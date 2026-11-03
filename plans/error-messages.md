@@ -29,32 +29,32 @@ against the messages defined here.
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|----------|-----------|-------|-------------|----------------------|
 | 1 | `as_survey()` | `data` is not a data frame | ERROR | `surveycore_error_not_data_frame` | `"{.arg data} must be a data frame, not {.cls {class(data)}}"` |
-| 2 | `as_survey()` | `data` has 0 rows | ERROR | `surveycore_error_empty_data` | `"{.arg data} must have at least one row"` |
+| 2 | `as_survey()` | `data` has 0 rows | ERROR | `surveycore_error_empty_data` | `"{.arg data} must have at least one row"` Note: Also thrown by the S7 validators of `survey_taylor`, `survey_replicate`, `survey_twophase` and `survey_nonprob` on construction and on every `@data <-` write (issue #248), through the shared helper `.validate_not_empty()`. |
 | 3 | `as_survey()` | `data` has duplicate column names | ERROR | `surveycore_error_duplicate_names` | `"Column names in {.arg data} must be unique. Duplicates: {.field {dupes}}"` |
-| 4 | `as_survey()` | `data` has 1 row | ERROR | `surveycore_error_single_row` | `"{.arg data} has only 1 row. A survey design requires at least 2 observations."` |
+| 4 | `as_survey()` | `data` has 1 row | ERROR | `surveycore_error_single_row` | `"{.arg data} has only 1 row. A survey design requires at least 2 observations."` Note: Also thrown by the four design-class S7 validators on every `@data <-` write (issue #248), through `.validate_not_single_row()`. For `survey_twophase` the count is `nrow(@data)`, the full phase 1 sample; the phase 2 subset is not row-counted. |
 | 5 | `as_survey()` | Both `probs` and `weights` provided, inconsistent values | ERROR | `surveycore_error_probs_weights_conflict` | `"Cannot specify both {.arg probs} and {.arg weights} with inconsistent values. {.arg weights} should equal 1 / {.arg probs}"` |
 | 6 | `as_survey()` | Both `probs` and `weights` provided, consistent values | INFO | `surveycore_inform_probs_weights_consistent` | `"Using {.arg weights}; provided {.arg probs} is consistent (weights = 1/probs)"` |
 | 7 | `as_survey()` | No weights, probs, or ids (SRS) | WARN | `surveycore_warning_srs_no_weights` | `"No weights or population size provided. Treating as equal-probability SRS with unknown population size. Valid: means, proportions, correlations. Invalid: population totals."` |
 | 8 | `as_survey()` | `weights` selects 0 columns | ERROR | `surveycore_error_weights_not_found` | `"{.arg weights} matched no columns in {.arg data}"` |
 | 9 | `as_survey()` | `weights` selects >1 column | ERROR | `surveycore_error_weights_multiple` | `"{.arg weights} must select exactly one column, not {length(weights_cols)}"` |
-| 10 | `as_survey()` | `weights` all zero | ERROR | `surveycore_error_weights_all_zero` | `"All values in {.arg weights} ({.field {weights_var}}) are zero or missing — no valid weights"` Note: Also thrown by `survey_nonprob` validator condition 4b (all non-NA weights are zero, no positive values). |
+| 10 | `as_survey()`, `as_survey_replicate()`, `as_survey_nonprob()` via `.validate_weights()` | `weights` has no non-NA value, or every non-NA value is zero | ERROR | `surveycore_error_weights_all_zero` | `"x" = "All values in weight column {.field {weights_var}} are zero or missing.", "i" = "No valid (non-NA, positive) weights found.", "v" = "Check {.field {weights_var}} for data issues or supply a different column."` Note: Also thrown by the `survey_nonprob` S7 validator, with its own messages, in two places: when the weight column has no non-NA value (`"x" = "Weight column {.field {weights_var}} has no non-NA values."`), and at condition 4b when no non-NA weight is positive (`"x" = "Weight column {.field {weights_var}} has no positive values."`). That validator refuses only an all-zero column, while `.validate_weights()` refuses any zero; the difference is deliberate (see row 33). |
 | 11 | `as_survey()` | `strata` selects 0 columns | ERROR | `surveycore_error_strata_not_found` | `"{.arg strata} matched no columns in {.arg data}"` |
 | 11b | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
 | 12 | `as_survey()` | `strata` resolves to 1 unique value | WARN | `surveycore_warning_single_stratum` | `"{.arg strata} ({.field {strata_var}}) has only 1 unique value — stratification has no effect"` |
-| 13 | `as_survey()` / `as_survey_replicate()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
-| 13b | `as_survey()` / `as_survey_replicate()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
+| 13 | `as_survey()` (not `as_survey_replicate()` since RF-1) | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
+| 13b | `as_survey()` (not `as_survey_replicate()` since RF-1) | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
 | 14 | `as_survey()` | `fpc` column contains `NA` | ERROR | `surveycore_error_fpc_na` | `"{.arg fpc} column {.field {fpc_var}} contains {sum(is.na(fpc_col))} NA value(s). FPC must be fully observed."` |
 | 15 | `as_survey()` | `nest = TRUE` with no `strata` | ERROR | `surveycore_error_nest_without_strata` | `"{.arg nest = TRUE} requires {.arg strata} to be specified"` |
 | 16 | `as_survey_replicate()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
 | 17 | `as_survey_replicate()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
 | 18 | `as_survey_replicate()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
-| 19 | `as_survey_twophase()` | `phase1` is not a survey design object | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a survey design object ({.cls survey_base}), not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}, {.fn as_survey_srs}, or {.fn as_survey_replicate}."` |
+| 19 | `as_survey_twophase()` | `phase1` is not a survey design object | ERROR | `surveycore_error_phase1_class` | `"x" = "{.arg phase1} must be a survey design object ({.cls survey_base}), not {.cls {class(phase1)[[1L]]}}.", "i" = "Create it first with {.fn as_survey}."` |
 | 20 | `as_survey_twophase()` | `subset` not provided (missing) | ERROR | `surveycore_error_subset_missing` | `"{.arg subset} is required: a logical column indicating Phase 2 membership"` |
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
 | 22 | `as_survey_twophase()` | `subset` column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"{.arg subset} column {.field {subset_var}} must be logical, not {.cls {class(data[[subset_var]])}}"` |
 | 23 | `as_survey_twophase()` | `subset` is all TRUE or all FALSE (among non-NA) | ERROR | `surveycore_error_subset_degenerate` | `"{.arg subset} column {.field {subset_var}} must contain both TRUE and FALSE values (non-NA). Found {n_true} TRUE and {n_false} FALSE (non-NA) value(s)."` |
 | 23b | `as_survey_twophase()` | `subset` column contains NA values | ERROR | `surveycore_error_subset_na` | `"x" = "{.arg subset} column {.field {subset_var}} contains {n_na} NA value(s).", "i" = "The phase 2 membership indicator must be fully observed for all phase 1 units.", "v" = "Remove rows with missing {.arg subset} values before calling {.fn as_survey_twophase}."` |
-| 24 | `as_survey_twophase()` | `method = "simple"` + clustered Phase 1 | WARN | `surveycore_warning_simple_clustered` | `'{.code method = "simple"} ignores the Phase 1 cluster design (PSUs: {.field {phase1@variables$ids}}). This understates variance. Use {.code method = "full"} or {.code method = "approx"}.'` |
+| 24 | `as_survey_twophase()` | *Retired by issue #330.* `method = "simple"` is `method = "approx"`, as in `survey::twophase()`, so the variance no longer ignores the Phase 1 clusters and the warning no longer fires | — | ~~`surveycore_warning_simple_clustered`~~ | — |
 | 26 | `as_survey_twophase()` (validator) | Phase 2 design var all-NA within Phase 2 subset | WARN | `surveycore_warning_phase2_all_na` | `"Phase 2 design variable {.field {var}} is all NA within the Phase 2 subset. Check rows where {.field {subset_var}} is TRUE."` |
 | 27 | `set_var_label()` | Variable not found in data | ERROR | `surveycore_error_var_not_found` | `"Variable {.field {var_name}} not found in {.arg x}. Available: {.field {names(x@data)}}"` |
 | 28 | `set_variable_labels()` | One or more variables not found | ERROR | `surveycore_error_vars_not_found` | `"Variable(s) not found in {.arg x}: {.field {missing}}"` |
@@ -62,7 +62,7 @@ against the messages defined here.
 | 30 | `set_val_labels()` | Some data values lack a label | WARN | `surveycore_warning_missing_labels` | `"Not all values of {.field {var_name}} are labeled. Unlabeled values: {.val {missing}}"` |
 | 31 | S7 validator (`survey_taylor`) | Design variable not in data | ERROR | `surveycore_error_design_var_missing` | `"Design variable(s) not found in {.arg data}: {.field {missing}}"` |
 | 32 | S7 validator (`survey_taylor`) | Weight column not numeric | ERROR | `surveycore_error_weights_not_numeric` | `"Weight column {.field {weights_var}} must be numeric, not {.cls {class(wt_col)}}"` |
-| 33 | S7 validator (`survey_taylor`, `survey_replicate`) | Weight column has non-positive values | ERROR | `surveycore_error_weights_nonpositive` | `"Weight column {.field {weights_var}} has {n_bad} non-positive value(s). All non-NA weights must be > 0."` Note: No longer thrown by `survey_nonprob` validator (see row 101, `surveycore_error_weights_negative`). |
+| 33 | `as_survey()`, `as_survey_replicate()`, `as_survey_nonprob()` via `.validate_weights()`; S7 validator (`survey_taylor`, `survey_replicate`) | Weight column has non-positive values | ERROR | `surveycore_error_weights_nonpositive` | Constructor route (Layer 3, dual pattern): `.validate_weights()` raises it before any S7 object exists, with `"x" = "Weight column {.field {weights_var}} has {n_bad} non-positive value(s).", "i" = "All non-NA weights must be strictly greater than 0.", "v" = "Remove or replace rows where {.field {weights_var}} is 0 or negative."`. A column whose non-NA values are all zero takes row 10 instead. Validator route (Layer 1, `class =` only): the `survey_taylor` and `survey_replicate` S7 validators raise it on a direct construction or property write that bypasses the constructors, with `"Weight column {.field {weights_var}} has {n_bad} non-positive value(s). All non-NA weights must be > 0."` Note: No longer thrown by `survey_nonprob` validator (see row 101, `surveycore_error_weights_negative`). The difference is deliberate, and was confirmed in issue #248: `as_survey_nonprob()` still raises this class through `.validate_weights()`, so a zero weight never enters from input data, while the `survey_nonprob` validator accepts a zero so that surveywts's `adjust_nonresponse()` can write zero nonrespondent weights into `@data` after construction. Source: `archive/nonprob-zero-weights/` (#80). |
 | 34 | S7 validator (`survey_taylor`) | Design variable is a list-column | ERROR | `surveycore_error_design_var_list` | `"Design variable {.field {var}} is a list-column. Design variables must be atomic vectors."` |
 | 35 | S7 validator (all) | PSU appears in multiple strata | WARN | `surveycore_warning_psu_multi_strata` | `"Some PSUs appear in more than one stratum: {.val {head(multi_strata_psus, 5)}}. If PSUs are nested within strata, set {.code nest = TRUE}."` |
 | 36 | `update_design()` | Any design variable update | WARN | *(inform, not warn)* | `"Survey design updated. This may affect statistical validity. Updated: {.field {changed_vars}}"` |
@@ -72,7 +72,7 @@ against the messages defined here.
 | 40 | `filter()` (surveytidy) | filter() produces all-FALSE domain | WARN | `surveycore_warning_empty_domain` | `"filter() produced an empty domain — no rows match the supplied condition. Variance estimation on this domain will fail."` |
 | 41 | `mutate()` (surveytidy) | mutate() modifies the weight column | WARN | `surveycore_warning_weight_modified` | `"mutate() modified the weight column {.field {wt_var}}. This changes the survey design. Use {.fn update_design} to update the weight column explicitly."` |
 | 42 | `subset()` (surveytidy) | subset() physically removes rows | WARN | `surveycore_warning_physical_subset` | `"subset() physically removes rows from the survey data. This is different from filter(), which preserves all rows for correct variance estimation. Subpopulation analyses should use filter() instead."` |
-| 43 | `get_means()`, `get_totals()`, `get_corr()`, `get_ratios()` | Non-numeric column passed | ERROR | `surveycore_error_non_numeric_variable` | `"{.arg x} must be numeric, not {.cls {class(col)}}. Column {.field {var}} cannot be used with {.fn {fn_name}}."` |
+| 43 | `get_means()`, `get_totals()`, `get_ratios()`, `get_variance()`, `get_quantiles()`, `get_t_test()`, `get_diffs()` | Non-numeric column passed (`get_totals()`: a column that is neither numeric, a factor, nor a character vector; its message names all three) | ERROR | `surveycore_error_non_numeric_variable` | `"{.arg x} must be numeric, not {.cls {class(col)}}. Column {.field {var}} cannot be used with {.fn {fn_name}}."` |
 | 44 | `get_corr()` | Fewer than 2 variables supplied | ERROR | `surveycore_error_insufficient_variables` | `"{.fn get_corr} requires at least 2 variables, but {.arg x} resolved to {length(vars)} variable{?s}."` |
 | 45 | all `get_*()` | Unknown value for `variance` argument | ERROR | `surveycore_error_invalid_variance_arg` | `'{.arg variance} values must be from {.val {valid_variance}}. Unknown value{?s}: {.val {bad_vals}}.'` |
 | 45a | all `get_*()` | `conf_level` not a single number strictly between 0 and 1 | ERROR | `surveycore_error_invalid_conf_level` | `"{.arg conf_level} must be a single number strictly between 0 and 1. Got {.val {conf_level}}."` |
@@ -84,16 +84,17 @@ against the messages defined here.
 | 50 | all `get_*()` | A grouping variable has only one observed level | WARN | `surveycore_warning_single_level` | `"Grouping variable {.field {var}} has only one observed level ({.val {level}}). Grouped estimates will have a single row."` |
 | 51 | `get_corr()` | Non-numeric variable in `x` silently dropped | WARN | `surveycore_warning_corr_non_numeric` | `"{.fn get_corr} requires numeric variables. Dropping non-numeric column{?s}: {.field {dropped}}."` |
 | 52 | `get_freqs()` multi-var | Variables have different non-NULL question prefaces | WARN | `surveycore_warning_mixed_prefaces` | `"{length(unique_prefaces)} different question prefaces found across {length(vars)} variables. Variables with different prefaces may not belong in the same {.fn get_freqs} call. Prefaces stored in {.code meta(result)$question_prefaces}."` |
-| 53 | `get_freqs()` | Focal variable all NA with `na.rm = FALSE` (categorical only — no levels to tabulate; numeric functions propagate NA naturally) | ERROR | `surveycore_error_all_na` | `"All values of {.field {var}} are {.code NA}. Cannot compute estimate with {.arg na.rm = FALSE}. Set {.arg na.rm = TRUE} to exclude {.code NA} values."` |
+| 53 | `get_freqs()`, `get_totals()` (factor or character `x`) | Focal variable all NA with `na.rm = FALSE` (categorical only — no levels to tabulate; numeric functions propagate NA naturally) | ERROR | `surveycore_error_all_na` | `"All values of {.field {var}} are {.code NA}. Cannot compute estimate with {.arg na.rm = FALSE}. Set {.arg na.rm = TRUE} to exclude {.code NA} values."` |
 | 54 | all `get_*()` | `variance = "cv"` but estimate is 0 or negative | WARN | `surveycore_warning_cv_undefined` | `'{.arg variance = "cv"} is undefined for {n_undef} cell{?s} where the estimate is 0 or negative. {.code cv} set to {.code NA} for those cells.'` |
 | 55 | `get_freqs()` | All values of focal variable are `NA` with `na.rm = TRUE` | WARN | `surveycore_warning_all_na_freqs` | `"All values of {.field {var}} are {.code NA} with {.arg na.rm = TRUE}. Returning 0 rows."` |
+| 55a | `get_totals()` | All values of a factor or character `x` are `NA` with `na.rm = TRUE` | WARN | `surveycore_warning_all_na_totals` | `"All values of {.field {var}} are {.code NA} with {.arg na.rm = TRUE}. Returning 0 rows."` |
 | 56 | `as_survey_srs()` | Both `weights` and `probs` supplied | ERROR | `surveycore_error_weights_probs_both` | `"Supply {.arg weights} or {.arg probs}, not both."` |
 | 57 | `as_survey_srs()` | `fpc` column has non-positive values | ERROR | `surveycore_error_fpc_nonpositive` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} non-positive value(s). FPC values must be > 0."` |
 | 58 | `as_survey_srs()` | `fpc` column mixes values > 1 and ≤ 1 | ERROR | `surveycore_error_fpc_ambiguous` | `"{.arg fpc} column {.field {fpc_var}} mixes values > 1 (population sizes) and values \u2264 1 (sampling fractions). All FPC values must be consistently one type."` |
 | 59 | `as_survey_srs()` | `fpc` population size < sample size | ERROR | `surveycore_error_fpc_below_sample` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} value(s) smaller than the sample size ({n}). Population size cannot be smaller than the number of sampled units."` |
 | 60 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | INFO | `surveycore_message_as_survey_srs_fallback` | `c("i" = "No {.arg ids} or {.arg strata} specified; creating a {.cls survey_srs} design.", "i" = "Use {.fn as_survey_srs} to avoid this message.")` |
 | 61 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
-| 62 | `from_svydesign()` (twophase) | Could not determine two-phase variance method | WARN | `surveycore_warning_twophase_method_unknown` | `"Could not determine two-phase variance method from the survey object. Defaulting to {.val \"approx\"}."` |
+| 62 | `from_svydesign()` (twophase) | *Retired by issue #335.* `survey::twophase()` stores no method, and the object's class decides it: `twophase2` is `"full"`, `twophase` is `"approx"` (surveycore treats `"simple"` as `"approx"`, issue #330), so nothing is left to guess | — | ~~`surveycore_warning_twophase_method_unknown`~~ | — |
 | 63 | `.twophasevar()` (via `.twophase_mean()` / `.twophase_total()`) | `method = "full"` but `@variables$phase2` has no `ids`, `strata`, or `probs` | ERROR | `surveycore_error_full_requires_phase2` | `"x" = "Two-phase variance method {.val full} requires phase 2 design structure.", "i" = "No {.arg ids2}, {.arg strata2}, or {.arg probs2} were specified in {.fn as_survey_twophase}.", "v" = 'Reconstruct with {.arg method = "approx"} or supply phase 2 design variables.'` |
 | 64 | `.check_unsupported_class()`, `.build_meta()` fallback | Object does not inherit from `survey_base` (`.check_unsupported_class()`), or inherits from `survey_base` but is not one of the five supported subclasses (`.build_meta()`) | ERROR | `surveycore_error_unsupported_class` | `.check_unsupported_class()`: `"{.fn {fn_name}} requires a survey design object. Got {.cls {class(design)[[1]]}}."` / `.build_meta()`: `"Unrecognized design class {.cls {class(design)[1]}}."` |
 | 65 | `survey_glm()` | `formula` is `NULL` (not supplied by caller) | ERROR | `surveycore_error_formula_missing` | `"{.arg formula} is required."` |
@@ -119,17 +120,18 @@ against the messages defined here.
 | 79 | `infer_question_prefaces()` | Variable already has `question_preface` and `overwrite = FALSE` | WARN | `surveycore_warning_preface_not_overwritten` | `"{length(skipped)} variable{?s} already {?has/have} a question preface and {?was/were} skipped. Set {.arg overwrite = TRUE} to replace them."` |
 | 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
 | 81 | all `get_*()` (via `.validate_shared_args()`) | `na.rm` is not `TRUE` or `FALSE` (e.g., `NA`, `1`, `"yes"`) | ERROR | `surveycore_error_na_rm_not_logical` | `"x" = "{.arg na.rm} must be {.code TRUE} or {.code FALSE}.", "i" = "Got {.obj_type_friendly {na.rm}}."` |
+| 102 | `survey_data()` | `haven_class` is not a length-one logical (e.g., `NA`, `NULL`, `"yes"`, `c(TRUE, TRUE)`) | ERROR | `surveycore_error_haven_class_not_logical` | `"x" = "{.arg haven_class} must be {.code TRUE} or {.code FALSE}.", "i" = "Got {.obj_type_friendly {haven_class}}."` |
 | M-2/M-7 | all extractors (M-2), all setters (M-7) | A variable specified in `...` / input is not found in `x@data` / `names(x)` | WARN | `surveycore_warning_var_not_found` | Extractor (M-2): `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}."` / Setter (M-7): `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}.", "i" = "Check spelling. Available columns: {.field {head(all_cols, 10)}}{?.}"` |
-| M-3 | all setters | Both `...` and explicit `variable`/content args are provided simultaneously | ERROR | `surveycore_error_setter_ambiguous` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.", "i" = "Use named {.arg ...} args, a named vector in {.arg ...}, or {.arg variable} + {.arg {content_arg}} — not a mix."` |
-| M-4 | all setters | Neither `...` nor `variable`/content args are provided | ERROR | `surveycore_error_setter_empty` | `"x" = "{.fn {fn_name}} requires at least one variable-label pair.", "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."` |
-| M-5 | all setters (convention 3) | `length(variable) != length(content)` | ERROR | `surveycore_error_setter_mismatched_lengths` | `"x" = "{.arg variable} has {length(variable)} element{?s} but {.arg {content_arg}} has {length(content)} element{?s}.", "i" = "They must be the same length (one content value per variable name)."` |
+| M-3 | all setters; `extract_dataset_metadata()` | Both `...` and explicit `variable`/content args are provided simultaneously | ERROR | `surveycore_error_setter_ambiguous` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.", "i" = "Use named {.arg ...} args, a named vector in {.arg ...}, or {.arg variable} + {.arg {content_arg}} — not a mix."` — message text is parameterized per calling function (see the dataset-level-metadata section). `set_dataset_metadata()` variant: `"x" = "Provide key names via {.arg ...} or via {.arg key}, not both.", "i" = "Use named {.arg ...} args, a named list in {.arg ...}, or {.arg key} + {.arg value} — not a mix."` / `extract_dataset_metadata()` variant (both `...` and `key` supplied): `"x" = "Provide key names via {.arg ...} or via {.arg key}, not both.", "i" = "Use named {.arg ...} args, a named list in {.arg ...}, or the {.arg key} argument — not a mix."` |
+| M-4 | all setters | Neither `...` nor `variable`/content args are provided | ERROR | `surveycore_error_setter_empty` | `"x" = "{.fn {fn_name}} requires at least one variable-label pair.", "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."` — message text is parameterized per calling function (see the dataset-level-metadata section). `set_dataset_metadata()` variant: `"x" = "{.fn set_dataset_metadata} requires at least one key-value pair.", "v" = "Use named {.arg ...} args: {.code set_dataset_metadata(x, vendor = 'Ipsos')}."` / Four scalar-wrapper variant (`set_survey_name()`, `set_data_name()`, `set_vendor()`, `set_field_period()`), emitted by the wrapper itself with its own function and argument names: `"x" = "{.fn {fn_name}} requires a value for {.arg {arg_name}}.", "v" = "Supply a single character value, or {.code NULL} to delete the key."` / `set_field_dates()` variant: `"x" = "{.fn set_field_dates} requires at least one of {.arg field_start} or {.arg field_end}.", "v" = "Supply a single character value, or {.code NULL} to delete the key."` |
+| M-5 | all setters (convention 3) | `length(variable) != length(content)` | ERROR | `surveycore_error_setter_mismatched_lengths` | `"x" = "{.arg variable} has {length(variable)} element{?s} but {.arg {content_arg}} has {length(content)} element{?s}.", "i" = "They must be the same length (one content value per variable name)."` — message text is parameterized per calling function (see the dataset-level-metadata section); `set_dataset_metadata()` renders `key` and `value` in place of `variable` and `content`. |
 | M-6 | all extractors | `format` argument has an invalid value | ERROR | `surveycore_error_format_invalid` | `"x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.", "i" = "{.arg format} must be one of {.val {valid_formats}}."` |
 | M-10 | `set_missing_codes()` | A `codes` entry is not an atomic vector | ERROR | `surveycore_error_missing_codes_not_vector` | `"x" = "Missing codes for {.field {var_name}} must be an atomic vector, not {.cls {class(codes_entry)[[1L]]}}.", "i" = "Use a numeric, integer, or character vector (e.g., {.code c(Refused = 99L, {\"Don't know\"} = 98L)})."` |
 | M-11 | `set_var_label()` | Old positional NSE form detected | ERROR | `surveycore_error_old_positional_setter` | `"x" = "The old positional calling form {.code {fn_name}(x, var, content)} is no longer supported.", "i" = "The new unified setter uses named arguments.", "v" = "Use {.code {fn_name}(x, {var_name} = {.val {content_val}})} instead."` |
-| M-12 | all setters | `...` contains any unnamed element(s) — either all unnamed or a mix of named and unnamed | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` |
+| M-12 | all setters | `...` contains any unnamed element(s) — either all unnamed or a mix of named and unnamed | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` — message text is parameterized per calling function (see the dataset-level-metadata section); `set_dataset_metadata()` renders its own examples and `a fully named list`. |
 | M-13 | scalar-content setters (`set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`) | A content value is not a character scalar (wrong type or length > 1) | ERROR | `surveycore_error_label_not_scalar` | `"x" = "Label content for {.field {var_name}} must be a character scalar, not {.cls {class(val)[[1L]]}} of length {length(val)}.", "v" = "Pass a single character string, e.g. {.code {fn_name}(x, {var_name} = 'My label')}."` |
-| M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` |
-| M-15 | all extractors, `extract_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` |
+| M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` — message text is parameterized per calling function (see the dataset-level-metadata section); `set_dataset_metadata()` renders `{.arg key}` in place of `{.arg variable}` and `key names` in place of `variable names`. |
+| M-15 | all extractors, `extract_metadata()`, `extract_dataset_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` — the shared fill validator gains a widening parameter whose default keeps this two-value message byte-identical. `extract_dataset_metadata()` variant: `valid_fill_values` lists `NULL`, `NA`, and `NA_character_`. |
 | 88 | `as_survey()` | `fpc` selects more columns than `ids` stages | ERROR | `surveycore_error_fpc_too_many_stages` | `"x" = "{.arg fpc} selected {n_fpc} column(s) but {.arg ids} has only {n_ids} stage(s).", "i" = "FPC columns must correspond 1-to-1 with ID stages. Supply at most {n_ids} FPC column(s)."` |
 | 89 | `as_survey()` | `fpc` selects fewer columns than `ids` stages | WARN | `surveycore_warning_fpc_partial_stages` | `"!" = "{.arg fpc} has {n_fpc} column(s) but {.arg ids} has {n_ids} stage(s).", "i" = "Later stages assume sampling from an infinite population (no FPC)."` |
 | 90 | `as_survey()` | Stage-j FPC population size < stage-j cluster count within parent | ERROR | `surveycore_error_fpc_smaller_than_n` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} has population sizes smaller than the observed cluster count in {n_bad} parent group(s).", "i" = "Population size must be >= the number of sampled units within each parent cluster."` |
@@ -144,7 +146,8 @@ against the messages defined here.
 | 98 | `get_diffs()` | `clean()` output missing intercept | ERROR | `surveycore_error_reference_row_not_found` | `"Reference row not found in model output. Expected exactly one intercept row."` |
 | 99 | `get_diffs()` | `show_pct_change = TRUE` and ref mean is 0 | WARN | `surveycore_warning_pct_change_zero_ref` | `"Reference group mean is 0; percentage change is undefined."` |
 | 100 | `get_diffs()` | `treats` column not a factor | WARN | `surveycore_warning_treats_coerced` | `"{.field {treats_name}} coerced to factor."` |
-| 101 | S7 validator (`survey_nonprob`) | Weight column has negative values | ERROR | `surveycore_error_weights_negative` | `"x" = "Weight column {.field {weights_var}} has {n_neg} negative value(s)."`, `"i" = "All non-NA weights must be non-negative (>= 0)."`, `"v" = "Remove or replace rows where {.field {weights_var}} is negative."` |
+| 101 | S7 validator (`survey_nonprob`) | Weight column has negative values | ERROR | `surveycore_error_weights_negative` | `"x" = "Weight column {.field {weights_var}} has {n_neg} negative value(s)."`, `"i" = "All non-NA weights must be non-negative (>= 0)."`, `"v" = "Remove or replace rows where {.field {weights_var}} is negative."` Note: Permits zero weights on purpose — the post-construction route surveywts's `adjust_nonresponse()` uses. The constructor stays strict (row 33). Confirmed in issue #248; source `archive/nonprob-zero-weights/` (#80). |
+| 103 | S7 validator (`survey_base`) | `@data` holds a column named by `SURVEYCORE_DOMAIN_COL` whose type is not logical | ERROR | `surveycore_error_domain_not_logical` | `"x" = "Domain column {.field {SURVEYCORE_DOMAIN_COL}} must be logical, not {.cls {col_class}}."`, `"i" = "{.fn surveytidy::filter} writes this column as a logical mask; {.code TRUE} marks a row inside the active domain."` |
 | A-2 | `get_anova()` | Models not symbolically nested | ERROR | `surveycore_error_models_not_nested` | `"x" = "Models are not symbolically nested.", "i" = "Neither model's term set is a subset of the other.", "v" = "Refit one model so its terms are a superset of the other's."` |
 | A-3 | `get_anova()` | `model` / `model2` have different responses | ERROR | `surveycore_error_response_mismatch` | `"x" = "Models have different response variables.", "i" = "{.field {lhs1}} vs. {.field {lhs2}}."` |
 | A-4 | `get_anova()` | `null` supplied with `method = "LRT"` | ERROR | `surveycore_error_null_with_lrt` | `"x" = "{.arg null} is only valid with {.code method = \"Wald\"}.", "v" = "Set {.code method = \"Wald\"} to test a non-zero null hypothesis."` |
@@ -190,9 +193,9 @@ against the messages defined here.
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|----------|-----------|-------|-------------|----------------------|
-| PC-1 | `get_corr(method = "polychoric")` | One or more selected variables are not ordinal (not `factor`, `ordered`, or small-cardinality `integer`) | ERROR | `surveycore_error_polychoric_requires_ordinal` | `"x" = "{.code method = \"polychoric\"} requires ordinal variables. Non-ordinal column{?s}: {.field {bad_vars}} ({.cls {bad_classes}}).", "v" = "Coerce to {.cls factor} or {.cls ordered}, or use {.code method = \"pearson\"}."` |
-| PC-2 | `get_corr(method = "polyserial")` | Pair does not have exactly one ordinal and one continuous variable after auto-detection | ERROR | `surveycore_error_polyserial_requires_mixed_types` | `"x" = "{.code method = \"polyserial\"} requires exactly one ordinal and one continuous variable per pair.", "i" = "For pair ({.field {var1}}, {.field {var2}}): classified as ({.val {type1}}, {.val {type2}}).", "v" = "Supply one {.cls factor}/{.cls ordered} variable and one {.cls numeric} variable, or use {.code method = \"polychoric\"} / {.code method = \"pearson\"}."` |
-| PC-3 | `get_corr(method = "polyserial")` | A selected variable's type cannot be unambiguously classified (integer with many distinct values, logical, character, or both sides ambiguous) | ERROR | `surveycore_error_polyserial_canonicalization_ambiguous` | `"x" = "Cannot determine whether {.field {var}} is ordinal or continuous.", "i" = "Integer vectors with more than {.val {threshold}} distinct values, and logical / character vectors, are ambiguous.", "v" = "Coerce to {.cls ordered} for ordinal or {.cls double} for continuous before calling {.fn get_corr}."` |
+| PC-1 | `get_corr(method = "polychoric")` | One or more selected variables are not ordinal. Ordinal means `factor`, `ordered`, or a numeric column whose non-missing values are all finite and all whole, with at least one and no more than the cardinality cutoff distinct values. A numeric column with no non-missing value at all is not ordinal; a `factor` or `ordered` column declares its levels and stays ordinal | ERROR | `surveycore_error_polychoric_requires_ordinal` | `"x" = "{.code method = \"polychoric\"} requires ordinal variables. Non-ordinal column{?s}: {.field {bad_vars}} ({.cls {bad_classes}}).", "v" = "Coerce to {.cls factor} or {.cls ordered}, or use {.code method = \"pearson\"}."` |
+| PC-2 | `get_corr(method = "polyserial")` | Pair does not have exactly one ordinal and one continuous variable after auto-detection. A whole-valued `double` within the cardinality cutoff counts as ordinal, so a pair of them raises this | ERROR | `surveycore_error_polyserial_requires_mixed_types` | `"x" = "{.code method = \"polyserial\"} requires exactly one ordinal and one continuous variable per pair.", "i" = "For pair ({.field {var1}}, {.field {var2}}): classified as ({.val {type1}}, {.val {type2}}).", "v" = "Supply one {.cls factor}/{.cls ordered} variable and one {.cls numeric} variable, or use {.code method = \"polychoric\"} / {.code method = \"pearson\"}."` |
+| PC-3 | `get_corr(method = "polyserial")` | A selected variable's type cannot be unambiguously classified (integer with many distinct values, logical, character, or both sides ambiguous). The `double` branch never returns ambiguous | ERROR | `surveycore_error_polyserial_canonicalization_ambiguous` | `"x" = "Cannot determine whether {.field {var}} is ordinal or continuous.", "i" = "Integer vectors with more than {.val {threshold}} distinct values, and logical / character vectors, are ambiguous.", "v" = "Coerce to {.cls ordered} for ordinal or {.cls double} for continuous before calling {.fn get_corr}."` |
 | PC-4 | `get_corr(method ∈ {polychoric,polyserial})` | An ordinal variable has only one observed level after domain / NA filtering | ERROR | `surveycore_error_polychoric_single_level_ordinal` | `"x" = "Ordinal variable {.field {var}} has only {.val {n_levels}} observed level{?s} in the active domain.", "i" = "Threshold estimation requires at least 2 distinct levels.", "v" = "Filter to a domain with more than one level of {.field {var}}."` |
 | PC-5 | `get_corr(method = "polychoric")` | For a pair, fewer than 4 non-empty bivariate cells are observed (surveycore stability guardrail; not paper-mandated) | ERROR | `surveycore_error_polychoric_insufficient_cells` | `"x" = "Pair ({.field {var1}}, {.field {var2}}) has only {.val {n_cells}} non-empty cell{?s} in the active domain.", "i" = "Polychoric MLE is not identified with fewer than 4 non-empty cells (surveycore guardrail).", "v" = "Collapse levels or choose a different pair."` |
 | PC-6 | `get_corr(method ∈ {polychoric,polyserial})` | Numerical optimizer failed to converge for a pair on the full sample | ERROR | `surveycore_error_polychoric_optim_failed` | `"x" = "Numerical optimization did not converge for pair ({.field {var1}}, {.field {var2}}).", "i" = "Optimizer message: {.val {msg}}.", "v" = "Inspect the pair for extreme weight skew, sparse cells, or degenerate ordinal coding."` |
@@ -204,6 +207,7 @@ against the messages defined here.
 | PC-12 | `get_corr(method ∈ {polychoric,polyserial})` (replicate path) | Some replicates failed but fewer than 20% | WARN | `surveycore_warning_polychoric_replicate_convergence` | `"!" = "{.val {n_failed}} of {.val {R}} replicate fit{?s} failed to converge for pair ({.field {var1}}, {.field {var2}}).", "i" = "Variance is computed over the {.val {n_ok}} successful replicate(s). See {.code meta(result)$n_failed_replicates_total}."` |
 | PC-13 | `get_corr(method = "polychoric")` | An ordinal variable is an unordered `factor` (not `ordered`); `levels()` order is used | WARN | `surveycore_warning_polychoric_unordered_factor` | `"!" = "Variable {.field {var}} is an unordered {.cls factor}; using {.fn levels} order for thresholds.", "v" = "Coerce to {.cls ordered} to make the level order explicit."` |
 | PC-14 | `get_corr(method ∈ {polychoric,polyserial})` (Taylor path) | ρ̂ is within ε = 1e-6 of ±1 on a `survey_taylor` design; the numerical-IF CI is structurally wide (same ε as PC-9) | WARN | `surveycore_warning_polychoric_taylor_boundary_wide_ci` | `"!" = "Taylor linearization for pair ({.field {var1}}, {.field {var2}}) is near the boundary ({.val {rho}}); CI is structurally wide.", "i" = "This is a known limitation of the delta-method / numerical influence-function approach (Mannan 2025).", "v" = "Use a {.cls survey_replicate} design for tighter inference near the boundary."` |
+| PC-15 | `get_corr(method = "polyserial")` | The continuous side of a pair holds an infinite value on the rows in the active domain. `NA` and `NaN` do not raise this — the weighted-moment helper drops them — and the ordinal side cannot hold one, because an `Inf`-carrying `double` classifies as continuous | ERROR | `surveycore_error_polyserial_nonfinite_continuous` | `"x" = "{.code method = \"polyserial\"} requires a finite continuous variable.", "i" = "Column {.field {var}} has {n_bad} non-finite value{?s} ({.val {bad_vals}}) in the active domain.", "v" = "Filter the non-finite rows, or recode them to {.code NA}."` |
 
 ### survey_collection rows (PR 1)
 
@@ -244,6 +248,12 @@ against the messages defined here.
 | G8 | `as_survey_collection()` | `group =` supplied; a member's non-empty `@groups` differs from resolved target and is being overridden | WARNING | `surveycore_warning_collection_group_overridden` | `"!" = "Member {.val {name}} had @groups {.val {member_groups}}; overriding with {.val {target}}.", "i" = "The {.arg group} argument to {.fn as_survey_collection} takes precedence over pre-existing member grouping.", "i" = "If this was unintentional, call {.fn surveytidy::ungroup} on the member first, or omit {.arg group} to adopt from members."` |
 
 *Note: the spec also defined `[[<-`-specific classes G5 / G5b (group mismatch on replace / append), G6 (`not_survey_base`), G7 (`index_out_of_range`), and G7b (`index_bad_type`). The `[[<-` method was not implemented because `S7::method("[[<-", ...)` registers the method in S3methods metadata in a form that trips R CMD check's `checkReplaceFuns` and produces a spurious warning. Users should mutate a collection via `add_survey()` / `remove_survey()` instead. If a future workaround is found, those classes can be added here without breaking callers.*
+
+### survey_collection dim (design-dim)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| C16 | `dim()` on a `survey_collection` (and therefore `nrow()`, `ncol()`, `NROW()`, `NCOL()`) | Always — a collection has no single set of dimensions | ERROR | `surveycore_error_collection_no_dim` | `"x" = "A {.cls survey_collection} has no single set of dimensions.", "i" = "It holds {n} survey{?s}, each with its own row and column counts.", "v" = "Extract one member with {.code [[} and ask that survey instead, e.g. the member named {.val {first_name}}."` |
 
 ### get_effective_n() rows (2026-05-05)
 
@@ -295,7 +305,7 @@ against the messages defined here.
 |---|----------|-----------|-------|-------------|----------------------|
 | NB-1 | `as_survey_nonprob()` | `type` is not `"bootstrap"` | ERROR | `surveycore_error_type_invalid` | `"x" = "{.arg type} must be {.val \"bootstrap\"} for {.cls survey_nonprob} objects.", "i" = "Jackknife and other replicate types are not supported for non-probability samples. Got {.val {type}}."` |
 | NB-2 | `get_means()`, `get_totals()`, `get_freqs()`, `get_corr()`, `get_ratios()`, `get_quantiles()`, `get_diffs()` | `survey_nonprob` object has no bootstrap replicate weights | WARN | `surveycore_warning_nonprob_srs_fallback` | `"!" = "{.cls survey_nonprob} object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.", "i" = "Run {.fn surveywts::create_bootstrap_weights} on this design for correct SEs."` |
-| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."` |
+| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Replicate variance requires >= 2 replicates. Got {.val 1}."` |
 | NB-4 | `get_means()` etc. (analysis functions, bootstrap path) | >5% of replicates have NA in a domain cell for `survey_nonprob` | WARN | `surveycore_warning_domain_replicates_na` | `"!" = "{na_dropped} of {R} bootstrap replicates have no observations in this domain ({pct}% of R).", "i" = "Standard errors for this cell understate variance when more than 5% of replicates are dropped.", "i" = "Consider collapsing small domain categories or increasing R."` |
 | NB-5 | `as_survey_nonprob()` | `reference_sample` is not a `survey_taylor` | ERROR | `surveycore_error_reference_sample_nonprob` | `"x" = "{.arg reference_sample} must be a {.cls survey_taylor} object.", "i" = "Got {.cls {class(reference_sample)[[1L]]}}.", "v" = "Pass the {.cls survey_taylor} object used to estimate propensity scores."` |
 | NB-6 | `as_survey_nonprob()` | `calibration$bootstrap` is `FALSE` when `repweights` is present | ERROR | `surveycore_error_provenance_not_bootstrap` | `"x" = "{.arg calibration} indicates the replicate weights were not produced by re-running the adjustment procedure.", "i" = "{.code calibration$bootstrap} must be {.val TRUE} for bootstrap variance to be valid.", "v" = "Use {.fn surveywts::create_bootstrap_weights} to produce repweights with re-calibration."` |
@@ -358,17 +368,47 @@ Tests should use BOTH:
 
 ---
 
+### twophase-multistage-phase2 rows (2026-11-02)
+
+Issue #338. The two-phase variance in `R/variance-twophase.R` reads one phase
+2 cluster column (`ids[[1L]]`), one strata column and one fpc column. A
+multi-stage phase 2 used to build and then got a standard error from its first
+stage alone (about 5.6% too small on the issue's fixture), with no condition.
+Multi-stage phase 2 is refused, not supported. One class serves all three
+entry points; `{fn}` names the one that raised it.
+
+`as_survey_twophase()` needs the check on `ids2` only: `strata2` and `fpc2`
+go through `.resolve_single_col()`, which already refuses more than one column
+with `surveycore_error_strata_multiple` and `surveycore_error_fpc_multiple`.
+`from_svydesign()` counts the stages of the phase 2 `id`, `strata` and `fpc`
+formulas in `x$phase2$call`, or the columns of the evaluated cluster, strata
+and population-size slots when there is no call. `survey` 4.5 refuses more
+`strata` or `fpc` stages than `id` stages, so a multi-stage `strata` or `fpc`
+always comes with a multi-stage `id`. The `survey_twophase` validator checks
+the `ids`, `strata` and `fpc` keys of `@variables$phase2`, which covers the
+exported class constructor and every `@variables` assignment.
+`update_design()` refuses every `survey_twophase` already.
+
+**Variable bindings.** `{fn}` = `as_survey_twophase`, `from_svydesign` or
+`survey_twophase`. `{multi}` = the arguments that name more than one stage:
+`ids2` from the constructor; any of `id`, `strata`, `fpc` from
+`from_svydesign()`; any of `ids`, `strata`, `fpc` from the validator.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| TP-3 | `as_survey_twophase()`, `from_svydesign()` (twophase), S7 validator (`survey_twophase`) | Phase 2 has more than one sampling stage: `ids2` resolves to more than one column; a phase 2 `id`, `strata` or `fpc` of a `survey` two-phase object has more than one stage; or `@variables$phase2$ids`, `$strata` or `$fpc` holds more than one name. Checked in the constructor directly after `ids2` is resolved, in `from_svydesign()` before phase 1 is converted | ERROR | `surveycore_error_twophase_multistage_phase2` | `"x" = "{.fn {fn}} does not support a multi-stage phase 2.", "i" = "{.arg {multi}} {cli::qty(length(multi))}{?names/name} more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.", "v" = "Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported."` |
+
 ## Coverage Map
 
 Which test files cover which error table rows:
 
 | Test File | Error Rows Covered |
 |-----------|-------------------|
-| `test-constructors.R` | 1–24, 23b, 56–61, 88–91, 13b |
+| `test-constructors.R` | 1–24, 23b, 56–61, 88–91, 13b; DM-7a, DM-7b, DM-7c, DM-7d (constructor promotion — the four `surveycore_warning_dataset_metadata_dropped` message variants) |
 | `test-variance-twophase.R` | 63 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30, M-2/M-7, M-3–M-15 |
-| `test-s7-classes.R` | 31–35, 37–39 |
+| `test-s7-classes.R` | 31–35, 37–39; DM-1a, DM-2a, DM-3a, DM-4a, DM-5a, DM-6c (`survey_metadata` validator — Layer 1) |
 | `test-update-design.R` | 36 |
 | `test-analysis-helpers.R` | 45, 45a, 45b, 46 (direct unit tests on `.validate_shared_args()` and `.apply_decimals()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
 | `test-analysis-freqs.R` | 45, 45a, 45b, 46, 49, 50, 52, 53, 55 |
@@ -390,9 +430,11 @@ Which test files cover which error table rows:
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
-| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
+| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded); M-16, M-17 (var-extension-slot) |
 | `test-calibration.R` | CAL-15, CAL-16 |
-| `test-analysis-methods-coef-vcov.R` | SCR-1, SCR-3, SCR-W1, SCR-W2, SCR-W3, SCR-W4 |
+| `test-analysis-methods-coef-vcov.R` | SCR-1, SCR-3, SCR-W1, SCR-W3, SCR-W4 |
+| `test-dataset-metadata.R` | DM-1b, DM-2b, DM-3b, DM-4b, DM-5b, DM-6a, DM-6b, DM-8, DM-9; M-3, M-4, M-5, M-12, M-14, M-15 (dataset-metadata variants) |
+| `test-conversion.R` | CN-1, CN-3 |
 
 ### coef-vcov-methods rows (2026-06-22)
 
@@ -400,8 +442,8 @@ Which test files cover which error table rows:
 |---|---|---|---|---|---|
 | SCR-1 | `coef.survey_result()`, `vcov.survey_result()`, `SE.survey_result()`, `confint.survey_result()` | Object is `survey_t_test` or `survey_pairwise` (unsupported), OR `attr(object, ".survey_result")` is `NULL` (attribute absent), OR estimate column not found (broom rename), OR wide-format `survey_corr` | ERROR | `surveycore_error_result_method_unsupported` | Template 1 (unsupported class): `"x" = "{.fn {fn_name}} is not supported for {.cls {class(object)[1L]}} objects.", "i" = "These result types have dedicated columns ({.field estimate}, {.field se}, {.field t_stat}, {.field df}, {.field p_value}). Access them directly.", "v" = "Use {.code result$estimate}, {.code result$se}, etc."` / Template 2 (absent attribute): `"x" = "{.fn {fn_name}} requires a {.cls survey_result} built with {.fn get_means}, {.fn get_totals}, or another supported {.fn get_*} function.", "i" = "The {.code .survey_result} metadata attribute is absent."` / Template 3 (broom rename): `"x" = "{.fn {fn_name}} cannot find estimate column {.field {estimate_col}} in {.cls {class(object)[1L]}}.", "i" = "Column was renamed by {.code name_style = \"broom\"}. The original column name {.field {estimate_col}} is stored in {.code attr(x, '.survey_result')$estimate_cols}.", "v" = "Call {.fn coef} before applying {.code name_style = \"broom\"}, or access the estimate directly."` / Template 4 (wide-format corr): `"x" = "{.fn {fn_name}} is not supported for wide-format {.cls survey_corr} objects.", "i" = "Wide-format correlation results do not have an {.code estimate_cols} mapping.", "v" = "Use {.code format = \"long\"} in {.fn get_corr} before calling {.fn {fn_name}}."` |
 | SCR-3 | `confint.survey_result()` | `df` stored in `.survey_result` attribute is `NA` or finite and ≤ 0 | ERROR | `surveycore_error_invalid_df` | `"x" = "Design degrees of freedom must be positive (got {.val {df}}).", "i" = "The {.code .survey_result} attribute was constructed with {.code df = {df}}.", "v" = "Ensure the survey design has at least one degree of freedom."` |
-| SCR-W1 | `vcov.survey_result()` | Called on a `survey_corr` result with more than one pair row | WARNING | `surveycore_warning_vcov_incomplete` | `"!" = "Off-diagonal elements of {.fn vcov} are {.code NA_real_} for {.cls survey_corr} results.", "i" = "Cross-pair covariances require joint estimation and are not available from per-pair stored data.", "i" = "Use {.code diag(vcov(result))} for per-pair variances, or {.code result$se} directly."` |
-| SCR-W2 | `vcov.survey_result()` | Result has p > 1 parameters (grouped or ungrouped; off-diagonal elements are structural zeros) | WARNING | `surveycore_warning_vcov_diagonal_only` | `"!" = "Off-diagonal elements of {.fn vcov} are structural zeros (only diagonal variances are estimated).", "i" = "This matches {.fn survey::vcov.svyby} behavior.", "i" = "For joint multi-parameter inference, see {.fn survey::svycontrast}."` |
+| SCR-W1 | `vcov.survey_result()` | Result has p > 1 parameters, an `se` column, and no stored joint covariance (every result other than `get_freqs()`/`get_totals()` on a Taylor or replicate design, or a stored matrix that no longer matches the rows); off-diagonal elements are `NA_real_` | WARNING | `surveycore_warning_vcov_incomplete` | `"!" = "Off-diagonal elements of {.fn vcov} are {.code NA_real_} for this {.cls {class(object)[1L]}} result.", "i" = "No joint covariance is stored for it; only the diagonal variances are available.", "i" = "Use {.code diag(vcov(result))} for the variances, or {.code result$se} directly."` |
+| SCR-W2 | `vcov.survey_result()` | **Retired (issue #200).** Was raised when off-diagonal elements were structural zeros. No code raises it: `vcov()` now returns the stored joint covariance, or `NA_real_` off-diagonals with SCR-W1 | WARNING | `surveycore_warning_vcov_diagonal_only` | — |
 | SCR-W3 | `confint.survey_result()` | `parm` character vector contains `NA` elements | WARNING | `surveycore_warning_parm_na` | `"!" = "{.arg parm} contains {.val {sum(is.na(parm))}} {.code NA} element(s).", "i" = "{.code NA} elements are dropped before parameter selection."` |
 | SCR-W4 | `confint.survey_result()` | `parm` character vector contains names not found in `names(coef(object))` | WARNING | `surveycore_warning_parm_unmatched` | `"!" = "{.arg parm} contains {.val {sum(is.na(m))}} name(s) not found in {.fn coef} output.", "i" = "Unmatched names: {.val {parm[is.na(m)]}}.", "i" = "These parameters are dropped. Check {.code names(coef(result))} for valid names."` |
 
@@ -416,3 +458,344 @@ Which test files cover which error table rows:
 | DF-5 | `extract_sata()` | `fill` is not `FALSE` or `NULL` | ERROR | `surveycore_error_fill_not_logical` | `"{.arg fill} must be {.code FALSE} or {.code NULL}."` |
 | DF-6 | `.svy_onestrat()` | stratum with one PSU + `lonely.psu = "fail"` | ERROR | `surveycore_error_lonely_psu` | `"Stratum {.val {stratum}} has only one PSU at stage {stage}."` |
 | DF-7 | `.svy_rep_var()` | all replicate thetas are `NA` | ERROR | `surveycore_error_all_replicates_na` | `"All replicates produced NA estimates."` |
+
+### dataset-level-metadata rows (2026-08-19)
+
+Layer 1 rows (the `survey_metadata` S7 validator) carry plain one-line text,
+not the CLI x/i/v register — the C1 / C4 / G1 precedent. Test them with
+`expect_error(class = ...)` plus `expect_error(regexp = ...)`; never with a
+snapshot. Layer 3 rows use the full CLI register and the dual test pattern.
+
+**Variable bindings.** `{key}` = the offending key name; `{value}` = the
+offending value; `{n_bad}` = count of unnamed or blank entries; `{dupes}` =
+the duplicated names; `{valid_keys}` = the six canonical key names;
+`{suggestion}` = the nearest valid key (bound only when the hint condition
+holds); `{expected}` = one of two fixed strings — `"a single non-NA character
+string"` (character keys) or `"a Date scalar or an ISO 8601 date string
+(YYYY-MM-DD)"` (date keys); `{start}` / `{end}` = the effective ISO-formatted
+dates.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| DM-1a | S7 validator (`survey_metadata`) — fires on direct construction and on `@<-` | An element of `@dataset_metadata` has no name, an `NA` name, or an empty name | ERROR | `surveycore_error_dataset_metadata_unnamed` | Layer 1, plain: `"All dataset metadata entries must have a non-empty name."` |
+| DM-1b | `set_dataset_metadata()` (Convention 3) | A key name is `NA` or `""` | ERROR | `surveycore_error_dataset_metadata_unnamed` | `"x" = "All dataset metadata keys must have a non-empty name.", "i" = "Found {n_bad} unnamed or blank-named entr{?y/ies}."` |
+| DM-2a | S7 validator (`survey_metadata`) | A key name is duplicated | ERROR | `surveycore_error_dataset_metadata_duplicate_key` | Layer 1, plain: `"Duplicate dataset metadata key(s): {dupes_txt}."` (`dupes_txt` is the duplicated names collapsed with `", "`) |
+| DM-2b | `set_dataset_metadata()` | A key name appears twice in one call (after the `dates` alias resolves) | ERROR | `surveycore_error_dataset_metadata_duplicate_key` | `"x" = "Duplicate dataset metadata key{?s}: {.val {dupes}}.", "i" = "Each key must appear exactly once."` |
+| DM-3a | S7 validator (`survey_metadata`) | A character key (`survey_name`, `data_name`, `vendor`, `field_period`) has the wrong type, length != 1, or is `NA`; or any element of `@dataset_metadata` is `NULL` | ERROR | `surveycore_error_dataset_metadata_bad_type` | Layer 1, plain: `"Dataset metadata key {key} must be a single non-NA character string."` |
+| DM-3b | `set_dataset_metadata()` and the four character-key wrappers (`set_survey_name()`, `set_data_name()`, `set_vendor()`, `set_field_period()`) | Same condition, raised at the setter by `.check_dataset_key_value(mode = "error")` | ERROR | `surveycore_error_dataset_metadata_bad_type` | `"x" = "Dataset metadata key {.val {key}} must be {expected}, not {.cls {class(value)[[1L]]}} of length {length(value)}.", "v" = "Supply a single non-NA character value, or {.code NULL} to delete the key."` |
+| DM-4a | S7 validator (`survey_metadata`) | Both dates are present and `field_start` is after `field_end` | ERROR | `surveycore_error_field_dates_reversed` | Layer 1, plain: `"field_start is after field_end."` |
+| DM-4b | `set_dataset_metadata()`; `set_field_dates()` | Effective `field_start` is after effective `field_end` (three-way effective-pair rule) | ERROR | `surveycore_error_field_dates_reversed` | `"x" = "{.val field_start} ({start}) is after {.val field_end} ({end}).", "v" = "Swap the two dates, or correct the wrong one."` |
+| DM-5a | S7 validator (`survey_metadata`) | A stored key is not one of the six canonical keys | ERROR | `surveycore_error_dataset_key_unknown` | Layer 1, plain: `"Unknown dataset metadata key: {key}."` |
+| DM-5b | All six dataset-metadata setters and all six extractors | A supplied or requested key is not one of the six canonical keys | ERROR | `surveycore_error_dataset_key_unknown` | `"x" = "{.val {key}} is not a dataset metadata key.", "i" = "Valid keys: {.val {valid_keys}}."` — plus, when the lowercased key is within Levenshtein distance 1 of a valid key: `"i" = "Did you mean {.val {suggestion}}?"` — plus, when the key is `dates` with a non-`NULL` value: `"i" = "The legacy {.val dates} attribute maps to {.val field_period}.", "v" = "Use {.fn set_field_period}, or {.code dates = NULL} to delete."` |
+| DM-6a | `set_dataset_metadata()` only (shared checker with `key_style = "val"`; the wrappers pre-validate, so a delegated date value is already a `Date`) | A `field_start` / `field_end` value fails `.coerce_field_date()` | ERROR | `surveycore_error_field_date_invalid` | `"x" = "{.val {key}} must be {expected}, not {.cls {class(value)[[1L]]}} of length {length(value)}.", "i" = "Got {.val {value}}."` — plus, when the value is `NA`: `"i" = "The value is NA."` |
+| DM-6b | `set_field_dates()` (shared checker with `key_style = "arg"` and the wrapper's own `call`) | Same condition, naming the function's own argument | ERROR | `surveycore_error_field_date_invalid` | `"x" = "{.arg {key}} must be {expected}, not {.cls {class(value)[[1L]]}} of length {length(value)}.", "i" = "Got {.val {value}}."` — same NA bullet. (`{key}` is `field_start` or `field_end`, which is both the key and the argument name.) |
+| DM-6c | S7 validator (`survey_metadata`) | A date key's stored value is not a non-`NA` `Date` of length 1 (the validator accepts stored values only, so an ISO string is rejected here) | ERROR | `surveycore_error_field_date_invalid` | Layer 1, plain: `"Dataset metadata key {key} must be a Date scalar."` |
+| DM-7a | Constructor promotion (`as_survey()`, `as_survey_replicate()`, `as_survey_nonprob()`) via `.promote_dataset_metadata()` | One of the six canonical whole-frame attributes has a wrong-typed, `NA`, unparseable, or length > 1 value; the key is skipped and construction proceeds | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Dataset attribute {.field {key}} has an invalid value and was not promoted.", "i" = "Expected {expected}; got {.cls {class(value)[[1L]]}} of length {length(value)}.", "v" = "Fix the attribute on the data frame, or set the key later with {.fn set_dataset_metadata}."` |
+| DM-7b | Constructor promotion | One of the six canonical whole-frame attributes has a zero-length value; the key is skipped. Loss is signalled, never silent — only an ABSENT attribute is skipped silently | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Dataset attribute {.field {key}} has a zero-length value and was not promoted.", "v" = "Set a single non-NA value, or remove the attribute."` |
+| DM-7c | Constructor promotion | After per-key coercion both dates are present and `field_start` is after `field_end`; BOTH date keys are dropped with ONE warning (the validator would reject the pair, so promotion must not write it) | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Dataset attributes {.field field_start} and {.field field_end} are reversed ({start} is after {end}); neither was promoted.", "v" = "Correct the dates on the data frame, or set them later with {.fn set_field_dates}."` |
+| DM-7d | Constructor promotion | The legacy `dates` attribute has ANY invalid value (wrong type, zero-length, or length > 1); the key is skipped. Takes precedence over DM-7a and DM-7b for the `dates` name, so the remedy points at `field_period` rather than at the rejected legacy name | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Legacy dataset attribute {.field dates} has an invalid value and was not promoted to {.val field_period}.", "v" = "Set the period with {.fn set_field_period}."` |
+| DM-8 | All six dataset-metadata setters | The survey object was restored from a file written by surveycore <= 1.1.0, so its stored class lacks the `dataset_metadata` property | ERROR | `surveycore_error_dataset_metadata_unavailable` | `"x" = "This object cannot store dataset metadata.", "i" = "It was created by surveycore <= 1.1.0, before the {.field dataset_metadata} property existed.", "v" = "Rebuild the object with {.fn as_survey} (or the matching constructor), then set the metadata."` |
+| DM-9 | `extract_dataset_metadata()` | A `...` element is a call, including a tidyselect helper such as `all_of()` | ERROR | `surveycore_error_dataset_key_not_name` | `"x" = "{.arg ...} must contain bare key names or strings.", "i" = "Tidy-select helpers do not apply here: a dataset metadata key is not a column.", "v" = "Use bare names ({.code vendor}), strings ({.val vendor}), or the {.arg key} argument."` |
+
+**Updated trigger descriptions for existing rows:**
+
+- Rows M-3 (`surveycore_error_setter_ambiguous`), M-4
+  (`surveycore_error_setter_empty`), M-5
+  (`surveycore_error_setter_mismatched_lengths`), M-12
+  (`surveycore_error_setter_mixed_dots`), and M-14
+  (`surveycore_warning_setter_empty_variables`): the message text of these
+  five convention classes is parameterized per calling function.
+  `.parse_setter_input()` gains `name_arg_name`, `pair_noun`,
+  `example_pairs`, and `container_noun`, whose defaults render the canonical
+  templates byte-identically. `set_dataset_metadata()` passes
+  `name_arg_name = "key"`, `pair_noun = "key-value"`,
+  `container_noun = "list"`, and its own `example_pairs`, so its messages read
+  `key` / `key-value` / `a named list in ...` in place of `variable` /
+  `variable-label` / `a named vector in ...`. The seven per-variable setters
+  keep their 1.1.0 text unchanged.
+- Row M-4 also carries two wrapper-level variants, stated on the row itself:
+  the four scalar convenience setters and `set_field_dates()` emit their own
+  `surveycore_error_setter_empty` message naming the calling function and its
+  missing argument, not the general key-value template.
+- Row M-3 also carries an `extract_dataset_metadata()` variant, stated on the
+  row itself: both `...` and `key` supplied.
+- Row M-15 (`surveycore_error_fill_invalid`): the shared fill validator gains
+  a widening parameter. Its default keeps the existing extractors' two-value
+  message byte-identical; `extract_dataset_metadata()` passes the widened
+  mode, whose message lists `NULL`, `NA`, and `NA_character_` as valid.
+
+The construction-promotion warning class
+(`surveycore_warning_dataset_metadata_dropped`) and its message variants land
+with the promotion PR.
+
+### var-extension-slot rows (2026-08-27)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| M-16 | `set_var_extra()` | A value passed for one variable is non-`NULL` and is not a list, OR is a non-empty list whose top-level names are missing, empty-string, or duplicated | ERROR | `surveycore_error_var_extra_not_list` | `"x" = "Extension slot content for {.field {var_name}} must be a list or {.code NULL}, not {.cls {class(content)[[1L]]}}.", "i" = "surveycore stores {.arg extra} as-is and does not validate its values, but every top-level entry must be named.", "v" = "Pass a named list, e.g. {.code set_var_extra(x, {var_name} = list(role = \"free_text\"))}."` |
+| M-17 | `set_var_extra()` | Convention 3, exactly one variable, and `extra` itself is a named list of length 1 (payload not wrapped in an outer list) | ERROR | `surveycore_error_var_extra_ambiguous_wrap` | `"x" = "{.arg extra} for a single variable must be wrapped in an outer list.", "i" = "{.code extra = list(role = \"free_text\")} is ambiguous with a length-1 outer list.", "v" = "Use {.code extra = list(list(role = \"free_text\"))} instead."` |
+
+`set_var_extra()` and `extract_var_extra()` otherwise reuse the shared unified-setter/extractor error and warning classes already in this table: `surveycore_error_setter_ambiguous` (M-3), `surveycore_error_setter_empty` (M-4), `surveycore_error_setter_mismatched_lengths` (M-5), `surveycore_error_format_invalid` (M-6), `surveycore_warning_var_not_found` (M-2/M-7), `surveycore_error_setter_mixed_dots` (M-12), `surveycore_warning_setter_empty_variables` (M-14), `surveycore_error_fill_invalid` (M-15), and `surveycore_error_not_survey_or_df` (row 78). Per the dataset-level-metadata update above, these reused classes are now parameterized in `.parse_setter_input()` (`name_arg_name`, `pair_noun`, `example_pairs`, `container_noun`); the seven per-variable setters — including `set_var_extra()` — keep the pre-parameterization defaults, so their message text is unchanged.
+
+### svydesign-replicate-bridge rows (2026-09-04)
+
+All four errors and the warning are user-facing conversion conditions raised by
+an exported function, so they carry the full CLI x/i/v register.
+Row 62 (`surveycore_warning_twophase_method_unknown`) and row 89
+(`surveycore_warning_fpc_partial_stages`) are the precedent for a
+`surveycore_warning_*` class raised when a design detail cannot cross a
+conversion route intact.
+
+**Variable bindings.** `{n_rep}` = the number of columns in the expanded
+replicate matrix; `{n_names}` = the number of usable, distinct replicate column
+names the route resolved — a usable name is non-`NA` and non-empty;
+`{collisions}` = the generated names that already name a column of the design
+data; `{n_collisions}` = how many of them there are; `{fpc_var}` = the name of
+the dropped FPC column; `{rep_type}` = the replicate
+type the `survey` design records; `{accepted}` = the nine replicate types
+`as_survey_replicate()` accepts.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| CB-1 | `from_svydesign()` (replicate) | The route cannot resolve one usable, distinct name per replicate column — an empty-string name, or a repeated name | ERROR | `surveycore_error_repweights_names_lost` | `"x" = "The {.pkg survey} design has {n_rep} replicate weight column{?s} but {n_names} usable column name{?s}.", "i" = "{.fn from_svydesign} needs one name per replicate column to store the weights in the design data.", "v" = "Rebuild the design with {.fn survey::svrepdesign} and pass {.arg repweights} as a data frame with one named column per replicate."` |
+| CB-2 | `from_svydesign()` (replicate) | The route generated the replicate column names, and one or more of them already names a column of the design data | ERROR | `surveycore_error_repwt_name_collision` | `"x" = "{.fn from_svydesign} cannot store the replicate weights under generated names.", "i" = "The design data already {cli::qty(n_collisions)}{?has a column/has columns} named {.field {collisions}}.", "i" = "A generated name reaches the data when an earlier conversion left its replicate columns there.", "v" = "Rename the conflicting {cli::qty(n_collisions)} column{?s} in the design data, then convert again."` |
+| CB-3 | `as_svydesign()` (replicate) | `@variables$fpc` names a column and `@variables$fpc_applied` is `NULL` (trigger narrowed by #320; see the replicate-fpc-applied block); the FPC is omitted from the `survey::svrepdesign()` call | WARN | `surveycore_warning_replicate_fpc_dropped` | `"!" = "{.fn as_svydesign} dropped the finite population correction column {.field {fpc_var}}.", "i" = "The design does not record whether the correction is already inside the replicate scales or weights.", "i" = "{.fn survey::svrepdesign} takes one FPC value per replicate, and a {.cls survey_replicate} design records one value per row.", "i" = "surveycore's replicate variance does not read the FPC, so the returned design reproduces surveycore's own standard errors.", "v" = "Call {.fn survey::svrepdesign} directly with {.arg fpc} to apply a per-replicate correction."` |
+| CB-4 | `as_svydesign()` (replicate) | `@variables$type` is `"Fay"` and `@variables$rho` is absent, `NULL`, or not a single finite number in `[0, 1)`. A design built before surveycore stored `rho` has no such key. | ERROR | `surveycore_error_fay_rho_unrecoverable` | `"x" = "{.fn as_svydesign} cannot export this {.val Fay} design: it records no usable {.arg rho}.", "i" = "{.fn survey::svrepdesign} requires {.arg rho} for {.code type = \"Fay\"}.", "i" = "A {.val Fay} design built before surveycore stored {.arg rho} records none.", "v" = "Rebuild the design with {.code as_survey_replicate(type = \"Fay\", rho = )}."` |
+| CB-5 | `from_svydesign()` (replicate) | `x$type` is not one of the nine replicate types `as_survey_replicate()` accepts — `survey::as.svrepdesign()` also produces `"subbootstrap"` and `"mrbbootstrap"` | ERROR | `surveycore_error_replicate_type_unsupported` | `"x" = "The {.pkg survey} design records replicate type {.val {rep_type}}, which surveycore does not accept.", "i" = "surveycore accepts {.val {accepted}}.", "v" = "Rebuild the design with {.fn survey::as.svrepdesign} and an accepted type, then convert it again."` |
+
+CB-4 was restated by issue #243: the export route reads `rho` from
+`@variables$rho` and no longer derives it from the scale.
+
+**Updated trigger descriptions for existing rows:**
+
+- Row 2 (`surveycore_error_empty_data`): trigger description extended — now
+  also fired by `from_svydesign()` on a `survey::svrepdesign` object whose data
+  has 0 rows. That route raises the class with a conversion-register message of
+  its own; it does not reuse the `{.arg data}` template.
+- Row 16 (`surveycore_error_repweights_empty`): trigger description extended —
+  now also fired by `as_svydesign()` on a `survey_replicate` whose
+  `@variables$repweights` has length 0.
+
+### as-svydesign-bridge rows (2026-09-09)
+
+Both rows belong to the `as_svydesign()` dispatch chain. CN-1 records a class
+that already existed and was never entered in this table. CN-3 is new.
+
+**The ID `CN-2` is not used, and the gap is deliberate.** It held the dropped
+replicate FPC warning, which shipped in the `svydesign-replicate-bridge` arc as
+row CB-3 above, with the same class name,
+`surveycore_warning_replicate_fpc_dropped`. That row's `"v"` bullet is the
+better remedy, so CN-2 was dropped rather than filled. Do not reuse the ID. The
+CB block above skips CB-2 to CB-5 on the same reading.
+
+`CN` is the prefix for conversion. `CV` is covariance.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| CN-1 | `as_svydesign()`, `as_tbl_svy()`, `survey_data()`, `survey_weighting_history()` | `x` does not inherit `survey_base` | ERROR | `surveycore_error_not_survey_object` | `"x" = "{.arg x} must be a survey design object.", "i" = "Got {.cls {class(x)[[1L]]}}."` — the four call sites raise identical text |
+| CN-3 | `as_svydesign()`, `as_tbl_svy()` | `x` is a `survey_nonprob` design with no replicate weights, and the conversion takes the plain route | WARNING | `surveycore_warning_nonprob_srs_conversion` | `"!" = "{.cls survey_nonprob} object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.", "i" = "The returned {.pkg survey} object records nothing about the approximation, so no later call warns again.", "v" = "Run {.fn surveywts::create_bootstrap_weights} on this design, then convert the design it returns."` |
+
+CN-3 is a distinct class from row NB-2
+(`surveycore_warning_nonprob_srs_fallback`) and not a re-emission of it. NB-2
+describes `get_*()` behaviour on a surveycore design; CN-3 describes an object
+leaving surveycore's hands. Its first bullet repeats NB-2's word for word, so
+one concept keeps one phrasing.
+
+### replicate-fay-rho rows (2026-09-30)
+
+Issue #243. `as_survey_replicate()` gains `rho`, the Fay shrinkage factor.
+All four rows are user-facing constructor conditions, so they carry the full
+CLI x/i/v register. `FR` is the prefix for Fay `rho`. `TP` is the prefix
+for the two-phase row TP-1, which the same issue adds. Row CB-4 above is
+restated for this work in the same PR that ships the code; its new text is
+fixed in the `replicate-fay-rho` spec.
+
+**Variable bindings.** `{rho_txt}` = the supplied `rho` as text:
+`paste(format(utils::head(rho, 5L)), collapse = ", ")`, or `"a value of
+length 0"` when `length(rho)` is 0; `{rho_cls}` = `class(rho)[[1L]]`;
+`{type}` = the replicate type after `match.arg()`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| FR-1 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is `NULL` (not supplied, or supplied as `NULL`) | ERROR | `surveycore_error_fay_rho_missing` | `"x" = "{.code type = \"Fay\"} requires {.arg rho}.", "i" = "{.arg rho} is the Fay shrinkage factor the replicate weights were built with, and the Fay scale {.code 1 / (R * (1 - rho)^2)} needs it.", "v" = "Pass the value the survey's technical documentation gives, for example {.code rho = 0.5}."` |
+| FR-2 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is not `NULL` and is not one finite number in `[0, 1)`: not numeric (logical and character included), a `dim` attribute (a 1 x 1 matrix or array), length other than 1, `NA`, `NaN`, infinite, below 0, or 1 or more | ERROR | `surveycore_error_fay_rho_invalid` | `"x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.", "i" = "Got {.cls {rho_cls}}: {rho_txt}.", "v" = "Pass the Fay shrinkage factor as one number, for example {.code rho = 0.5}."` |
+| FR-3 | `as_survey_replicate()` | `type` is not `"Fay"` and `rho` is not `NULL`. The design stores `rho = NULL` | WARN | `surveycore_warning_rho_ignored` | `"!" = "{.arg rho} applies only to {.code type = \"Fay\"} and was ignored.", "i" = "The design has type {.val {type}} and stores no {.arg rho}.", "v" = "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate weights are Fay weights."` |
+| TP-1 | `as_survey_twophase()` | `phase1` is a `survey_replicate`, of any replicate type. Checked directly after row 19 and before every `subset` check. Decision S9 of issue #243; reverses PR #74 | ERROR | `surveycore_error_twophase_replicate_phase1` | `"x" = "{.fn as_survey_twophase} does not accept a {.cls survey_replicate} phase 1.", "i" = "Phase 1 variance for a replicate design is not implemented, and {.pkg survey} has no two-phase design with a replicate phase 1.", "v" = "Build phase 1 with {.fn as_survey} from the design's cluster, strata and weight columns."` |
+
+### replicate-supplied-args rows (2026-10-01)
+
+Issue #255. `RS` is the prefix for replicate supplied arguments. RS-1 is the
+single class for "the replicate type ignores this argument": one warning
+names every discarded argument in its bullet. RS-2 adds a call site to an
+existing class. RS-3 records the `as_survey_nonprob()` site of the same class,
+which shipped without a register row.
+
+**Variable bindings.** `{ignored}` = the discarded argument names, in the
+order `"scale"`, `"rscales"`; `{n_ignored}` = `length(ignored)`; `{type}` =
+the replicate type after `match.arg()`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| RS-1 | `as_survey_replicate()` | `type` is `"BRR"`, `"JK2"`, `"ACS"` or `"successive-difference"` and `scale` is not `NULL`; or `type` is `"JK2"`, `"ACS"` or `"successive-difference"` and `rscales` is not `NULL`. One warning names every discarded argument. The design stores the type's own `scale` and `rscales = NULL`. No warning when neither is supplied (D8). Also carried as the second class of FR-3 | WARN | `surveycore_warning_replicate_arg_ignored` | `"!" = "{.arg {ignored}} {?has/have} no effect for this replicate type and {?was/were} ignored.", "i" = "For type {.val {type}}, the design stores the type's own {cli::qty(n_ignored)}value{?s}, as {.fn survey::svrepdesign} does.", "v" = "Remove {.arg {ignored}} from the call."` |
+| RS-2 | `as_survey_replicate()` | `type` is `"JKn"` and `rscales` is `NULL`. Checked after the `rscales` length and value checks and before the `rho` step | ERROR | `surveycore_error_stratified_jk_rscales_unset` | `"x" = "{.code type = \"JKn\"} requires {.arg rscales}.", "i" = "JKn replicate weights are combined weights, so the stratum factor {.code (n_h - 1) / n_h} reaches the variance only through {.arg rscales}. {.fn survey::svrepdesign} refuses the same input.", "v" = "Pass {.arg rscales} with one entry per replicate column: {.code (n_h - 1) / n_h}, where {.code n_h} is the number of PSUs in the stratum the replicate drops a PSU from."` |
+| RS-3 | `as_survey_nonprob()` | `type` is `"JK2"` or `"JKn"` and `rscales` is `NULL`. Shipped before this work; recorded here | ERROR | `surveycore_error_stratified_jk_rscales_unset` | `"x" = "{.arg type} = {.val {type}} requires explicit {.arg rscales}.", "i" = "Stratified jackknife rscales are stratum-specific: {.code (n_h - 1) / n_h}. Supplying {.code NULL} would silently use {.code rep(1, R)}, which is statistically incorrect for JK2/JKn.", "v" = "Compute {.code rscales} as {.code (n_h - 1) / n_h} where {.code n_h} is the number of units in stratum {.code h}, indexed to replicate order."` |
+
+**Updated trigger descriptions for existing rows:**
+
+- Row FR-3 (`surveycore_warning_rho_ignored`): the condition now carries two
+  classes, `c("surveycore_warning_rho_ignored",
+  "surveycore_warning_replicate_arg_ignored")`. The trigger and message do not
+  change.
+
+### replicate-fpc-refusal rows (2026-10-16)
+
+Issue #251, decision D12. `RF` is the prefix for the replicate FPC refusal.
+`as_survey_replicate()` no longer accepts `fpc` or `fpctype`: no replicate
+variance formula read the column. The `"v"` bullet gives the `rscales` route,
+which is what `survey::svrepdesign()` does with its own `fpc`.
+
+Rows 13 and 13b no longer fire from `as_survey_replicate()`: RF-1 refuses
+`fpc` before any column is resolved. Row CB-3 stays, because a
+`survey_replicate` built with the exported `survey_replicate()` constructor,
+as surveywts' `create_*_weights()` does, can still record an FPC.
+
+**Variable bindings.** `{refused}` = the supplied arguments, in the order
+`"fpc"`, `"fpctype"`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| RF-1 | `as_survey_replicate()` | `fpc` names a column of `data`: a bare symbol, or a single string, equal to a column name. Checked first, before the data frame is validated, whenever `data` is a data frame. Restated by #320; see the block below | ERROR | `surveycore_error_replicate_fpc_unsupported` | `"x" = "{.arg fpc} names the column {.field {fpc_col}}, and {.fn as_survey_replicate} does not accept an FPC column.", "i" = "No replicate variance formula reads a finite population correction column, so a column {.arg fpc} never changed a standard error.", "i" = "A replicate FPC is one value per replicate: {.fn survey::svrepdesign} multiplies {.arg rscales} by {.code 1 - f}, where {.code f} is the sampling fraction.", "i" = "For a Taylor series design with an FPC, use {.fn as_survey}.", "v" = "Pass a number or one value per replicate column, for example {.code fpc = 0.05}, or write {.code .env${fpc_col}} to use a variable of that name from the calling environment."` |
+| RF-1b | `as_survey_replicate()` | `fpctype` is not `NULL` and `fpc` is `NULL`. Checked first, before the data frame is validated | ERROR | `surveycore_error_replicate_fpc_unsupported` | `"x" = "{.arg fpctype} was supplied without {.arg fpc}.", "i" = "{.arg fpctype} says how to read {.arg fpc}: {.val fraction} for the sampling fraction {.code f}, {.val correction} for {.code 1 - f}.", "v" = "Remove {.arg fpctype}, or pass {.arg fpc} with it."` |
+
+### replicate-fpc-applied rows (2026-10-16)
+
+Issue #320, amending D12 in `plans/issue-cleanup.md`. `as_survey_replicate()`
+now accepts a numeric `fpc`, one number or one value per replicate, and folds
+it into `rscales` as `survey::svrepdesign()` does (`rscales * (1 - f)`). Every
+`survey_replicate` design records whether its FPC was applied, and where, in
+`@variables$fpc_applied`; `@variables$fpc_fraction` holds the `f` vector.
+
+**RF-1 is restated, not removed.** Its class is unchanged. Before #320 it fired
+on any non-`NULL` `fpc` or `fpctype`. It now fires on two triggers only, the
+column form (RF-1) and `fpctype` without `fpc` (RF-1b), each with its own
+message. A numeric `fpc` passes it.
+
+**How `fpc` is read.** `fpc` stays a quosure. A bare symbol or a single string
+that names a column of `data` is a column, and RF-1 refuses it, even when a
+variable of that name exists in the calling environment: the column wins, as
+in data masking. Anything else is evaluated in the calling environment with
+the `.env` pronoun available, so `.env$f` reaches a variable that shares a
+column's name. RF-3 handles every evaluated value.
+
+**Order.** RF-1 and RF-1b first. Then `.validate_data_frame()` and the
+column, `rscales` and JKn checks that already exist. Then RF-2, then RF-3 in
+the order of its sub-rows below.
+
+**Variable bindings.** `{fpc_col}` = the column name `fpc` resolved to;
+`{type}` = the replicate type; `{n_rep}` = the number of replicate columns;
+`{n_fpc}` = `length(fpc)`; `{fpc_cls}` = the first class of the evaluated
+`fpc`; `{fpctype_txt}` = the supplied `fpctype`, formatted; `{n_bad}` = the
+count of offending values; `{bounds}` = `[0, 1)` for `"fraction"`, `(0, 1]`
+for `"correction"`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| RF-2 | `as_survey_replicate()` | A numeric `fpc` is supplied and `type` is not `"JK1"`, `"JKn"` or `"other"` | ERROR | `surveycore_error_replicate_fpc_type_unsupported` | `"x" = "{.arg fpc} applies to {.code type = \"JK1\"}, {.code \"JKn\"} and {.code \"other\"} only.", "i" = "The design has type {.val {type}}, and {.fn survey::svrepdesign} refuses {.arg fpc} for it too.", "v" = "Remove {.arg fpc}."` For `type = "bootstrap"` the `"i"` bullet is: `"i" = "A bootstrap FPC belongs in the replicate weights, built in when the weights are drawn. {.fn survey::svrepdesign} also refuses a separate one."` |
+| RF-3a | `as_survey_replicate()` | `fpc` is supplied and `fpctype` is `NULL` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} needs {.arg fpctype}.", "i" = "The same value reads as the sampling fraction {.code f} or as the correction {.code 1 - f}, and the two give different standard errors.", "v" = "Pass {.code fpctype = \"fraction\"} or {.code fpctype = \"correction\"}."` |
+| RF-3b | `as_survey_replicate()` | `fpctype` is not exactly one of the strings `"fraction"`, `"correction"`. No partial matching | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpctype} must be {.val fraction} or {.val correction}.", "i" = "Got {fpctype_txt}.", "v" = "Pass {.code fpctype = \"fraction\"} or {.code fpctype = \"correction\"}."` |
+| RF-3c | `as_survey_replicate()` | Evaluating `fpc` raises an error. The error is attached as the parent | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} could not be evaluated.", "i" = "Only a bare column name is read as a column. Any other {.arg fpc} is evaluated in the calling environment.", "v" = "Pass a number or one value per replicate column."` |
+| RF-3d | `as_survey_replicate()` | The evaluated `fpc` is not a numeric vector: not numeric, or carries a `dim` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} must be a numeric vector.", "i" = "Got {.cls {fpc_cls}}.", "v" = "Pass a number or one value per replicate column."` |
+| RF-3e | `as_survey_replicate()` | `length(fpc)` is neither 1 nor `R` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} must have length 1 or {n_rep}, one value per replicate column.", "i" = "Got length {n_fpc}."` |
+| RF-3f | `as_survey_replicate()` | `fpc` holds `NA`, `NaN` or an infinite value | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} contains {n_bad} missing or non-finite value{?s}.", "i" = "Every replicate needs a finite correction."` |
+| RF-3g | `as_survey_replicate()` | A value lies outside `[0, 1)` for `"fraction"`, or outside `(0, 1]` for `"correction"` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} has {n_bad} value{?s} outside {.code {bounds}}.", "i" = "With {.code fpctype = \"fraction\"} each value is a sampling fraction {.code f} in {.code [0, 1)}; with {.code fpctype = \"correction\"} it is {.code 1 - f}, in {.code (0, 1]}.", "v" = "Check {.arg fpctype}, or pass {.code n / N} for each replicate."` |
+| RF-4 | `survey_replicate` validator (Layer 1) | `@variables$fpc_applied` is not `NULL` and not one of `"rscales"`, `"repweights"`, `"none"`; or `@variables$fpc_fraction` is not `NULL` and not a finite numeric vector in `[0, 1]` with one value per replicate column | ERROR | `surveycore_error_replicate_fpc_record_invalid` | `"x" = "{.field @variables$fpc_applied} must be {.code NULL}, {.val rscales}, {.val repweights} or {.val none}."` / `"x" = "{.field @variables$fpc_fraction} must be {.code NULL} or a finite numeric vector in {.code [0, 1]} with one value per replicate column."` |
+
+RF-4 is a structural validator error: `class =` only in tests, no snapshot.
+`fpc_fraction` is checked against the closed interval `[0, 1]`, wider than
+RF-3g's `[0, 1)`: a `"correction"` value below about `1e-16` stores
+`1 - c`, which rounds to `1` in double precision. A
+missing key reads as `NULL`, so a design saved before #320, or built by
+`survey_replicate()` without the keys, passes it.
+
+**Updated trigger descriptions for existing rows:**
+
+- Row CB-3 (`surveycore_warning_replicate_fpc_dropped`): fires only when
+  `@variables$fpc` names a column **and** `@variables$fpc_applied` is `NULL`,
+  the state in which the design does not record whether the correction was
+  applied. For `"rscales"` and `"repweights"` the correction is already in
+  what is exported; for `"none"` nothing was applied, so nothing is dropped.
+  The route passes no `fpc` to `survey::svrepdesign()` in every state. The
+  template gains one `"i"` bullet, second in order: `"i" = "The design does
+  not record whether the correction is already inside the replicate scales
+  or weights."`
+
+### update-design-repweights-count rows (2026-10-21)
+
+Issue #300. `UD` is the prefix for `update_design()`. A `survey_replicate`
+design stores `scale`, `rscales` and `fpc_fraction` for the replicate count it
+was built with, and does not record whether `scale` was the type's default or
+supplied by the caller. A `repweights` update that changes the count is
+refused rather than re-scaled. An update that keeps the count keeps all three
+as they are.
+
+**Variable bindings.** `{n_new}` = the number of columns `repweights`
+resolves to; `{n_old}` = `length(x@variables$repweights)`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| UD-1 | `update_design()` | `x` is a `survey_replicate` and `repweights` resolves to a number of columns other than the design's current replicate count. Checked after `repweights` is resolved and before any `@variables` key is changed | ERROR | `surveycore_error_repweights_count_changed` | `"x" = "{.arg repweights} selects {n_new} column{?s}, but the design has {n_old} replicate{?s}.", "i" = "The design's {.field scale} and {.field rscales} were set for {n_old} replicate{?s} and would no longer match.", "v" = "Rebuild the design with {.fn as_survey_replicate} to change the number of replicates."` |
+
+### from-svydesign-twophase rows (2026-10-22)
+
+Issue #335. `from_svydesign()` recovers the phase 2 design of a
+`survey::twophase()` object from the formulas in `x$phase2$call`. A formula
+that names no column directly, a phase 2 `weights` formula, or a phase 2
+design with no stored call goes into a generated column named
+`..surveycore_{key}2..`, with no condition, as the `..surveycore_wt..` fallback does. The one
+condition is a generated name that already names a data column.
+
+**Variable bindings.** `{collisions}` = the generated names that already name
+a column of the design data.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| TP-1 | `from_svydesign()` (twophase) | The route generated a phase 2 column name, and it already names a column of the design data | ERROR | `surveycore_error_phase2_name_collision` | `"x" = "{.fn from_svydesign} cannot store the phase 2 design under generated names.", "i" = "The design data already {cli::qty(length(collisions))}{?has a column/has columns} named {.field {collisions}}.", "v" = "Rename the conflicting {cli::qty(length(collisions))}column{?s} in the design data, then convert again."` |
+
+### twophase-full-no-fpc rows (2026-10-29)
+
+Issue #340. `method = "full"` computes `survey::twophase2()`'s variance.
+Without a phase-1 `fpc` that variance treats each phase-1 sampling unit as
+Poisson-sampled: the expanded unit totals are never centred, so the variance
+of a total is many times the true one for a fixed-size phase-1 sample. A
+simulation of a stratified cluster sample measured about 13 times the
+variance (3.7 times the SE); an unclustered, unstratified phase 1 is
+overstated by a similar amount. surveycore matches `survey` here, so the
+condition is a warning, not a change to the estimator. `survey` itself raises
+no condition. The warning fires once, when the design is built, and never
+from an analysis function.
+
+**Trigger.** All three hold: the method is `"full"`; the phase-1
+`@variables$fpc` is `NULL`; the phase-1 weight column is not all 1. Phase-1
+weights of all 1 are the no-weights fallback, which `"full"` treats as iid,
+or a census, which contributes no phase-1 variance; neither is overstated.
+Clustering and stratification do not enter the rule.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| TP-2 | `as_survey_twophase()`, `from_svydesign()` (`twophase2`) | The trigger above holds. Raised after the design is built | WARN | `surveycore_warning_twophase_full_no_fpc` | `"!" = "Phase 1 has no {.arg fpc}, so {.code method = \"full\"} treats its sampling units as Poisson-sampled.", "i" = "Standard errors are then conservative, often several times too large for a total.", "i" = "With an {.arg fpc} on the phase 1 design, the variance is that of a fixed-size sample."` |
+
+### diffs-na-guards rows (2026-11-02)
+
+Issue #294, optional hardening. `.build_diffs_output()` told reference rows
+from comparison rows with bare `estimate == 0` / `estimate != 0` guards, so an
+`NA` estimate aborted with base R's "missing value where TRUE/FALSE needed".
+That is how the marginaleffects 1.0.0 `rowid` defect surfaced on CRAN before
+#174 fixed it. No supported model returns an `NA` difference today (an
+aliased treatment coefficient is refused earlier by
+`surveycore_error_singular_model_matrix`), so the warning guards against an
+upstream regression rather than a reachable input. The row keeps its `NA`
+estimate, is left out of p-value adjustment, and gets an `NA` `pct_change`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| DN-1 | `get_diffs()` | One or more comparison rows carry an `NA` estimate. Raised once per call, naming each affected level once | WARN | `surveycore_warning_diffs_na_estimate` | `"!" = "The difference for treatment level{?s} {.val {na_est_levels}} could not be estimated and is reported as {.code NA}.", "i" = "Rows with an {.code NA} estimate are excluded from p-value adjustment and have an {.code NA} percentage change."` |

@@ -1349,7 +1349,14 @@ test_that("get_ratios() empty domain for twophase returns NA", {
     design = "twophase",
     seed = 903
   )
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(
     phase1,
     subset = subset,
@@ -1426,13 +1433,27 @@ test_that("get_ratios() attaches .survey_result with statistic = 'ratio'", {
   expect_identical(sr$statistic, "ratio")
 })
 
-test_that("get_ratios() .survey_result$df is finite for non-calibrated Taylor design", {
+test_that("get_ratios() does not warn about calibration df on a calibrated Taylor design", {
+  # Calibration rank (40) exceeds the SRS design df (39). get_ratios() uses
+  # normal-approximation CIs, so the zero-df warning must not fire.
+  set.seed(55L)
+  n <- 40L
+  df <- data.frame(y = rnorm(n), x = runif(n, 1, 2), wt = rep(1, n))
+  d <- as_survey(df, weights = wt)
+  cd_high <- as_caldata(df$wt, rep(1.001, n), diag(n))
+  d@calibration <- list(cd_high)
+
+  expect_no_warning(
+    get_ratios(d, y, x, variance = "se"),
+    class = "surveycore_warning_zero_df_after_calibration"
+  )
+})
+
+test_that("get_ratios() .survey_result$df is Inf for non-calibrated Taylor design", {
   df <- make_survey_data(n = 200, seed = 3)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_ratios(d, numerator = y1, denominator = y2)
   sr <- attr(result, ".survey_result")
-  # Non-calibrated Taylor designs now store finite design df (not Inf).
-  expect_true(all(is.finite(sr$df)))
-  expect_true(all(sr$df >= 1))
-  expect_equal(length(sr$df), nrow(result))
+  # Inf is the df behind the ci_low/ci_high columns (issue #271).
+  expect_identical(sr$df, rep(Inf, nrow(result)))
 })

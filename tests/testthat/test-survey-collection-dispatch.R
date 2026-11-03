@@ -436,11 +436,12 @@ test_that("C14: bind-type mismatch across surveys aborts with surveycore class",
   )
   coll <- do.call(as_survey_collection, surveys)
 
+  # No snapshot: the message embeds a vctrs factor hash (e.g. <factor<3b1cd>>)
+  # that differs across environments, so the text can never match on CI.
   expect_error(
     get_means(coll, y1, group = grp),
     class = "surveycore_error_collection_bind_type_mismatch"
   )
-  expect_snapshot(error = TRUE, get_means(coll, y1, group = grp))
 })
 
 test_that("C10: tidy-selected variable absent raises surveycore_error_variable_not_found", {

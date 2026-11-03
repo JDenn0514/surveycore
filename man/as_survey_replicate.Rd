@@ -10,10 +10,11 @@ as_survey_replicate(
   repweights,
   type = c("JK1", "JK2", "JKn", "BRR", "Fay", "bootstrap", "ACS",
     "successive-difference", "other"),
+  rho = NULL,
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
-  fpctype = c("fraction", "correction"),
+  fpctype = NULL,
   mse = TRUE,
   calibration = NULL
 )
@@ -30,30 +31,161 @@ columns. Must select at least one column. Supports tidy-select helpers
 (e.g., \code{starts_with("repwt")}). Required.}
 
 \item{type}{Character. Replicate weight method. One of \code{"JK1"} (delete-1
-jackknife), \code{"JK2"} (delete-1 jackknife, stratified), \code{"JKn"} (delete-1
-jackknife with varying replication counts), \code{"BRR"} (balanced repeated
-replication), \code{"Fay"} (Fay's method, a modified BRR), \code{"bootstrap"},
-\code{"ACS"} (used in American Community Survey), \code{"successive-difference"},
-or \code{"other"} (user-specified scale). Case-sensitive.}
+jackknife), \code{"JK2"} (paired jackknife, two PSUs per stratum), \code{"JKn"}
+(delete-1 jackknife with varying replication counts), \code{"BRR"} (balanced
+repeated replication), \code{"Fay"} (Fay's method, a modified BRR; needs
+\code{rho}), \code{"bootstrap"}, \code{"ACS"} (used in American Community Survey),
+\code{"successive-difference"}, or \code{"other"} (user-specified scale).
+Case-sensitive.}
+
+\item{rho}{Numeric scalar or \code{NULL} (default). The Fay shrinkage factor:
+the factor the replicate weights were built with. Each Fay replicate
+multiplies the weights of one half sample by \code{2 - rho} and the weights
+of the other half sample by \code{rho}. Required when \code{type = "Fay"}. The
+valid range is \verb{[0, 1)}, and \code{rho = 0} gives BRR. An integer is
+accepted and stored as a double; a value with a \code{dim} attribute is
+refused. Find the value in the survey's technical documentation, where
+it is often called the Fay coefficient or epsilon. surveycore cannot
+check that the value matches the replicate columns.
+
+The Fay scale \code{1 / (R * (1 - rho)^2)} assumes a two-PSU-per-stratum
+layout with Hadamard-balanced half samples, which surveycore does not
+check; the scale is exact for totals and first-order for means and
+ratios. \code{type} stays \code{"Fay"} at \code{rho = 0}, unlike
+\code{survey::as.svrepdesign()}, which relabels it \code{"BRR"}.
+
+For every other \code{type}, a supplied \code{rho} is ignored with a warning and
+the design stores no \code{rho}. The warning has the class
+\code{surveycore_warning_rho_ignored} and also the class
+\code{surveycore_warning_replicate_arg_ignored}. For \code{"JKn"} with no
+\code{rscales}, the refusal fires and no \code{rho} warning is raised, where
+\code{survey::svrepdesign()} raises both.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
-the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}, \code{"JK2"}, and
-\code{"JKn"}; \code{1/R} for \code{"BRR"}, \code{"Fay"}, and \code{"bootstrap"}; \code{4/R} for
-\code{"ACS"} and \code{"successive-difference"} (per Ash 2014 / Fay & Train 1995);
-\code{1} for \code{"other"}.}
+the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}; \code{1/R} for
+\code{"BRR"}; \code{1 / (R * (1 - rho)^2)} for \code{"Fay"}; \code{1/(R-1)} for
+\code{"bootstrap"}; \code{4/R} for \code{"ACS"} and \code{"successive-difference"} (per
+Ash 2014 / Fay & Train 1995); \code{1} for \code{"JKn"}, \code{"JK2"} and \code{"other"}.
+
+For \code{"JK1"}, \code{"JKn"}, \code{"bootstrap"} and \code{"other"}, a supplied \code{scale}
+is stored as given.
+
+For \code{"BRR"}, \code{"JK2"}, \code{"ACS"} and \code{"successive-difference"}, a supplied
+\code{scale} is ignored with a warning of class
+\code{surveycore_warning_replicate_arg_ignored}, and the design stores the
+type's own value from the list above. \code{survey::svrepdesign()} also
+ignores a supplied \code{scale} for these four types. Any value other than
+\code{NULL} counts as supplied, even one equal to the type's own value, and
+surveycore does not check it.
+
+surveycore warns only when the caller supplies \code{scale} or \code{rscales}.
+\code{survey::svrepdesign()} warns on every \code{"JK2"} call, even when the
+caller supplies neither. surveycore does not copy that warning: a
+warning that fires when the caller passed nothing tells the caller
+nothing, and warnings that no one asserts hide new ones.
+
+For \code{"Fay"}, a supplied \code{scale} is discarded with no warning, as
+\code{survey::svrepdesign()} does, and the Fay scale always comes from
+\code{rho}.
+
+\code{"JK2"} is the paired jackknife. Each replicate is a half sample, so
+the per-stratum factor is already inside the replicate weights:
+\code{rscales} stays at \code{rep(1, R)} and the overall scale stays at \code{1}.
+\code{survey::svrepdesign()} forces both. \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} uses the
+same scale of \code{1} but requires \code{rscales} for \code{"JK2"}.
+
+\code{"JKn"} is the stratified delete-one jackknife. Its per-stratum factor
+belongs in \code{rscales} and not in the overall scale. The factor is
+\code{(n_h - 1) / n_h} when PSUs are selected with replacement, or when the
+sampling fraction is negligible. \code{"JKn"} requires \code{rscales}, and
+\code{rscales = NULL} is refused, as \code{survey::svrepdesign()} refuses it for
+combined weights.
+
+A caller who samples PSUs without replacement at a sampling fraction
+that is not negligible folds the correction into each \code{rscales} entry
+by hand, which makes the entry \code{(n_h - 1) * (1 - n_h / N_h) / n_h}.
+Here \code{n_h} is the number of sample PSUs in stratum \code{h}, and \code{N_h} is
+the number of population PSUs in stratum \code{h}. The caller supplies
+\code{N_h} from their own sampling frame. The \code{fpc} argument applies the
+same correction: \code{fpc = n_h / N_h} per replicate, with
+\code{fpctype = "fraction"}.
+
+\code{"bootstrap"} divides by \code{R - 1}, which is the value
+\code{survey::svrepdesign()} computes at \code{bootstrap.average = 1}.
+surveycore has no \code{bootstrap.average} argument, so a caller cannot
+build a design with one and this default is always \code{1/(R-1)}; a design
+imported from \code{survey} keeps its effective scale exactly, in both
+directions. A bootstrap design of one replicate column gives
+\code{scale = Inf}, and \code{survey::svrepdesign()} stores \code{Inf} for the same
+input.
+
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}} keeps \code{1/R} for \code{"bootstrap"}, so the same
+\code{type} string means a different divisor in the two constructors. The
+difference is a decision and not a defect; see \code{\link[=as_survey_nonprob]{as_survey_nonprob()}}
+for the reason and the size of the gap.
+
+Pass \code{scale} explicitly to reproduce numbers published before these
+two defaults moved: \code{scale = (R - 1) / R} for \code{"JKn"} and
+\code{scale = 1 / R} for \code{"bootstrap"}. An old \code{"JKn"} call that passed no
+\code{rscales} also needs \code{rscales = rep(1, R)}, because \code{"JKn"} refuses
+\code{rscales = NULL}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of
-replicate weight columns selected by \code{repweights}.}
+replicate weight columns selected by \code{repweights}, with no \code{NA} and no
+negative value. These length and value checks run on a supplied
+\code{rscales} for every \code{type}, including the three that ignore it.
 
-\item{fpc}{<\code{\link[tidyselect:language]{tidy-select}}> Finite population
-correction column (a single column). Used by some replicate methods to
-adjust the variance estimator. \code{NULL} means no FPC correction.}
+Required for \code{"JKn"}: \code{rscales = NULL} is refused with
+\code{surveycore_error_stratified_jk_rscales_unset}.
 
-\item{fpctype}{Character. How \code{fpc} is interpreted: \code{"fraction"} (sampling
-fraction, 0–1) or \code{"correction"} (multiplier for the replicate variance).
-Default \code{"fraction"}. Case-sensitive.}
+For \code{"JK2"}, \code{"ACS"} and \code{"successive-difference"}, a supplied
+\code{rscales} is ignored with the same warning as a supplied \code{scale},
+\code{surveycore_warning_replicate_arg_ignored}. The design stores \code{NULL},
+which the variance treats as \code{rep(1, R)}. \code{survey::svrepdesign()}
+forces \code{rep(1, R)} for these three types.
+
+For \code{"JKn"} and the other five types, \code{"JK1"}, \code{"BRR"}, \code{"Fay"},
+\code{"bootstrap"} and \code{"other"}, a supplied \code{rscales} is stored as given.
+
+For a stratified jackknife whose PSUs are selected without replacement
+at a sampling fraction that is not negligible, the \code{scale} argument
+gives the entry to build here.}
+
+\item{fpc}{A finite population correction, as a number or as one value per
+replicate column, or \code{NULL} (default, no correction). A number is
+recycled to every replicate. Accepted for \code{"JK1"}, \code{"JKn"} and
+\code{"other"} only, as in \code{survey::svrepdesign()}; every other type raises
+an error of class \code{surveycore_error_replicate_fpc_type_unsupported}.
+For \code{"bootstrap"} the correction belongs in the replicate weights
+themselves.
+
+The correction is applied the way \code{survey::svrepdesign()} applies its
+own \code{fpc}: each \code{rscales} entry is multiplied by \code{1 - f}, where \code{f} is
+the sampling fraction for that replicate. A \code{NULL} \code{rscales} starts from
+\code{rep(1, R)}. For \code{"JKn"}, \code{f} is the sampling fraction of the stratum
+the replicate drops a PSU from, and \code{rscales} is still required. The
+design stores the corrected \code{rscales} and records the fraction, so
+\code{print()} shows it.
+
+A column is not accepted. A bare name, or a single string, that names a
+column of \code{data} raises an error of class
+\code{surveycore_error_replicate_fpc_unsupported}, even when a variable of
+the same name exists in the calling environment. No replicate variance
+formula reads a per-row FPC column. To use such a variable, write
+\code{.env$name}. Any other expression is evaluated in the calling
+environment. A value that is not numeric, has the wrong length, holds
+\code{NA} or lies out of range raises an error of class
+\code{surveycore_error_replicate_fpc_invalid}.}
+
+\item{fpctype}{How to read \code{fpc}: \code{"fraction"} (the sampling fraction
+\code{f}, with \verb{0 <= f < 1}) or \code{"correction"} (\code{1 - f}, used as given,
+with \verb{0 < 1 - f <= 1}). Required whenever \code{fpc} is supplied, as in
+\code{survey::svrepdesign()}, because the same number reads either way and
+the two give different standard errors. Must match exactly. Supplying
+\code{fpctype} without \code{fpc} raises an error of class
+\code{surveycore_error_replicate_fpc_unsupported}.}
 
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
@@ -74,7 +206,12 @@ makes \verb{@calibration} stale; clear it manually.
 }}
 }
 \value{
-A \code{survey_replicate} object.
+A \code{survey_replicate} object. Columns imported with \code{haven}-style
+value labels are stored as their underlying type: the \code{label} and \code{labels}
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the \code{haven_labelled} class is not stored. Use
+\code{survey_data(x, haven_class = TRUE)} to read the data back with that class
+rebuilt.
 }
 \description{
 Creates a survey design object using replicate weights for variance
@@ -132,6 +269,36 @@ d_sub <- as_survey_replicate(
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
   type = "JK1"
 )
+
+# A finite population correction: a 5\% sampling fraction, folded into
+# the replicate scales
+d_fpc <- as_survey_replicate(
+  acs_pums_wy,
+  weights = pwgtp,
+  repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
+  type = "JK1",
+  fpc = 0.05,
+  fpctype = "fraction"
+)
+
+# Fay's method: 4 replicate columns built with rho = 0.5
+set.seed(1)
+df_fay <- data.frame(
+  y = rnorm(20),
+  wt = runif(20, 1, 3)
+)
+for (r in 1:4) {
+  factor_r <- sample(c(0.5, 1.5), 20, replace = TRUE)
+  df_fay[[paste0("rep", r)]] <- df_fay$wt * factor_r
+}
+d_fay <- as_survey_replicate(
+  df_fay,
+  weights = wt,
+  repweights = starts_with("rep"),
+  type = "Fay",
+  rho = 0.5
+)
+d_fay
 }
 \references{
 Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
@@ -146,8 +313,7 @@ procedures in survey sampling. \emph{Journal of the American Statistical
 Association} \bold{88}(423), 1013--1020.
 
 Judkins, D.R. (1990) Fay's method for variance estimation.
-\emph{Journal of the American Statistical Association}
-\bold{85}(410), 895--904.
+\emph{Journal of Official Statistics} \bold{6}(3), 223--239.
 
 Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
 methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
@@ -160,16 +326,16 @@ Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs,
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_twophase]{as_survey_twophase()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

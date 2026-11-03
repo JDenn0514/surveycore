@@ -5,12 +5,13 @@
 #
 # ATTRIBUTION — VENDORED CODE:
 # The functions .twophasevar(), .twophase_phase1_var(), .twophase_phase2_var(),
-# and .compute_phase2_probs() are adapted from the survey package by
-# Thomas Lumley
+# .twophase_same_scale(), .twophase_full_var() and .compute_phase2_probs() are
+# adapted from the survey package by Thomas Lumley
 # (https://cran.r-project.org/package=survey), licensed under GPL-2 | GPL-3.
 # Modifications: integrated with S7 classes; three-method dispatch made
 # explicit; RCPP path removed; error messages converted to cli format;
-# data access via @variables instead of survey's internal list structure.
+# data access via @variables instead of survey's internal list structure;
+# the twophase2 check matrices reduced to grouped sums.
 # ---------------------------------------------------------------------------
 
 # ===========================================================================
@@ -56,14 +57,18 @@
     }
   }
 
-  # Phase 1 variance contribution
-  v1 <- .twophase_phase1_var(influence, design, method, lonely.psu)
-
-  if (identical(method, "simple")) {
-    return(v1)
+  # method = "full" is survey::twophase2()'s Horvitz-Thompson variance;
+  # "approx" and "simple" are survey::twophase()'s, and "simple" is "approx":
+  # survey documents the two as the same method and never branches on
+  # "simple" (issue #330)
+  if (identical(method, "full")) {
+    return(.twophase_full_var(influence, design))
   }
 
-  # Phase 2 variance contribution (full and approx only)
+  # Phase 1 variance contribution
+  v1 <- .twophase_phase1_var(influence, design, lonely.psu)
+
+  # Phase 2 variance contribution
   v2 <- .twophase_phase2_var(influence, design, subset, lonely.psu)
 
   v1 + v2
@@ -76,8 +81,7 @@
 
 # Compute phase 1 variance contribution.
 # Adapted from survey:::svyrecvar.phase1 / onestrat.phase1.
-# For "simple": standard .svy_recvar() with raw influence scores.
-# For "full"/"approx": implements the onestrat.phase1 formula directly:
+# Implements the onestrat.phase1 formula directly, for "approx" and "simple":
 #   V1 = sum_s { f_s * nPSUfull_s/(nPSUfull_s-1) *
 #                sum_j { ((x_j * pi2_j - xcenter_s) / sqrt(pi2_j))^2 } }
 # where nPSU_s = phase 2 PSUs in stratum, nPSUfull_s = phase 1 PSUs in stratum,
@@ -87,7 +91,7 @@
 # and f_s = (N_s - n_s) / N_s is the Phase 1 FPC factor for stratum s
 # (1 when no FPC column is provided).
 # Returns a numeric scalar.
-.twophase_phase1_var <- function(influence, design, method, lonely.psu) {
+.twophase_phase1_var <- function(influence, design, lonely.psu) {
   ph1_data <- design@data
   ph1_vars <- design@variables$phase1
   subset <- design@data[[design@variables$subset]]
@@ -111,43 +115,7 @@
     seq_len(n_ph1)
   }
 
-  if (identical(method, "simple")) {
-    # simple: raw influence for Phase 2 rows; 0 for Phase 1-only
-    score <- numeric(n_ph1)
-    score[subset] <- influence[subset]
-
-    clusters_mat <- matrix(psu_all, ncol = 1L)
-    strata_mat <- matrix(strata_all, ncol = 1L)
-
-    psu_per_stratum <- tapply(psu_all, strata_all, function(ps) {
-      length(unique(ps))
-    })
-    sampsize_vec <- as.integer(psu_per_stratum[as.character(strata_all)])
-    sampsize_mat <- matrix(sampsize_vec, ncol = 1L)
-
-    fpc_col <- if (!is.null(ph1_vars$fpc)) ph1_data[[ph1_vars$fpc]] else NULL
-    popsize_mat <- if (!is.null(fpc_col)) {
-      if (any(fpc_col > 1, na.rm = TRUE)) {
-        matrix(as.numeric(fpc_col), ncol = 1L)
-      } else {
-        matrix(as.numeric(sampsize_vec / fpc_col), ncol = 1L)
-      }
-    } else {
-      NULL
-    }
-
-    fpcs <- list(sampsize = sampsize_mat, popsize = popsize_mat)
-    v <- .svy_recvar(
-      matrix(score, ncol = 1L),
-      clusters_mat,
-      strata_mat,
-      fpcs,
-      lonely.psu = lonely.psu
-    )
-    return(v[1L, 1L])
-  }
-
-  # full or approx: implement onestrat.phase1 formula using phase 2 rows only
+  # onestrat.phase1 formula using phase 2 rows only
   ph2_idx <- which(subset)
   infl_ph2 <- influence[ph2_idx]
   strata_ph2 <- strata_all[ph2_idx]
@@ -199,7 +167,10 @@
     nPSU_s <- length(x_agg)
 
     # Aggregate usu to PSU level (mean handles PSUs spanning multiple
-    # phase 2 strata)
+    # phase 2 strata). Deliberately not survey's rule: onestrat.phase1()
+    # pairs rowsum()'s sorted PSU totals with usu in row order, so its SE
+    # moves with row order and PSU labels when strata2 cuts across phase 1
+    # PSUs. Nested strata give the same answer either way (issue #341).
     pi2_agg <- as.numeric(tapply(usu_ph2[idx_s], psu_s, mean))
 
     if (nPSU_s <= 1L) {
@@ -230,8 +201,11 @@
 }
 
 
-# Compute phase 2 variance contribution (used by "full" and "approx" only).
+# Compute phase 2 variance contribution (used by "approx" and "simple").
 # Adapted from the phase 2 component of survey:::twophasevar.
+# The Phase 2 score is the influence itself when no Phase 1 sampling unit
+# holds more than one Phase 2 unit (survey's `samescale`), and the influence
+# times sqrt(1 / w1) otherwise.
 # Returns a numeric scalar (extracts [1L, 1L] from the .svy_recvar() matrix).
 #' @noRd
 .twophase_phase2_var <- function(influence, design, subset, lonely.psu) {
@@ -240,10 +214,13 @@
   ph2_data <- design@data[subset, , drop = FALSE]
   n_ph2 <- nrow(ph2_data)
 
-  # Phase 2 score: influence[i] * sqrt(1 / w1[i])
-  w1 <- design@data[[ph1_vars$weights]]
-  w1_ph2 <- w1[subset]
-  score_ph2 <- influence[subset] * sqrt(1 / w1_ph2)
+  # Phase 2 score
+  score_ph2 <- if (.twophase_same_scale(design, subset)) {
+    influence[subset]
+  } else {
+    w1 <- design@data[[ph1_vars$weights]]
+    influence[subset] * sqrt(1 / w1[subset])
+  }
   score_mat <- matrix(score_ph2, ncol = 1L)
 
   # Phase 2 strata column
@@ -311,38 +288,221 @@
 }
 
 
+# Does each Phase 1 sampling unit hold at most one Phase 2 unit? This is
+# survey::twophase()'s `samescale`: it takes the last-stage Phase 1 cluster of
+# the first row of each Phase 2 first-stage unit and checks for repeats. It
+# holds for an unclustered Phase 1 and when ids2 names the Phase 1 cluster; it
+# fails when Phase 2 subsamples rows or smaller units within Phase 1 clusters.
+# A Phase 1 unit is keyed by its stratum and every id stage, so nested ids
+# count once per stratum.
+#' @noRd
+.twophase_same_scale <- function(design, subset) {
+  ph1_vars <- design@variables$phase1
+  data <- design@data
+  n <- nrow(data)
+
+  unit1 <- if (is.null(ph1_vars$ids)) {
+    as.character(seq_len(n))
+  } else {
+    strata1 <- if (!is.null(ph1_vars$strata)) {
+      as.character(data[[ph1_vars$strata]])
+    } else {
+      rep("1", n)
+    }
+    stages <- lapply(ph1_vars$ids, function(v) as.character(data[[v]]))
+    do.call(paste, c(list(strata1), stages, sep = "\r"))
+  }
+  unit2 <- .phase2_units(design)$psu
+
+  first_rows <- !duplicated(unit2[subset])
+  anyDuplicated(unit1[subset][first_rows]) == 0L
+}
+
+
+# Compute the method = "full" variance: the double-expansion
+# Horvitz-Thompson estimator of survey:::twophase2var(),
+#   V = sum_ij x_i x_j * (D1 + D2 - D1 o D2)_ij,
+# over Phase 2 rows, where x is the (already weighted) influence and D1, D2
+# are survey's "check" matrices (pi_ij - pi_i pi_j) / pi_ij for each phase
+# (survey:::Dcheck_subset, survey:::Dcheck_strat, survey:::twophaseDcheck).
+# Each D takes one of three values for a pair of rows:
+#   same sampling unit            1 - p
+#   same stratum, other unit      -(1 - p) / (n_h - 1)
+#   otherwise                     0
+# where p is the unit's inclusion probability and n_h the number of units
+# sampled in the stratum. Each value is a function of the row i's unit, so
+# the quadratic form reduces to sums of x within groups and needs no n x n
+# matrix.
+#
+# Phase 1: p = 1 / w1 taken from each unit's first Phase 2 row (as survey
+# does); the off-diagonal term applies only with a Phase 1 fpc, because
+# survey treats a design without one as sampled with replacement. A Phase 1
+# with no weights, probs, strata or fpc and no repeated cluster is iid, as in
+# survey (phase1_is_iid): D1 is the identity, i.e. p = 0.
+# n_h counts the stratum's Phase 1 units. survey 4.5 reads n_h from the wrong
+# rows here (Dcheck_multi_subset passes a row-length sampsize that
+# Dcheck_subset indexes by unit), which changes the answer when a Phase 1 fpc
+# meets strata with unequal unit counts; this function uses the stratum's own
+# count.
+#
+# Both phases use their first-stage clusters only, and lonely PSUs need no
+# rule: a stratum with one unit has no off-diagonal pair.
+# Returns a numeric scalar.
+#' @noRd
+.twophase_full_var <- function(influence, design) {
+  data <- design@data
+  vars <- design@variables
+  ph1_vars <- vars$phase1
+  subset <- data[[vars$subset]]
+  n <- nrow(data)
+
+  # Phase 1 units (keyed by stratum, so nested and unique ids agree)
+  strata1 <- if (!is.null(ph1_vars$strata)) {
+    as.character(data[[ph1_vars$strata]])
+  } else {
+    rep("1", n)
+  }
+  ids1 <- if (!is.null(ph1_vars$ids)) {
+    as.character(data[[ph1_vars$ids[[1L]]]])
+  } else {
+    as.character(seq_len(n))
+  }
+  psu1 <- paste(strata1, ids1, sep = "\r")
+  n1_h <- .count_units(psu1, strata1, rep(TRUE, n))
+
+  phase1_is_iid <- .twophase_phase1_is_iid(design)
+
+  # Phase 2 units and probabilities
+  units2 <- .phase2_units(design)
+  pi2 <- .compute_phase2_probs(design, subset)
+  n2_h <- .count_units(units2$psu, units2$strata, subset)
+
+  # Restrict everything to Phase 2 rows
+  x <- influence[subset]
+  strata1 <- strata1[subset]
+  psu1 <- psu1[subset]
+  n1_h <- n1_h[subset]
+  strata2 <- units2$strata[subset]
+  psu2 <- units2$psu[subset]
+  n2_h <- n2_h[subset]
+
+  # Unit-level probabilities, from each unit's first Phase 2 row
+  first_of <- function(v, unit) v[match(unit, unit)]
+  p1 <- if (phase1_is_iid) {
+    rep(0, length(x))
+  } else {
+    first_of(1 / data[[ph1_vars$weights]][subset], psu1)
+  }
+  p2 <- first_of(pi2[subset], psu2)
+
+  same_unit1 <- 1 - p1
+  same_strat1 <- if (is.null(ph1_vars$fpc)) {
+    rep(0, length(x))
+  } else {
+    -(1 - p1) / (n1_h - 1)
+  }
+  same_strat1[n1_h <= 1] <- 0
+  same_unit2 <- 1 - p2
+  same_strat2 <- -(1 - p2) / (n2_h - 1)
+  same_strat2[n2_h <= 1] <- 0
+
+  # Sums of x over each row's groups
+  group_sum <- function(...) stats::ave(x, ..., FUN = sum)
+  s_u1 <- group_sum(psu1)
+  s_s1 <- group_sum(strata1)
+  s_u2 <- group_sum(psu2)
+  s_s2 <- group_sum(strata2)
+  s_u1u2 <- group_sum(psu1, psu2)
+  s_u1s2 <- group_sum(psu1, strata2)
+  s_s1u2 <- group_sum(strata1, psu2)
+  s_s1s2 <- group_sum(strata1, strata2)
+
+  # (D1 x)_i, (D2 x)_i and ((D1 o D2) x)_i; "other unit" sums subtract the
+  # same-unit part
+  d1x <- same_unit1 * s_u1 + same_strat1 * (s_s1 - s_u1)
+  d2x <- same_unit2 * s_u2 + same_strat2 * (s_s2 - s_u2)
+  d12x <- same_unit1 *
+    same_unit2 *
+    s_u1u2 +
+    same_unit1 * same_strat2 * (s_u1s2 - s_u1u2) +
+    same_strat1 * same_unit2 * (s_s1u2 - s_u1u2) +
+    same_strat1 * same_strat2 * (s_s1s2 - s_u1s2 - s_s1u2 + s_u1u2)
+
+  sum(x * (d1x + d2x - d12x))
+}
+
+
 # ===========================================================================
 # Section 3: Phase 2 probability computation
 # ===========================================================================
 
 # Derive conditional Phase 2 inclusion probabilities (pi2|1,i).
-# Adapted from internal probability computation in survey/R/twophase.R.
+# Adapted from the phase 2 design survey::twophase() and survey::twophase2()
+# build from data[subset, ].
+#
+# Priority: an explicit probs2 column, then fpc2, then the fraction of Phase 2
+# sampling units drawn within each Phase 2 stratum. A Phase 2 sampling unit is
+# the first-stage ids2 cluster when ids2 is given, and the row otherwise, so
+# cluster subsampling gets the cluster fraction (m_h / M_h) and not the row
+# fraction. With no strata2 the whole Phase 1 sample is one stratum.
 # Returns numeric vector of length nrow(design@data), with 1 for Phase 1-only
 # rows (influence = 0 there, so the placeholder value does not affect results).
 #' @noRd
 .compute_phase2_probs <- function(design, subset) {
   vars <- design@variables
-  n <- nrow(design@data)
-  pi2 <- rep(1, n)
+  data <- design@data
 
   if (!is.null(vars$phase2$probs)) {
-    # Priority 1: explicit probs column
-    pi2 <- as.numeric(design@data[[vars$phase2$probs]])
-    pi2[!subset] <- 1 # Phase 1-only rows: placeholder 1
-  } else if (!is.null(vars$phase2$strata)) {
-    # Priority 2: within-stratum sampling fraction (n2_stratum / n1_stratum)
-    strata2_all <- design@data[[vars$phase2$strata]]
-    frac_by_stratum <- tapply(subset, strata2_all, mean)
-    pi2 <- as.numeric(frac_by_stratum[as.character(strata2_all)])
-    pi2[!subset] <- 1 # Phase 1-only rows: placeholder 1
+    pi2 <- as.numeric(data[[vars$phase2$probs]])
   } else {
-    # Priority 3: overall fraction (n2 / n1)
-    frac <- mean(subset)
-    pi2[subset] <- frac
-    # Phase 1-only rows: pi2 stays 1
+    units <- .phase2_units(design)
+    n2_h <- .count_units(units$psu, units$strata, subset)
+    pi2 <- if (!is.null(vars$phase2$fpc)) {
+      fpc2 <- as.numeric(data[[vars$phase2$fpc]])
+      # survey::as.fpc() reads a column of values <= 1 as sampling fractions
+      # and anything else as population sizes
+      if (all(fpc2[subset] <= 1)) fpc2 else n2_h / fpc2
+    } else {
+      n2_h / .count_units(units$psu, units$strata, rep(TRUE, nrow(data)))
+    }
   }
 
+  pi2[!subset] <- 1 # Phase 1-only rows: placeholder 1
   pi2
+}
+
+
+# Phase 2 stratum and first-stage sampling-unit keys for every row. The unit
+# key carries the stratum, so a unit is counted within its own stratum.
+#' @noRd
+.phase2_units <- function(design) {
+  vars <- design@variables$phase2
+  data <- design@data
+  n <- nrow(data)
+
+  strata <- if (!is.null(vars$strata)) {
+    as.character(data[[vars$strata]])
+  } else {
+    rep("1", n)
+  }
+  ids <- if (!is.null(vars$ids)) {
+    as.character(data[[vars$ids[[1L]]]])
+  } else {
+    as.character(seq_len(n))
+  }
+
+  list(strata = strata, psu = paste(strata, ids, sep = "\r"))
+}
+
+
+# Number of distinct units per stratum among the rows `keep` selects, returned
+# for every row (0 for a stratum with no selected row).
+#' @noRd
+.count_units <- function(psu, strata, keep) {
+  counts <- tapply(psu[keep], strata[keep], function(p) length(unique(p)))
+  out <- as.numeric(counts[strata])
+  out[is.na(out)] <- 0
+  out
 }
 
 

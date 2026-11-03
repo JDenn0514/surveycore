@@ -5,14 +5,14 @@
 # functions live at the top of their respective source files.
 #
 # Contents:
+#   .haven_available()      — is the haven namespace installed?
 #   Meta-key constants (six character vectors)
 #   .extract_var_meta()     — variable/value label lookup for one variable
 #   .build_group_meta()     — metadata lookup for all group variables
 #   .apply_group_labels()   — convert coded group columns to labelled factors
 #   .build_group_combos()   — unique group value combinations from domain data
 #   .match_group_combo()    — row mask matching one group combination
-#   .degf_taylor()          — Taylor df formula (retained; not called by
-#                             .degf())
+#   .degf_taylor()          — Taylor df formula over a data frame
 #   .resolve_groups()       — combine @groups + group= arg
 #   .apply_domain()         — extract domain membership mask
 #   .build_meta()           — assemble .meta list
@@ -22,70 +22,17 @@
 #   .apply_name_style()     — rename columns for broom compatibility
 #   .check_unsupported_class() — throw for non-survey-base objects
 #   .add_variance_cols()    — compute requested uncertainty columns
-#   .degf()                 — design degrees of freedom
+#   .degf()                 — design degrees of freedom over estimate rows
 
-#' Analysis Helper Standards
-#'
-#' @srrstats {EA2.4} surveycore uses an explicit S7 class system
-#'   (survey_taylor, survey_replicate, survey_twophase) that encodes the design
-#'   type and all associated parameters.
-#'
-#' @srrstats {EA2.6} Routines process vector columns regardless of additional
-#'   attributes: haven-style "label" and "labels" attributes are automatically
-#'   detected and preserved in @metadata during construction, and restored in
-#'   analysis output when requested.
-#'
-#' @srrstats {EA3.0} The get_*() family (get_freqs(), get_means(),
-#'   get_totals(), get_corr(), get_quantiles(), get_ratios(), get_diffs())
-#'   provides automated, reproducible extraction of survey statistics without
-#'   requiring manual formula-writing or post-processing.
-#'
-#' @srrstats {EA3.1} All get_*() functions return tidy tibbles with consistent
-#'   column naming conventions, enabling direct comparison of estimates across
-#'   variables, groups, and designs.
-#'
-#' @srrstats {EA4.0} All get_*() functions return tibble-based objects;
-#'   survey_glm() returns a survey_glm_fit S7 object. Return types do not
-#'   vary by input class within the accepted input space.
-#'
-#' @srrstats {EA4.1} All seven get_*() analysis functions implement a
-#'   decimals parameter (integer or NULL) that rounds all numeric output
-#'   columns to the specified number of decimal places. Numeric precision
-#'   control is consistently available across the full analysis API.
-#'
-#' @srrstats {EA4.2} All survey design objects have a print method that
-#'   provides a structured summary (design type, sample size, variable
-#'   preview). survey_glm_fit has both print and summary methods.
-#'
-#' @srrstats {EA5.2} The print.survey_glm_fit() and print.survey_glm_summary()
-#'   methods format numeric output via format(round(x, digits), nsmall =
-#'   digits) rather than relying on default numeric printing.
-#'
-#' @srrstats {EA5.3} The tibble print method for get_*() output includes
-#'   column type abbreviations (<dbl>, <int>, <fct>, etc.), indicating the
-#'   class and storage mode of each column.
-#'
-#' @srrstats {EA6.0} Return values from all get_*() functions are tested for
-#'   class, dimensions, column names, column types, and numeric values.
-#'
-#' @srrstats {EA6.0a} Tests verify the class of all return objects: get_*()
-#'   functions return tibbles; constructors return the correct S7 subclass.
-#'
-#' @srrstats {EA6.0b} Tests verify the dimensions (number of rows and columns)
-#'   of all tabular return objects for representative inputs.
-#'
-#' @srrstats {EA6.0c} Tests verify that returned tibbles carry the expected
-#'   column names (e.g. mean, se, ci_low, ci_high, n for get_means()).
-#'
-#' @srrstats {EA6.0d} Tests verify column classes within returned tibbles
-#'   (e.g. numeric estimates, integer counts, factor group columns).
-#'
-#' @srrstats {EA6.0e} Numeric return values are tested with
-#'   expect_equal(..., tolerance = 1e-10) or equivalent against reference
-#'   values from the survey package.
-#'
+
+# ── haven availability ────────────────────────────────────────────────────────
+
+# Is the haven namespace available? Wrapped in a helper so tests can stub it.
+# Behaviour is identical to calling requireNamespace() inline.
 #' @noRd
-NULL
+.haven_available <- function() {
+  requireNamespace("haven", quietly = TRUE)
+}
 
 
 # ── Meta-key constants ────────────────────────────────────────────────────────
@@ -240,7 +187,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
       # Build a map from haven tagged-NA tag character to label string.
       # Requires haven at runtime; falls back gracefully when not installed:
       # tagged NAs without a resolvable tag remain NA in the factor output.
-      haven_ok <- requireNamespace("haven", quietly = TRUE)
+      haven_ok <- .haven_available()
       # Tagged NAs are always doubles (special NaN bit patterns). Build a map
       # from tag character to label string by checking double NA entries in
       # labels. Non-double NA entries (integer NA, etc.) are plain NAs.
@@ -385,10 +332,8 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' Compute Taylor series degrees of freedom
 #'
 #' Computes design-based degrees of freedom from a data frame and variables
-#' list using the Taylor series rules. Retained for potential future use (e.g.,
-#' design effect computation, user-accessible `degf()`). Not called by
-#' `.degf()` — Phase 1 analysis functions use `Inf` directly (normal
-#' approximation, matching `survey::svymean()` defaults).
+#' list using the Taylor series rules. Callers pass only the rows that enter
+#' an estimate; `.degf()` is the usual entry point.
 #'
 #' Rules applied, in order:
 #' 1. Stratified cluster: `Σ_h(n_h - 1)` = total PSUs − number of strata.
@@ -464,13 +409,23 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' is retained for correct variance estimation; only the estimation sum is
 #' restricted to in-domain rows.
 #'
+#' A stored `NA` marker resolves to `FALSE`. Thirteen call sites index
+#' `design@data` with the returned vector, and an `NA` element selects a row of
+#' all `NA` values. In a grouped call that phantom row becomes a group
+#' combination that no real row supports. The `survey_base` validator
+#' guarantees the stored column is logical, so this helper does one job and
+#' adds no coercion.
+#'
 #' @param design A survey design object.
-#' @return Logical vector of length `nrow(design@data)`. `TRUE` for in-domain
-#'   rows.
+#' @return Logical vector of length `nrow(design@data)`, holding no `NA`.
+#'   `TRUE` for in-domain rows; `FALSE` for a row whose stored marker is
+#'   `FALSE` or `NA`.
 #' @noRd
 .apply_domain <- function(design) {
   if (SURVEYCORE_DOMAIN_COL %in% names(design@data)) {
-    design@data[[SURVEYCORE_DOMAIN_COL]]
+    stored <- design@data[[SURVEYCORE_DOMAIN_COL]]
+    stored[is.na(stored)] <- FALSE
+    stored
   } else {
     rep(TRUE, nrow(design@data))
   }
@@ -1043,22 +998,38 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 
 #' Compute design-based degrees of freedom
 #'
-#' Returns the design-based degrees of freedom as a numeric scalar. Used by
-#' `survey_glm()` for t-distribution critical values in confidence intervals
-#' and Wald tests. Phase 1 analysis functions (`get_means()`, `get_totals()`,
-#' etc.) use `Inf` directly (normal approximation, matching
-#' `survey::svymean()` defaults) and do **not** call `.degf()`.
+#' Returns the design-based degrees of freedom over the rows that enter an
+#' estimate. `get_quantiles()` uses it for the Woodruff t critical value,
+#' `survey_glm()` for its residual df, and the calibrated Taylor cells for
+#' their per-cell df. `get_means()`, `get_totals()` and the other Phase 1
+#' functions use `Inf` (normal approximation, matching `survey::svymean()`
+#' defaults) and do **not** call `.degf()`, so that `confint()` agrees with
+#' their `ci_low`/`ci_high` columns (issue #271).
 #'
-#' Design-specific formulas (matching `survey::degf()`):
-#' - Taylor: `Σ_h(n_h - 1)` = total PSUs − number of strata.
+#' Only rows in `rows` are counted, so a PSU or stratum with no row in the
+#' estimate adds nothing (issue #326). This is what `survey::degf()` returns
+#' on the design `survey` analyses: one restricted by `subset()`, by the
+#' NA removal of `na.rm = TRUE`, by a `svyby()` group, or to the complete
+#' cases of `svyglm()`. The variance itself still sums over every PSU; only
+#' the df is restricted.
+#'
+#' Design-specific formulas:
+#' - Taylor: `Σ_h(n_h - 1)` over the PSUs and strata holding a row in `rows`.
 #' - Replicate: `R - 1` where `R` is the number of replicate weight columns.
-#' - Twophase: Phase-1 Taylor degrees of freedom.
+#'   `rows` is ignored: `survey::degf()` on a replicate design does not change
+#'   under `subset()`.
+#' - Twophase: phase-2 clusters minus phase-2 strata over the phase-2 rows in
+#'   `rows`, as `survey::degf()` takes `degf(design$phase2)`. With no `ids2`
+#'   each phase-2 row is its own cluster; with no `strata2` there is one
+#'   stratum. Phase-1 clustering does not enter.
 #' - Non-probability (`survey_nonprob`): `Inf` — no design-based df.
 #'
 #' @param design A survey design object inheriting from `survey_base`.
+#' @param rows Logical vector of length `nrow(design@data)`: the rows that
+#'   enter the estimate. Defaults to the active domain.
 #' @return Numeric(1). Design-based degrees of freedom, always ≥ 1.
 #' @noRd
-.degf <- function(design) {
+.degf <- function(design, rows = .apply_domain(design)) {
   if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
       c(
@@ -1071,7 +1042,8 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     )
   }
   if (S7::S7_inherits(design, survey_taylor)) {
-    max(1, .degf_taylor(design@data, design@variables))
+    est_data <- design@data[rows, , drop = FALSE]
+    max(1, .degf_taylor(est_data, design@variables))
   } else if (S7::S7_inherits(design, survey_replicate)) {
     rep_mat <- as.matrix(
       design@data[, design@variables$repweights, drop = FALSE]
@@ -1079,13 +1051,232 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     max(1L, ncol(rep_mat) - 1L)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     subset <- design@data[[design@variables$subset]]
-    ph1_data <- design@data[subset, , drop = FALSE]
-    max(1, .degf_taylor(ph1_data, design@variables$phase1))
+    ph2_data <- design@data[subset & rows, , drop = FALSE]
+    p2 <- design@variables$phase2
+    n_clusters <- if (length(p2$ids) > 0L) {
+      length(unique(ph2_data[[p2$ids[[1L]]]]))
+    } else {
+      nrow(ph2_data)
+    }
+    n_strata <- if (!is.null(p2$strata)) {
+      length(unique(ph2_data[[p2$strata]]))
+    } else {
+      min(1L, nrow(ph2_data))
+    }
+    max(1, n_clusters - n_strata)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     Inf
   } else {
-    max(1L, nrow(design@data) - 1L)
+    max(1L, sum(rows) - 1L)
   }
+}
+
+
+# ── .get_levels() ─────────────────────────────────────────────────────────────
+#
+# Return unique levels for a variable column, preserving factor level order
+# (or ascending sort for non-factors). When na.rm = FALSE, NA is appended last
+# regardless of factor ordering. When na.rm = TRUE, only non-NA values are
+# returned, and factor levels absent from the data are dropped.
+#
+# @param x_col  Atomic vector (factor or plain vector).
+# @param na.rm  Logical. If FALSE, NA is appended as a level.
+# @return Atomic vector of levels (same type as x_col, except NA is always
+#   NA_character_ for factors since factor levels are character).
+.get_levels <- function(x_col, na.rm) {
+  has_na <- anyNA(x_col)
+
+  if (is.factor(x_col)) {
+    # Factor: use declared level order; drop levels not present in data
+    all_lvls <- levels(x_col)
+    present <- unique(as.character(x_col[!is.na(x_col)]))
+    kept_lvls <- all_lvls[all_lvls %in% present]
+    if (!na.rm && has_na) {
+      c(kept_lvls, NA_character_)
+    } else {
+      kept_lvls
+    }
+  } else {
+    # Non-factor: sort unique non-NA values ascending
+    non_na <- sort(unique(x_col[!is.na(x_col)]))
+    if (!na.rm && has_na) {
+      c(non_na, NA)
+    } else {
+      non_na
+    }
+  }
+}
+
+
+# ── .level_display() ──────────────────────────────────────────────────────────
+#
+# Display string for one level of a categorical focal variable. With
+# label_values = TRUE and a value-label map, a numeric code is replaced by its
+# label; a factor level is already its label string and falls through.
+#
+# @param lvl           One element of .get_levels() output.
+# @param vl_map        Named character vector (labels named by code) or NULL.
+# @param label_values  Logical.
+# @return Character(1); NA_character_ for the NA level.
+.level_display <- function(lvl, vl_map, label_values) {
+  if (is.na(lvl)) {
+    return(NA_character_)
+  }
+  key <- as.character(lvl)
+  if (label_values && !is.null(vl_map) && key %in% names(vl_map)) {
+    vl_map[[key]]
+  } else {
+    key
+  }
+}
+
+
+# ── .value_label_map() ────────────────────────────────────────────────────────
+#
+# Invert a value-label vector (codes named by label) into a lookup of labels
+# named by code, for .level_display(). A factor's levels are already its label
+# strings, and the labels inferred from a factor are coded 1..k by position,
+# so a factor gets no lookup: mapping a level such as "6" through the codes
+# would relabel it with whichever level sits sixth.
+#
+# @param vl     Named vector from .extract_var_meta()$value_labels, or NULL.
+# @param x_col  The focal column.
+# @return Named character vector, or NULL.
+.value_label_map <- function(vl, x_col) {
+  if (is.null(vl) || is.factor(x_col)) {
+    return(NULL)
+  }
+  structure(names(vl), names = as.character(vl))
+}
+
+
+# ── .focal_level_column() ─────────────────────────────────────────────────────
+#
+# Build the focal output column of a one-row-per-level result from the
+# accumulated display strings. Returns a factor ordered by the value labels
+# when label_values = TRUE and labels exist, else a character vector.
+#
+# @param acc_focal     Character vector of display strings.
+# @param vl            Named vector of value labels, or NULL.
+# @param label_values  Logical.
+# @return Character vector or factor.
+.focal_level_column <- function(acc_focal, vl, label_values) {
+  if (label_values && !is.null(vl)) {
+    factor(acc_focal, levels = names(vl))
+  } else {
+    acc_focal
+  }
+}
+
+
+# ── Joint covariance across result rows ──────────────────────────────────────
+#
+# Each cell helper that can contribute to a joint covariance matrix returns a
+# `joint` element alongside its scalar SE, built by one of three
+# constructors:
+#   .joint_infl(infl_mat) — Taylor: the cell's influence column (after any
+#                           calibration projection), full design length.
+#   .joint_rep(theta, est) — replicate: the cell's R per-replicate estimates
+#                           and its full-sample estimate.
+#   .joint_na()           — the cell has no variance (empty cell, or too many
+#                           NA replicates); its row and column are NA.
+# A cell helper with no joint form (two-phase, the SRS fallback for a
+# survey_nonprob design without replicate weights) returns no `joint`, so the
+# result stores no matrix and vcov() falls back to NA off-diagonals.
+#
+# Every cell's influence is computed on the full design with zeros outside its
+# domain, so one reduction over the stacked columns gives the covariances
+# between levels, between groups and across domains: the same matrix as
+# survey::svyby(covmat = TRUE).
+
+.joint_infl <- function(infl_mat) {
+  list(kind = "infl", value = infl_mat[, 1L], est = NA_real_)
+}
+
+.joint_rep <- function(theta, est) {
+  list(kind = "rep", value = theta, est = est)
+}
+
+.joint_na <- function() {
+  list(kind = "na", value = NULL, est = NA_real_)
+}
+
+
+# ── .joint_vcov() ─────────────────────────────────────────────────────────────
+#
+# Reduce the per-cell `joint` elements of one result to its k x k covariance
+# matrix, in row order. The diagonal equals each cell's own se^2: the Taylor
+# reduction is .svy_recvar() over the same columns, and the replicate one is
+# .svy_rep_vcov(), whose diagonal is .svy_rep_var() on each column.
+#
+# @param design  The design the cells were computed on.
+# @param joint   List of length k: each element NULL or a .joint_*() value.
+# @return k x k numeric matrix, or NULL when any cell has no joint form.
+.joint_vcov <- function(design, joint) {
+  k <- length(joint)
+  if (any(vapply(joint, is.null, logical(1L)))) {
+    return(NULL)
+  }
+  kinds <- vapply(joint, function(j) j$kind, character(1L))
+  live <- kinds != "na"
+  out <- matrix(NA_real_, nrow = k, ncol = k)
+  if (!any(live)) {
+    return(out)
+  }
+
+  vals <- do.call(cbind, lapply(joint[live], function(j) j$value))
+  if (all(kinds[live] == "infl")) {
+    mats <- .build_cluster_matrices(design@data, design@variables)
+    v <- .svy_recvar(
+      vals,
+      mats$clusters_mat,
+      mats$strata_mat,
+      mats$fpcs,
+      lonely.psu = getOption("survey.lonely.psu", "remove")
+    )
+  } else {
+    vars <- design@variables
+    est <- vapply(joint[live], function(j) j$est, numeric(1L))
+    v <- .svy_rep_vcov(
+      vals,
+      scale = vars$scale,
+      rscales = if (!is.null(vars$rscales)) {
+        vars$rscales
+      } else {
+        rep(1L, nrow(vals))
+      },
+      mse = isTRUE(vars$mse),
+      coef = est
+    )
+  }
+  out[live, live] <- v
+  out
+}
+
+
+# ── .attach_joint_vcov() ──────────────────────────────────────────────────────
+#
+# Store a result's joint covariance matrix in attr(result, ".vcov"), named by
+# names(coef(result)), for vcov.survey_result() to read. Call after
+# .make_result_tibble() and before .apply_decimals(), so the names come from
+# the unrounded, unrenamed result. Stores nothing when no cell has a joint
+# form or the result has no rows.
+#
+# @param result  A survey_result tibble with its .survey_result attribute.
+# @param design  The design the cells were computed on.
+# @param joint   List of per-cell `joint` elements, in row order.
+# @return result, possibly with a ".vcov" attribute.
+.attach_joint_vcov <- function(result, design, joint) {
+  if (nrow(result) == 0L) {
+    return(result)
+  }
+  v <- .joint_vcov(design, joint)
+  if (!is.null(v)) {
+    nms <- .build_coef_names(result, attr(result, ".survey_result"))
+    dimnames(v) <- list(nms, nms)
+    attr(result, ".vcov") <- v
+  }
+  result
 }
 
 

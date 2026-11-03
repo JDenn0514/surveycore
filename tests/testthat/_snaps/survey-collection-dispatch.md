@@ -57,21 +57,6 @@
       x `.id` must be a single non-empty, non-NA character string.
       i Got <character> of length 1: NA.
 
-# C14: bind-type mismatch across surveys aborts with surveycore class
-
-    Code
-      get_means(coll, y1, group = grp)
-    Condition
-      Warning:
-      ! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
-      Warning:
-      ! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
-      Error in `tryCatchOne()`:
-      x Cannot combine per-survey results: column type mismatch. Each survey must produce compatible types for shared columns.
-      i Original error: Can't combine `..1$grp` <integer> and `..2$grp` <factor<38051>>.
-      Caused by error in `dplyr::bind_rows()`:
-      ! Can't combine `..1$grp` <integer> and `..2$grp` <factor<38051>>.
-
 # C10: tidy-selected variable absent raises surveycore_error_variable_not_found
 
     Code

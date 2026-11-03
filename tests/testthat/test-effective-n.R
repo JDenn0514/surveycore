@@ -369,6 +369,17 @@ test_that("get_effective_n() kish: na.rm=FALSE with NA weight produces NA n_eff"
   expect_equal(result_true$n[[1L]], 4L)  # 4 non-NA weights
 })
 
+test_that("get_effective_n() warns with single-level group variable", {
+  d <- make_all_na_group_design()
+  expect_warning(
+    r <- get_effective_n(d, group = grp, na.rm = FALSE),
+    class = "surveycore_warning_single_level"
+  )
+  expect_equal(nrow(r), 1L)
+  expect_true(is.na(r$grp[[1L]]))
+  expect_true(is.finite(r$n_eff[[1L]]))
+})
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Section 5 — survey_collection dispatch
 # ══════════════════════════════════════════════════════════════════════════════

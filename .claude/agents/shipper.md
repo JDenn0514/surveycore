@@ -2,6 +2,7 @@
 name: shipper
 description: Ships a PR after review.md verdict=PASS. Branch, commit (Conventional Commits), push, open PR against develop, monitor CI, merge (squash), post-merge cleanup. Refuses to run without a PASS review. Dispatched by pipeline-ship.
 tools: Read, Bash, Edit
+model: sonnet
 ---
 
 # Agent: shipper
@@ -75,7 +76,7 @@ git commit -m "$(cat <<'EOF'
 
 {2–4 bullet details from implementation.md §Summary}
 
-Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 ```
@@ -144,7 +145,7 @@ sleep N && gh pr checks ...
 gh run list   # in any loop
 ```
 
-Required checks: `R-CMD-check` (all OS matrix), `pkgdown`. `pkgcheck` is NOT a required check — ignore it.
+Required checks: `R-CMD-check` (all OS matrix), `pkgdown`.
 
 | CI state | Action |
 |---|---|

@@ -104,6 +104,16 @@
       i Wide-format correlation results do not have an `estimate_cols` mapping.
       v Use `format = "long"` in `get_corr()` before calling `coef()`.
 
+# vcov() on grouped quantiles emits surveycore_warning_vcov_incomplete
+
+    Code
+      invisible(vcov(r))
+    Condition
+      Warning:
+      ! Off-diagonal elements of `vcov()` are `NA_real_` for this <survey_quantiles> result.
+      i No joint covariance is stored for it; only the diagonal variances are available.
+      i Use `diag(vcov(result))` for the variances, or `result$se` directly.
+
 # confint() with parm containing NA emits surveycore_warning_parm_na
 
     Code
@@ -113,8 +123,8 @@
       ! `parm` contains 1 `NA` element(s).
       i `NA` elements are dropped before parameter selection.
     Output
-            2.5 %   97.5 %
-      y1 49.02904 51.67635
+           2.5 %   97.5 %
+      y1 49.1289 51.57648
 
 # confint() with partially unmatched parm emits surveycore_warning_parm_unmatched
 
@@ -126,8 +136,8 @@
       i Unmatched names: "not_a_param".
       i These parameters are dropped. Check `names(coef(result))` for valid names.
     Output
-              2.5 %   97.5 %
-      A:y1 47.58754 52.43242
+             2.5 %   97.5 %
+      A:y1 47.7703 52.24965
 
 # confint() with all unmatched parm emits warning and returns 0x2 matrix
 

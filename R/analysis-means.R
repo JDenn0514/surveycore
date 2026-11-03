@@ -68,14 +68,21 @@
 #'     `deff`) — only those requested via `variance`.
 #'   \item `df` — degrees of freedom used for CI calculation. Present only for
 #'     `survey_taylor` designs with an active `@calibration` object
-#'     (GREG-corrected SE). For all other designs the normal approximation
-#'     (`Inf`) is used and `df` is not included.
+#'     (GREG-corrected SE); counts only the PSUs and strata holding a row in
+#'     the cell. For all other designs the normal approximation
+#'     (`Inf`) is used and `df` is not included. `confint()` on the result
+#'     uses the same df, so it reproduces `ci_low` and `ci_high`.
 #'   \item `n` — unweighted count of non-NA observations used in the estimate.
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
 #' The variable name is stored in `meta(result)$x`, not as a column.
 #' Use `meta(result)` to access design type, variable labels, and other
 #' metadata.
+#'
+#' On a Taylor or replicate design (including a `survey_nonprob` design with
+#' replicate weights), the result also stores the joint covariance matrix of
+#' its estimates, covering every pair of rows. Read it with `vcov(result)`; see
+#' [vcov.survey_result()].
 #'
 #' @examples
 #' d <- as_survey(
@@ -210,6 +217,7 @@ get_means <- function(
   acc_nw <- numeric(0)
   acc_df <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
+  acc_joint <- list()
 
   small_cell_ns <- integer(0)
 
@@ -235,6 +243,7 @@ get_means <- function(
     acc_sesrs <- c(acc_sesrs, cell$se_srs)
     acc_n <- c(acc_n, cell$n)
     acc_nw <- c(acc_nw, cell$n_weighted)
+    acc_joint <- c(acc_joint, list(cell$joint))
     acc_df <- c(acc_df, if (!is.null(cell$df)) cell$df else Inf)
 
     if (length(group_vars) > 0L) {
@@ -313,19 +322,14 @@ get_means <- function(
   )
 
   # ── Step 11: Assemble result ────────────────────────────────────────────────
-  # Determine cell_df for .survey_result attribute:
+  # Determine cell_df for .survey_result attribute. It must equal the df
+  # behind the ci_low/ci_high columns, so confint() returns the same interval:
   #   - Calibrated Taylor: per-cell df from .taylor_mean_cell()
-  #   - Non-calibrated Taylor / twophase: design df (finite, from .degf())
-  #   - Replicate / nonprob: Inf (normal approximation)
-  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
-    S7::S7_inherits(design, survey_twophase)
+  #   - Everything else: Inf (NULL defaults to Inf in .make_result_tibble())
   cell_df_attr <- if (has_calibration) {
     cell_df_vec <- acc_df
     cell_df_vec[is.na(cell_df_vec)] <- Inf
     cell_df_vec
-  } else if (is_taylor_like) {
-    design_df <- .degf(design)
-    rep(design_df, n_combos)
   } else {
     NULL
   }
@@ -341,6 +345,7 @@ get_means <- function(
     statistic = "mean",
     cell_df = cell_df_attr
   )
+  result <- .attach_joint_vcov(result, design, acc_joint)
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {

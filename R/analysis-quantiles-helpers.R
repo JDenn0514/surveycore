@@ -5,7 +5,6 @@
 # Functions:
 #   .last()                     — index of last TRUE (vendored from survey)
 #   .wtd_qs()                   — weighted quantile via sorted ECDF (vendored)
-#   .degf_woodruff()            — design-specific df for Woodruff t-critical
 #   .get_quantile_weights()     — effective weights (handles twophase)
 #   .quantile_woodruff_cell()   — Woodruff SE + CI for one (domain, prob) cell
 #
@@ -56,43 +55,6 @@
 }
 
 
-# ── .degf_woodruff() ──────────────────────────────────────────────────────────
-#
-# Compute the degrees of freedom for the Woodruff t-critical value. Unlike
-# .degf() (which returns Inf for all designs), this uses the actual design df
-# to match survey::svyquantile()'s CI computation.
-#
-# Design-specific formulas:
-#   Taylor:      Σ(n_h - 1) = total PSUs - number of strata
-#   Replicate:   R - 1 where R = number of replicate columns
-#   Twophase:    Phase 1 Taylor df
-#   SRS:         n - 1
-#   Calibrated:  n - 1
-#
-# @param design A survey design object.
-# @return Numeric(1): degrees of freedom (>= 1).
-#' @noRd
-.degf_woodruff <- function(design) {
-  if (S7::S7_inherits(design, survey_taylor)) {
-    max(1, .degf_taylor(design@data, design@variables))
-  } else if (S7::S7_inherits(design, survey_replicate)) {
-    rep_mat <- as.matrix(design@data[,
-      design@variables$repweights,
-      drop = FALSE
-    ])
-    max(1L, ncol(rep_mat) - 1L)
-  } else if (S7::S7_inherits(design, survey_twophase)) {
-    subset <- design@data[[design@variables$subset]]
-    ph1_data <- design@data[subset, , drop = FALSE]
-    max(1, .degf_taylor(ph1_data, design@variables$phase1))
-  } else if (S7::S7_inherits(design, survey_nonprob)) {
-    Inf
-  } else {
-    max(1L, nrow(design@data) - 1L)
-  }
-}
-
-
 # ── .get_quantile_weights() ───────────────────────────────────────────────────
 #
 # Return the full-length effective weight vector appropriate for weighted
@@ -100,9 +62,10 @@
 # (phase1_weight / phase2_sampling_probability); for all others, the standard
 # survey weight column.
 #
-# Note: For twophase designs, Phase 1-only rows receive Inf (division by 0).
-# These rows are always excluded from the quantile domain (subset = FALSE),
-# so the Inf values never contribute.
+# Note: For twophase designs, Phase 1-only rows receive a finite weight:
+# .compute_phase2_probs() gives them a placeholder probability of 1. The
+# caller must exclude them from the quantile domain; get_quantiles() does so
+# by restricting its domain mask to the phase-2 subset (issue #328).
 #
 # @param design A survey design object.
 # @return Numeric vector of length nrow(design@data).
@@ -144,8 +107,9 @@
 # @param prob          Numeric scalar in (0, 1): quantile probability.
 # @param conf_level    Numeric scalar in (0, 1): confidence level for Woodruff.
 # @param degf_w        Numeric(1): degrees of freedom for the t-critical value.
-#                      Use .degf_woodruff(design). Finite df gives CI bounds
-#                      that match survey::svyquantile() at 1e-6 tolerance.
+#                      Use .degf(design, rows) over the cell's non-missing
+#                      rows. Finite df gives CI bounds that match
+#                      survey::svyquantile() at 1e-6 tolerance.
 # @return Named list: estimate, se, ci_low, ci_high, se_srs, n, n_weighted.
 #' @noRd
 .quantile_woodruff_cell <- function(

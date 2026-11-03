@@ -17,9 +17,9 @@ A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} objec
 }
 \description{
 Converts a \code{survey} package design object (\code{svydesign}, \code{svrepdesign}, or
-\code{twophase}) to the corresponding surveycore S7 object. The data, design
-variables, and replicate weights are preserved; metadata (variable labels,
-value labels) is not — the \code{survey} package has no metadata system.
+\code{twophase}) to the corresponding surveycore S7 object. The data and the
+design variables are preserved; metadata (variable labels, value labels) is
+not — the \code{survey} package has no metadata system.
 }
 \details{
 Weight column names are recovered from the design call when available. When
@@ -28,6 +28,62 @@ the weight column is identified by matching the stored weight values against
 columns in the data. If no match is found, a \code{..surveycore_wt..} column is
 added.
 }
+\section{Replicate weights}{
+
+
+A \code{svrepdesign} object stores either finished replicate weights or
+replication factors, and reports which through its \code{combined.weights}
+field. On a design that reports replication factors the conversion
+transforms the replicate weights rather than preserving them: it multiplies
+each replicate column by the base weight, so the returned design always
+carries finished weights.
+
+When the source design does not name its replicate columns — the case for
+every design that \code{\link[survey:as.svrepdesign]{survey::as.svrepdesign()}} builds — the conversion writes
+a generated block into the data, one column per replicate, named on the
+same \code{..surveycore_wt..} pattern as the manufactured weight column above:
+\code{..surveycore_repwt_1..}, \code{..surveycore_repwt_2..}, and so on, with the
+index zero-padded to the width of the replicate count. When the source does
+name its replicate columns, those names pass through unchanged.
+
+Either way, the \code{repweights} design variable of the returned object names
+those columns, in replicate order.
+}
+
+\section{Two-phase designs}{
+
+
+The variance method comes from the object's class: a \code{twophase2} object,
+which \code{\link[survey:twophase]{survey::twophase()}} returns for \code{method = "full"}, converts to
+\code{method = "full"}, and a \code{twophase} object converts to \code{method = "approx"}.
+\code{survey} builds \code{method = "simple"} as a \code{twophase} object too, and
+surveycore treats \code{"simple"} as \code{"approx"}.
+A \code{twophase2} object whose phase 1 has weights other than 1 and no \code{fpc}
+raises the warning \code{surveycore_warning_twophase_full_no_fpc}, as
+\code{\link[=as_survey_twophase]{as_survey_twophase()}} does; see its section on the Phase 1 fpc.
+
+The phase 2 design, \code{ids2}, \code{strata2}, \code{probs2} and \code{fpc2}, is read from
+the formulas the \code{survey} object stores for it. A formula that names data
+columns directly, such as \code{~psu2} or \code{~strata}, keeps those names. Any other
+formula, such as \code{~I(1/w2)}, is evaluated on the phase 1 data as \code{survey}
+evaluates it, and the values go into a generated column named
+\code{..surveycore_ids2..}, \code{..surveycore_strata2..}, \code{..surveycore_probs2..}
+or \code{..surveycore_fpc2..}. A phase 2 \code{weights} formula,
+which \code{method = "approx"} accepts, goes in as \code{..surveycore_probs2..},
+because surveycore records phase 2 probabilities and not weights. The
+phase 1 weights of a \code{twophase2} object, which \code{survey} stores as
+\code{probs = ~I(1/w)}, keep the column name \code{w}.
+
+Multi-stage phase 2 is not supported. A two-phase object whose phase 2
+\code{id}, \code{strata} or \code{fpc} has more than one stage, such as
+\code{id = list(~psu, ~psu + ssu)}, raises the error
+\code{surveycore_error_twophase_multistage_phase2}, because surveycore's
+two-phase variance uses one phase 2 stage and would otherwise drop the
+later ones from the standard error. \code{survey} itself refuses a multi-stage
+phase 2 \code{strata} or \code{fpc} unless the phase 2 \code{id} also has more than one
+stage.
+}
+
 \examples{
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(
@@ -44,9 +100,9 @@ if (requireNamespace("survey", quietly = TRUE)) {
 \seealso{
 \code{\link[=as_svydesign]{as_svydesign()}} to convert in the other direction
 
-Other conversion: 
-\code{\link{as_svydesign}()},
-\code{\link{as_tbl_svy}()},
-\code{\link{from_tbl_svy}()}
+Other conversion:
+\code{\link[=as_svydesign]{as_svydesign()}},
+\code{\link[=as_tbl_svy]{as_tbl_svy()}},
+\code{\link[=from_tbl_svy]{from_tbl_svy()}}
 }
 \concept{conversion}

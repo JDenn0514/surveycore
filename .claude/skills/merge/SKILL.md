@@ -1,11 +1,10 @@
 ---
 name: merge
 description: >
-  Merges an open pull request targeting `develop` after CI passes. Trigger on:
-  "merge this", "merge the PR", "merge it", "merge PR #N", or any phrase
-  combining "merge" with a branch or PR reference. Also called as an optional
-  final stage from inside commit-and-pr. Accepts an optional PR number argument
-  (e.g., `/merge 42`). Never merges to `main` — use `/merge-main` for releases.
+  Merges an open pull request targeting `develop` after CI passes. Trigger on
+  "merge this" or any phrase combining "merge" with a branch or PR reference
+  (e.g., `/merge 42`). Never merges to `main` — use `/merge-main` for
+  releases.
 ---
 
 # Merge Skill
@@ -106,11 +105,41 @@ user says no or asks to cancel, stop and report: "Merge cancelled."
 
 ## Step 5 — Squash merge
 
+The squash merge happens via the GitHub API — no local checkout is needed
+for the merge itself, so run it without `--delete-branch`:
+
 ```bash
-gh pr merge <prNumber> --squash --delete-branch
+gh pr merge <prNumber> --squash
 ```
 
 If the command fails, report the error verbatim and stop.
+
+**Do not add `--delete-branch` here.** In a multi-worktree checkout it also
+tries to check out the base branch (`develop`) in the current worktree as
+part of local cleanup. If `develop` is already checked out in another
+worktree, that checkout fails with something like `fatal: 'develop' is
+already used by worktree at ...` and the branch cleanup half-fails even
+though the merge itself succeeded.
+
+**Branch cleanup** (after a successful merge):
+
+Check `git worktree list` for a worktree other than the main working
+directory that has `headRefName` checked out. If one exists, remove it
+first — this is what's holding the branch checked out:
+
+```bash
+git worktree remove <worktree-path>
+```
+
+Then delete the remote and local branches:
+
+```bash
+git push origin --delete <headRefName>
+git branch -D <headRefName>
+```
+
+If no worktree is involved, `git branch -D <headRefName>` can run directly
+after the remote delete.
 
 ---
 

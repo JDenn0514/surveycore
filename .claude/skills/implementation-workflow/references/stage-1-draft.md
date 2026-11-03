@@ -77,7 +77,7 @@ Rules for the PR map:
 **Files (in TDD order — tests first):**
 - `tests/testthat/test-[file].R` — [one-sentence description]
 - `R/[file].R` — [one-sentence description]
-- `changelog/phase-{X}/feature-[name].md` — created last, before opening PR
+- `changelog/feat-[slug].md` — created last, before opening PR
 
 **Acceptance criteria:**
 - [ ] All new tests confirmed failing (red) before implementation began

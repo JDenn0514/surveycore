@@ -1,14 +1,10 @@
 ---
 name: implementation-workflow
 description: >
-  Use this skill for implementation plan work — drafting a plan from a finalized
-  spec, running an adversarial review of the plan, or resolving plan issues
-  interactively. Trigger when the user says "build the implementation plan",
-  "draft the plan", "review the plan", "resolve plan issues", or "implementation
-  plan". Always runs after spec-workflow is complete. Has three stages: Stage 1
-  (draft plan), Stage 2 (adversarial review), Stage 3 (resolve + decisions log).
-  After the plan is approved, hand off to /r-implement (section-by-section
-  with manual oversight) or /auto-ship (fully autonomous end-to-end execution).
+  Legacy interactive implementation-plan workflow, superseded by
+  pipeline-implement. Three stages: draft plan, adversarial review,
+  resolve + decisions log.
+disable-model-invocation: true
 ---
 
 # Surveyverse Implementation Workflow

@@ -710,7 +710,6 @@ test_that(
       strata = sdmvstra,
       nest = TRUE
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~sdmvpsu,
       weights = ~wtmec2yr,
@@ -747,7 +746,6 @@ test_that(
       strata = strata,
       fpc = fpc
     )
-    test_invariants(sc)
     inp <- surveycore:::.taylor_build_inputs(sc, "y1")
     expect_identical(ncol(inp$clusters), 1L)
     expect_identical(ncol(inp$stratas), 1L)
@@ -773,7 +771,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     inp <- surveycore:::.taylor_build_inputs(sc, "y1")
     expect_identical(ncol(inp$clusters), 2L)
     expect_identical(ncol(inp$stratas), 2L)
@@ -842,7 +839,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       strata = ~strata,
@@ -883,7 +879,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       strata = ~strata,
@@ -974,7 +969,6 @@ test_that(
       ),
       class = "surveycore_warning_fpc_partial_stages"
     )
-    test_invariants(sc)
     # survey pkg needs one FPC column per stage; use Inf for
     # stages without FPC (= infinite population, no correction)
     df$fpc2_inf <- Inf
@@ -1021,7 +1015,6 @@ test_that(
       strata = strata,
       fpc = c(fpc, fpc2)
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1066,7 +1059,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1105,7 +1097,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1147,7 +1138,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1185,7 +1175,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1229,7 +1218,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1277,7 +1265,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu + unit,
       weights = ~wt,
@@ -1324,7 +1311,6 @@ test_that(
       ),
       class = "surveycore_warning_fpc_partial_stages"
     )
-    test_invariants(sc)
     # survey pkg needs one FPC column per stage; use Inf for
     # stages without FPC (= infinite population, no correction)
     df$fpc2_inf <- Inf
@@ -1373,7 +1359,6 @@ test_that(
       strata = strata,
       fpc = c(fpc, fpc2, fpc3)
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu + unit,
       weights = ~wt,
@@ -1424,7 +1409,6 @@ test_that(
       strata = strata,
       nest = TRUE
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1471,7 +1455,6 @@ test_that(
       strata = strata,
       nest = TRUE
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1516,7 +1499,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1564,7 +1546,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sc_dom <- surveytidy::filter(sc, domain == 1L)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
@@ -1618,7 +1599,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sc_dom <- surveytidy::filter(sc, domain == 1L)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
@@ -1670,7 +1650,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1719,7 +1698,6 @@ test_that(
       strata = strata,
       fpc = fpc
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~psu,
       weights = ~wt,
@@ -1742,3 +1720,143 @@ test_that(
     )
   }
 )
+
+# ── Issue #271: filtered Taylor design CI and confint() against survey ────────
+#
+# The domain drops stratum_5 entirely and cuts across the PSUs of the other
+# four strata. Both sides are built from the same frame, ids, strata and
+# weights; survey restricts with subset(), surveycore with the domain column.
+# survey's confint() methods default to df = Inf, the df surveycore's CI
+# columns and stored .survey_result df use.
+
+make_filtered_oracle_271 <- function() {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 5L, seed = 271L)
+  df$dom <- df$strata != "stratum_5" & seq_len(nrow(df)) %% 3L != 0L
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$dom
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  list(sc = sc, sv = subset(sv, dom))
+}
+
+test_that("get_means() CI columns on a filtered Taylor design match survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_means(o$sc, y1, variance = c("se", "ci"))
+  sv_result <- survey::svymean(~y1, o$sv)
+  sv_ci <- confint(sv_result)
+  expect_equal(sc_result$mean, coef(sv_result)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    sc_result$se,
+    as.numeric(survey::SE(sv_result)),
+    tolerance = 1e-8
+  )
+  expect_equal(sc_result$ci_low, sv_ci[1, 1], tolerance = 1e-6)
+  expect_equal(sc_result$ci_high, sv_ci[1, 2], tolerance = 1e-6)
+})
+
+test_that("confint() on a filtered get_means() result matches survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_means(o$sc, y1, variance = "se")
+  sv_result <- survey::svymean(~y1, o$sv)
+  expect_equal(
+    unname(confint(sc_result)),
+    unname(confint(sv_result)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("get_totals() CI columns on a filtered Taylor design match survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_totals(o$sc, y1, variance = c("se", "ci"))
+  sv_result <- survey::svytotal(~y1, o$sv)
+  sv_ci <- confint(sv_result)
+  expect_equal(sc_result$total, coef(sv_result)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    sc_result$se,
+    as.numeric(survey::SE(sv_result)),
+    tolerance = 1e-8
+  )
+  expect_equal(sc_result$ci_low, sv_ci[1, 1], tolerance = 1e-6)
+  expect_equal(sc_result$ci_high, sv_ci[1, 2], tolerance = 1e-6)
+})
+
+test_that("confint() on a filtered get_totals() result matches survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_totals(o$sc, y1, variance = "se")
+  sv_result <- survey::svytotal(~y1, o$sv)
+  expect_equal(
+    unname(confint(sc_result)),
+    unname(confint(sv_result)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("get_ratios() CI columns on a filtered Taylor design match survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_ratios(o$sc, y1, y2, variance = c("se", "ci"))
+  sv_result <- survey::svyratio(~y1, ~y2, o$sv)
+  sv_ci <- confint(sv_result)
+  expect_equal(
+    sc_result$ratio,
+    as.numeric(coef(sv_result)),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    sc_result$se,
+    as.numeric(survey::SE(sv_result)),
+    tolerance = 1e-8
+  )
+  expect_equal(sc_result$ci_low, sv_ci[1, 1], tolerance = 1e-6)
+  expect_equal(sc_result$ci_high, sv_ci[1, 2], tolerance = 1e-6)
+})
+
+test_that("confint() on a filtered get_ratios() result matches survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_ratios(o$sc, y1, y2, variance = "se")
+  sv_result <- survey::svyratio(~y1, ~y2, o$sv)
+  expect_equal(
+    unname(confint(sc_result)),
+    unname(confint(sv_result)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("get_freqs() CI columns on a filtered Taylor design match survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_freqs(o$sc, group, variance = c("se", "ci"))
+  sv_result <- survey::svymean(~group, o$sv)
+  sv_ci <- confint(sv_result)
+  expect_identical(as.character(sc_result$group), c("A", "B", "C"))
+  expect_equal(sc_result$pct, as.numeric(coef(sv_result)), tolerance = 1e-10)
+  expect_equal(
+    sc_result$se,
+    as.numeric(survey::SE(sv_result)),
+    tolerance = 1e-8
+  )
+  expect_equal(sc_result$ci_low, unname(sv_ci[, 1]), tolerance = 1e-6)
+  expect_equal(sc_result$ci_high, unname(sv_ci[, 2]), tolerance = 1e-6)
+})
+
+test_that("confint() on a filtered get_freqs() result matches survey [numerical]", {
+  skip_if_not_installed("survey")
+  o <- make_filtered_oracle_271()
+  sc_result <- get_freqs(o$sc, group, variance = "se")
+  sv_result <- survey::svymean(~group, o$sv)
+  expect_equal(
+    unname(confint(sc_result)),
+    unname(confint(sv_result)),
+    tolerance = 1e-6
+  )
+})

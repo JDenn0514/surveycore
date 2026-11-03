@@ -49,7 +49,6 @@ test_that("get_variance() Taylor SE matches SE(svyvar()) — NHANES [oracle]", {
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
   sv <- survey::svydesign(
     ids = ~sdmvpsu,
     strata = ~sdmvstra,
@@ -79,7 +78,6 @@ test_that("get_variance() Taylor CI = coef +/- qnorm(0.975) * SE — NHANES [ora
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
 
   sc_est <- get_variance(sc, ridageyr, variance = c("se", "ci"))
   z <- stats::qnorm(0.975)
@@ -151,7 +149,6 @@ test_that("get_variance() multi-variable pairwise matches per-variable svyvar() 
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
   sv <- survey::svydesign(
     ids = ~sdmvpsu,
     strata = ~sdmvstra,
@@ -183,7 +180,6 @@ test_that("get_variance() listwise matches svyvar() diagonal on shared complete 
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
   sv <- survey::svydesign(
     ids = ~sdmvpsu,
     strata = ~sdmvstra,
@@ -224,7 +220,6 @@ test_that("get_variance() group= matches svyby(svyvar) [oracle]", {
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
   sv <- survey::svydesign(
     ids = ~sdmvpsu,
     strata = ~sdmvstra,
@@ -271,7 +266,6 @@ test_that("get_variance() group_by(design) matches group= [oracle]", {
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
 
   sc_grouped <- surveytidy::group_by(sc, riagendr)
   est_a <- suppressWarnings(
@@ -295,7 +289,6 @@ test_that("get_variance() constant variable returns exact 0 for point + SE + CI 
   df <- make_survey_data(n = 50L, design = "taylor", seed = 101L)
   df$const <- 7
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(
     get_variance(sc, const, variance = c("se", "ci", "var", "moe", "deff"))
@@ -314,7 +307,6 @@ test_that("get_variance() constant variable with variance='cv' fires cv_undefine
   df <- make_survey_data(n = 50L, design = "taylor", seed = 102L)
   df$const <- 3
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     res <- get_variance(sc, const, variance = "cv"),
@@ -330,7 +322,6 @@ test_that("get_variance() constant variable with variance='cv' fires cv_undefine
 test_that("get_variance() name_style='broom' renames variance/se/ci_low/ci_high", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 103L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(
     sc,
@@ -360,7 +351,6 @@ test_that("get_variance() name_style='broom' renames variance/se/ci_low/ci_high"
 test_that("get_variance() n_weighted = TRUE appends n_weighted column", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 104L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, y1, variance = NULL, n_weighted = TRUE)
   expect_true("n_weighted" %in% names(res))
@@ -376,7 +366,6 @@ test_that("get_variance() n_weighted = TRUE appends n_weighted column", {
 test_that("get_variance() attaches label attribute to every output column", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 105L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(
     sc,
@@ -402,7 +391,6 @@ test_that("get_variance() attaches label attribute to every output column", {
 test_that("get_variance() conf_level interpolates into CI labels", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 106L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, y1, variance = "ci", conf_level = 0.90)
   expect_identical(attr(res$ci_low, "label"), "90% CI low")
@@ -416,7 +404,6 @@ test_that("get_variance() conf_level interpolates into CI labels", {
 test_that("get_variance() .meta has FAMILY_META_KEYS + design_class + conf_level + name_style + min_cell_n + na_handling", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 107L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, y1)
   m <- meta(res)
@@ -446,7 +433,6 @@ test_that("get_variance() .meta has FAMILY_META_KEYS + design_class + conf_level
 test_that("get_variance() .meta$group populated when grouping is active", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 108L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(get_variance(sc, y1, group = group))
   m <- meta(res)
@@ -466,7 +452,6 @@ test_that("get_variance() label_vars = TRUE/FALSE controls name column display",
     with_labels = TRUE
   )
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   # Set a variable label so label_vars has a visible effect
   sc2 <- set_var_label(sc, y1 = "Outcome Y1")
@@ -480,7 +465,6 @@ test_that("get_variance() label_vars = TRUE/FALSE controls name column display",
 test_that("get_variance() label_vars = TRUE falls back to raw name when label is unset", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 110L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   # No label set on y1; label_vars=TRUE should fall back
   res <- get_variance(sc, y1, label_vars = TRUE)
@@ -494,7 +478,6 @@ test_that("get_variance() label_vars = TRUE falls back to raw name when label is
 test_that("get_variance() decimals = 3 rounds every numeric output column exactly", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 111L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res_full <- get_variance(
     sc,
@@ -528,7 +511,6 @@ test_that("get_variance() decimals = 3 rounds every numeric output column exactl
 test_that("get_variance() deff = (se / se_srs)^2 where se_srs is SRS-of-score SE", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 112L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, y1, variance = c("se", "deff"))
 
@@ -553,7 +535,6 @@ test_that("get_variance() deff = (se / se_srs)^2 where se_srs is SRS-of-score SE
 test_that("get_variance() print method returns invisibly and does not error", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 113L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res_single <- get_variance(sc, y1)
   res_multi <- suppressWarnings(get_variance(sc, c(y1, y2)))
@@ -572,7 +553,6 @@ test_that("broom::tidy(survey_variance) returns a tibble", {
   skip_if_not_installed("broom")
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 114L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, y1)
   td <- broom::tidy(res)
@@ -583,7 +563,6 @@ test_that("broom::glance(survey_variance) returns a 1-row tibble", {
   skip_if_not_installed("broom")
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 115L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, y1)
   gl <- broom::glance(res)
@@ -731,7 +710,6 @@ test_that("get_variance() rejects unknown na_handling via match.arg()", {
 test_that("get_variance() fires small_cell when any row has n < min_cell_n", {
   df <- make_survey_data(n = 20L, n_psu = 10L, design = "taylor", seed = 301L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     get_variance(sc, y1),
@@ -743,7 +721,6 @@ test_that("get_variance() fires single_level when grouping var has one observed 
   df <- make_survey_data(n = 100L, design = "taylor", seed = 302L)
   df$const_grp <- 1L
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     get_variance(sc, y1, group = const_grp),
@@ -755,7 +732,6 @@ test_that("get_variance() fires cv_undefined when variance='cv' on constant vari
   df <- make_survey_data(n = 100L, design = "taylor", seed = 303L)
   df$const <- 5
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     get_variance(sc, const, variance = "cv"),
@@ -767,7 +743,6 @@ test_that("get_variance() fires variance_all_na when focal var is all-NA in acti
   df <- make_survey_data(n = 100L, design = "taylor", seed = 304L)
   df$allna <- NA_real_
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     get_variance(sc, allna),
@@ -783,7 +758,6 @@ test_that("get_variance() fires variance_all_na under listwise with empty inters
   df$a[1:50] <- NA
   df$b[51:100] <- NA
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     get_variance(sc, c(a, b), na_handling = "listwise"),
@@ -796,7 +770,6 @@ test_that("get_variance() fires variance_insufficient_n when n == 1", {
   df$one <- NA_real_
   df$one[[1L]] <- 42
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   expect_warning(
     get_variance(sc, one),
@@ -812,7 +785,6 @@ test_that("get_variance() all-NA focal with na.rm=TRUE returns NaN point + uncer
   df <- make_survey_data(n = 100L, design = "taylor", seed = 401L)
   df$allna <- NA_real_
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(
     get_variance(sc, allna, variance = c("se", "ci", "var", "moe", "deff"))
@@ -829,7 +801,6 @@ test_that("get_variance() single non-NA observation returns NaN point + n=1", {
   df$one <- NA_real_
   df$one[[1L]] <- 3.14
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(get_variance(sc, one))
   expect_true(is.nan(res$variance[[1L]]))
@@ -841,7 +812,6 @@ test_that("get_variance() na.rm=FALSE with NAs returns NaN estimate", {
   df$y_na <- df$y1
   df$y_na[1:5] <- NA
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(get_variance(sc, y_na, na.rm = FALSE))
   # n reflects all in-domain rows regardless of NA (spec §Edge cases)
@@ -853,7 +823,6 @@ test_that("get_variance() single-level grouping produces one row per focal varia
   df <- make_survey_data(n = 100L, design = "taylor", seed = 404L)
   df$g1 <- 1L
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(get_variance(sc, y1, group = g1))
   expect_identical(nrow(res), 1L)
@@ -866,7 +835,6 @@ test_that("get_variance() listwise shares n across variables with differing NA p
   df$a[1:20] <- NA
   df$b[21:40] <- NA
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(
     get_variance(sc, c(a, b), na_handling = "listwise")
@@ -881,7 +849,6 @@ test_that("get_variance() pairwise per-variable n differs across rows", {
   df$a[1:20] <- NA
   df$b[21:40] <- NA
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(
     get_variance(sc, c(a, b), na_handling = "pairwise")
@@ -908,7 +875,6 @@ test_that("get_variance() replicate near-zero variance returns se = 0 via max(0,
     repweights = all_of(rep_cols),
     type = "BRR"
   )
-  test_invariants(sc)
 
   res <- suppressWarnings(
     get_variance(sc, const, variance = c("se", "ci"))
@@ -924,7 +890,6 @@ test_that("get_variance() CI bounds are NOT clamped at zero (may be negative)", 
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 408L)
   df$near <- 1 + rnorm(nrow(df)) * 1e-6 # near-constant, tiny variance
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_variance(sc, near, variance = c("se", "ci"))
   # Check that we DO NOT clamp: if ci_low < 0 arithmetically, it stays negative

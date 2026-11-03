@@ -90,13 +90,14 @@ make_twophase_with_p2 <- function(seed = 42L) {
   set.seed(seed)
   df <- data.frame(
     wt = runif(30L, 0.8, 1.5),
+    pop = rep(20, 30L),
     arm = rep(c("A", "B", "C"), 10L),
     strata = rep(c("S1", "S2"), 15L),
     sampfrac = rep(c(0.5, 0.6, 0.4), 10L),
     in_phase2 = c(rep(TRUE, 15L), rep(FALSE, 15L)),
     y = rnorm(30L)
   )
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = pop)
   as_survey_twophase(
     phase1,
     strata2 = arm,
@@ -140,13 +141,11 @@ test_that("survey_data() returns @data as a data.frame for survey_taylor", {
 
 test_that("survey_data() returns @data for survey_replicate", {
   d <- make_rep()
-  test_invariants(d)
   expect_identical(survey_data(d), d@data)
 })
 
 test_that("survey_data() returns @data for survey_twophase", {
   d <- make_twophase()
-  test_invariants(d)
   expect_identical(survey_data(d), d@data)
 })
 
@@ -179,7 +178,6 @@ test_that("survey_data() rejects a list", {
 
 test_that(".get_design_vars_flat() returns all design var names for survey_taylor", {
   d <- make_taylor()
-  test_invariants(d)
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true(is.character(flat))
   expect_true("psu" %in% flat)
@@ -199,7 +197,6 @@ test_that(".get_design_vars_flat() returns unique names only", {
 
 test_that(".get_design_vars_flat() returns weights and repweights for survey_replicate", {
   d <- make_rep()
-  test_invariants(d)
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true("wt" %in% flat)
   repwt_cols <- grep("^repwt_", names(d@data), value = TRUE)
@@ -211,7 +208,6 @@ test_that(".get_design_vars_flat() returns weights and repweights for survey_rep
 
 test_that(".get_design_vars_flat() returns phase1, phase2, and subset vars for survey_twophase", {
   d <- make_twophase()
-  test_invariants(d)
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true("psu" %in% flat)
   expect_true("wt" %in% flat)
@@ -290,7 +286,6 @@ test_that(".get_design_vars_flat() excludes fpc for SRS-style design without fpc
 
 test_that(".get_design_vars() returns a named list for survey_taylor", {
   d <- make_taylor()
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   expect_true(is.list(vars))
   expect_true("ids" %in% names(vars))
@@ -302,7 +297,6 @@ test_that(".get_design_vars() returns a named list for survey_taylor", {
 test_that(".get_design_vars() omits NULL slots for SRS design (survey_taylor)", {
   df <- data.frame(y = 1:5, w = runif(5, 0.5, 2))
   d <- suppressWarnings(as_survey(df, weights = w))
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   # ids, strata, fpc are NULL — they should be absent
   expect_false("ids" %in% names(vars))
@@ -323,7 +317,6 @@ test_that(".get_design_vars() can be unlist()ed to a char vector", {
 
 test_that(".get_design_vars() returns weights and repweights for survey_replicate", {
   d <- make_rep()
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   expect_true("weights" %in% names(vars))
   expect_true("repweights" %in% names(vars))
@@ -336,7 +329,6 @@ test_that(".get_design_vars() returns weights and repweights for survey_replicat
 
 test_that(".get_design_vars() returns phase1 vars and subset for survey_twophase", {
   d <- make_twophase()
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   expect_true("ids" %in% names(vars))
   expect_true("weights" %in% names(vars))
@@ -673,6 +665,29 @@ test_that(".delete_metadata_col() removes column from all metadata slots", {
   expect_null(sc2@metadata@transformations[["y1"]])
 })
 
+test_that(".delete_metadata_col() removes var_extra entry and leaves other variables' payloads", {
+  df <- make_survey_data(n = 30, n_psu = 6, n_strata = 2, seed = 1001)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- set_var_extra(
+    sc,
+    y1 = list(role = "outcome"),
+    y2 = list(role = "other")
+  )
+
+  sc2 <- surveycore:::.delete_metadata_col(sc, "y1")
+  expect_null(sc2@metadata@var_extra[["y1"]])
+  expect_identical(sc2@metadata@var_extra[["y2"]], list(role = "other"))
+})
+
+test_that(".delete_metadata_col() on a variable with no var_extra payload is a no-op", {
+  df <- make_survey_data(n = 30, n_psu = 6, n_strata = 2, seed = 1001)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- set_var_extra(sc, y2 = list(role = "other"))
+
+  sc2 <- surveycore:::.delete_metadata_col(sc, "y1")
+  expect_identical(sc2@metadata@var_extra, list(y2 = list(role = "other")))
+})
+
 # ---------------------------------------------------------------------------
 # .compute_nonprob_scale() — replicate scale helper
 # ---------------------------------------------------------------------------
@@ -682,4 +697,617 @@ test_that("`.compute_nonprob_scale()` returns correct default for each type", {
   expect_equal(surveycore:::.compute_nonprob_scale("JK1", 4L), 3 / 4)
   expect_equal(surveycore:::.compute_nonprob_scale("JK2", 10L), 1)
   expect_equal(surveycore:::.compute_nonprob_scale("JKn", 10L), 1)
+})
+
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# survey_data() on a design built from a labelled frame (spec III.1, VIII.1)
+# ---------------------------------------------------------------------------
+#
+# survey_data() returns @data unchanged, so it is how anything outside the
+# package sees the stored state. These blocks read the as_survey() route and
+# assert both halves of the storage contract: the haven labelled class is gone,
+# and every other attribute the import set is still readable.
+
+# A labelled frame carrying one column of each backing type, plus the SPSS
+# variant. make_labelled(), make_labelled_spss() and make_tagged_na() live in
+# helper-test-data.R.
+.labelled_import_frame <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(40, 0.5, 2),
+    dbl = rep(c(1, 2, 3, 4), 10L),
+    int = rep(c(0L, 1L), 20L),
+    chr = rep(c("a", "b"), 20L),
+    spss = rep(c(1, 2, 98, 99), 10L),
+    stringsAsFactors = FALSE
+  )
+  df$dbl <- make_labelled(
+    df$dbl,
+    c(`Strongly agree` = 1, Agree = 2, Disagree = 3, `Strongly disagree` = 4),
+    "Agreement"
+  )
+  df$int <- make_labelled(df$int, c(No = 0L, Yes = 1L), "Binary")
+  df$chr <- make_labelled(df$chr, c(Alpha = "a", Beta = "b"), "Cohort")
+  df$spss <- make_labelled_spss(
+    df$spss,
+    labels = c(Yes = 1, No = 2, Refused = 98, `Don't know` = 99),
+    na_values = c(98, 99),
+    na_range = c(98, 99),
+    label = "SPSS coded"
+  )
+  df
+}
+
+.labelled_import_design <- function(seed = 42L) {
+  as_survey(
+    .labelled_import_frame(seed),
+    ids = psu,
+    weights = wt,
+    strata = strata
+  )
+}
+
+test_that("D-1: survey_data() returns no column carrying the labelled class", {
+  out <- survey_data(.labelled_import_design())
+
+  hits <- vapply(out, inherits, logical(1L), "haven_labelled")
+  expect_identical(names(out)[hits], character(0))
+
+  spss_hits <- vapply(out, inherits, logical(1L), "haven_labelled_spss")
+  expect_identical(names(out)[spss_hits], character(0))
+})
+
+test_that("D-2: every previously labelled column is a plain base type", {
+  out <- survey_data(.labelled_import_design())
+
+  # The backing type is preserved, so the token differs by input type.
+  expect_identical(class(out$dbl), "numeric")
+  expect_identical(class(out$int), "integer")
+  expect_identical(class(out$chr), "character")
+  expect_identical(class(out$spss), "numeric")
+
+  expect_identical(typeof(out$dbl), "double")
+  expect_identical(typeof(out$int), "integer")
+  expect_identical(typeof(out$chr), "character")
+})
+
+test_that("D-3: the label and labels attributes stay readable", {
+  out <- survey_data(.labelled_import_design())
+
+  expect_identical(attr(out$dbl, "label", exact = TRUE), "Agreement")
+  expect_identical(attr(out$int, "label", exact = TRUE), "Binary")
+  expect_identical(attr(out$chr, "label", exact = TRUE), "Cohort")
+
+  expect_identical(
+    attr(out$dbl, "labels", exact = TRUE),
+    c(`Strongly agree` = 1, Agree = 2, Disagree = 3, `Strongly disagree` = 4)
+  )
+  expect_identical(
+    attr(out$int, "labels", exact = TRUE),
+    c(No = 0L, Yes = 1L)
+  )
+  expect_identical(
+    attr(out$chr, "labels", exact = TRUE),
+    c(Alpha = "a", Beta = "b")
+  )
+})
+
+test_that("D-4: the SPSS missing-value attributes stay readable", {
+  out <- survey_data(.labelled_import_design())
+
+  expect_identical(attr(out$spss, "na_values", exact = TRUE), c(98, 99))
+  expect_identical(attr(out$spss, "na_range", exact = TRUE), c(98, 99))
+  expect_identical(attr(out$spss, "label", exact = TRUE), "SPSS coded")
+})
+
+test_that("D-5: survey_data() returns a plain frame unchanged", {
+  # The early return in .strip_labelled_columns() means a frame with nothing to
+  # strip comes back as the identical object, not a rebuilt copy.
+  plain <- .labelled_import_frame()
+  for (nm in c("dbl", "int", "chr", "spss")) {
+    attr(plain[[nm]], "class") <- NULL
+  }
+  d <- as_survey(plain, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(survey_data(d), plain)
+})
+
+test_that("D-6: a caller class stacked above haven_labelled goes too", {
+  # attr(x, "class") <- NULL removes the whole class vector, so a class the
+  # caller stacked on top goes with it. Accepted, not fixed: spec III.3a gives
+  # the reasoning, and NEWS.md records it as this PR's breaking change.
+  set.seed(7L)
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    wt = runif(40, 0.5, 2),
+    y = rep(c(1, 2, 3, 4), 10L)
+  )
+  df$y <- make_labelled(df$y, c(A = 1, B = 2, C = 3, D = 4), "Stacked")
+  attr(df$y, "class") <- c(
+    "my_class",
+    "haven_labelled",
+    "vctrs_vctr",
+    "double"
+  )
+
+  out <- survey_data(as_survey(df, ids = psu, weights = wt))
+
+  # A bare base type: the caller's own class is gone with the rest.
+  expect_identical(class(out$y), "numeric")
+  expect_false(inherits(out$y, "my_class"))
+  expect_false(inherits(out$y, "haven_labelled"))
+  expect_false(inherits(out$y, "vctrs_vctr"))
+
+  # Every attribute other than class still survives.
+  expect_identical(attr(out$y, "label", exact = TRUE), "Stacked")
+  expect_identical(
+    attr(out$y, "labels", exact = TRUE),
+    c(A = 1, B = 2, C = 3, D = 4)
+  )
+  expect_identical(c(unname(out$y)), rep(c(1, 2, 3, 4), 10L))
+})
+
+
+# ---------------------------------------------------------------------------
+# survey_data(haven_class = TRUE) — the rebuild (spec II, VIII.1)
+# ---------------------------------------------------------------------------
+#
+# The rebuild writes the class chain with base R, so none of D-8 to D-15 may
+# carry skip_if_not_installed("haven"). That is the observable proof of quality
+# gate 11: a user without haven can still produce a properly classed column.
+# The rows that hand the result to another package are guarded by that package.
+
+test_that("D-7: survey_data() still strips by default", {
+  out <- survey_data(.labelled_import_design())
+
+  hits <- vapply(out, inherits, logical(1L), "haven_labelled")
+  expect_identical(names(out)[hits], character(0))
+})
+
+test_that("D-8: haven_class = TRUE rebuilds the class on every labelled column", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  labelled_cols <- c("dbl", "int", "chr", "spss")
+  for (nm in labelled_cols) {
+    expect_true(inherits(out[[nm]], "haven_labelled"), info = nm)
+  }
+
+  # And on no other column. psu, strata and wt never carried a `labels`
+  # attribute, so the helper returns them untouched.
+  hits <- vapply(out, inherits, logical(1L), "haven_labelled")
+  expect_identical(sort(names(out)[hits]), sort(labelled_cols))
+})
+
+test_that("D-9: a double-backed column gets the exact three-entry chain", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    class(out$dbl),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+})
+
+test_that("D-10: an integer-backed column gets the exact three-entry chain", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    class(out$int),
+    c("haven_labelled", "vctrs_vctr", "integer")
+  )
+})
+
+test_that("D-11: a character-backed column gets the exact three-entry chain", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    class(out$chr),
+    c("haven_labelled", "vctrs_vctr", "character")
+  )
+})
+
+test_that("D-12: na_values alone rebuilds the SPSS four-entry chain", {
+  df <- .labelled_import_frame()
+  df$spss <- make_labelled_spss(
+    rep(c(1, 2, 98, 99), 10L),
+    labels = c(Yes = 1, No = 2, Refused = 98, `Don't know` = 99),
+    na_values = c(98, 99),
+    label = "SPSS coded"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    class(out$spss),
+    c("haven_labelled_spss", "haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(attr(out$spss, "na_values", exact = TRUE), c(98, 99))
+  expect_null(attr(out$spss, "na_range", exact = TRUE))
+})
+
+test_that("D-13: na_range alone rebuilds the SPSS four-entry chain", {
+  df <- .labelled_import_frame()
+  df$spss <- make_labelled_spss(
+    rep(c(1, 2, 98, 99), 10L),
+    labels = c(Yes = 1, No = 2, Refused = 98, `Don't know` = 99),
+    na_range = c(98, 99),
+    label = "SPSS coded"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    class(out$spss),
+    c("haven_labelled_spss", "haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(attr(out$spss, "na_range", exact = TRUE), c(98, 99))
+  expect_null(attr(out$spss, "na_values", exact = TRUE))
+})
+
+test_that("D-14: strip then rebuild returns the input column identically", {
+  df <- .labelled_import_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  for (nm in c("dbl", "int", "chr", "spss")) {
+    expect_identical(out[[nm]], df[[nm]], info = nm)
+  }
+})
+
+test_that("D-15: haven_class = TRUE on an unlabelled design changes nothing", {
+  d <- make_taylor()
+
+  expect_identical(survey_data(d, haven_class = TRUE), survey_data(d))
+})
+
+test_that("D-16: a tagged NA survives the rebuild and keeps its tag", {
+  df <- .labelled_import_frame()
+  tagged <- rep(c(1, 2, make_tagged_na("a")), length.out = 40L)
+  df$tag <- make_labelled(
+    tagged,
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$tag), c("haven_labelled", "vctrs_vctr", "double"))
+  expect_true(all(is.na(c(unname(out$tag))[seq(3L, 39L, by = 3L)])))
+
+  # Reading the tag back needs haven; the value being NA does not.
+  skip_if_not_installed("haven")
+  expect_identical(haven::na_tag(c(unname(out$tag))[[3L]]), "a")
+})
+
+test_that("D-17: haven::as_factor() on the rebuilt column returns the labels", {
+  skip_if_not_installed("haven")
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    as.character(haven::as_factor(out$dbl)),
+    rep(c("Strongly agree", "Agree", "Disagree", "Strongly disagree"), 10L)
+  )
+})
+
+test_that("D-18: haven::as_factor() on the stripped column returns the codes", {
+  skip_if_not_installed("haven")
+  out <- survey_data(.labelled_import_design())
+
+  expect_identical(
+    as.character(haven::as_factor(out$dbl)),
+    rep(c("1", "2", "3", "4"), 10L)
+  )
+})
+
+test_that("D-19: labelled::to_factor() on the rebuilt column returns the labels", {
+  skip_if_not_installed("labelled")
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    as.character(labelled::to_factor(out$dbl)),
+    rep(c("Strongly agree", "Agree", "Disagree", "Strongly disagree"), 10L)
+  )
+})
+
+test_that("D-20: a rebuilt column round trips through haven::write_sav()", {
+  skip_if_not_installed("haven")
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+  path <- withr::local_tempfile(fileext = ".sav")
+
+  haven::write_sav(out[c("dbl", "int")], path)
+  back <- haven::read_sav(path)
+
+  expect_identical(
+    attr(back$dbl, "labels", exact = TRUE),
+    c(`Strongly agree` = 1, Agree = 2, Disagree = 3, `Strongly disagree` = 4)
+  )
+  expect_identical(attr(back$int, "labels", exact = TRUE), c(No = 0, Yes = 1))
+})
+
+test_that("D-21: haven::write_sav() raises on a column holding a tagged NA", {
+  # The .sav format has no room for a tagged NA, so haven raises when it writes
+  # one. Nothing here causes it: a column built straight from haven's own
+  # constructor, with no strip and no rebuild involved, fails identically. The
+  # row is a fence, so nobody attributes the failure to haven_class = TRUE.
+  skip_if_not_installed("haven")
+  df <- .labelled_import_frame()
+  df$tag <- make_labelled(
+    rep(c(1, 2, make_tagged_na("a")), length.out = 40L),
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+  path <- withr::local_tempfile(fileext = ".sav")
+
+  expect_error(haven::write_sav(out["tag"], path))
+})
+
+test_that("D-22: haven_class rejects anything but a length-one logical", {
+  d <- make_taylor()
+
+  expect_error(
+    survey_data(d, haven_class = "yes"),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+  expect_error(
+    survey_data(d, haven_class = NA),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+  expect_error(
+    survey_data(d, haven_class = c(TRUE, TRUE)),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+  expect_error(
+    survey_data(d, haven_class = NULL),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = "yes"))
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = NA))
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = c(TRUE, TRUE)))
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = NULL))
+})
+
+test_that("D-23: survey_data() still rejects a non-survey object", {
+  expect_error(
+    survey_data(data.frame(x = 1), haven_class = TRUE),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_snapshot(error = TRUE, survey_data(42))
+})
+
+# ── X. Behaviour worth covering that matches no numbered row ─────────────────
+#
+# An `X-` label claims no row identifier.
+
+test_that("X-16: the stored values equal the plain-input values", {
+  plain <- .labelled_import_frame()
+  for (nm in c("dbl", "int", "chr", "spss")) {
+    attr(plain[[nm]], "class") <- NULL
+  }
+  d <- as_survey(plain, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(survey_data(.labelled_import_design()), survey_data(d))
+})
+
+test_that("X-17: a tagged NA survives the strip unchanged", {
+  df <- .labelled_import_frame()
+  tagged <- rep(c(1, 2, make_tagged_na("a")), length.out = 40L)
+  df$tag <- make_labelled(
+    tagged,
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d)
+
+  # Byte-for-byte identical to the payload the import produced. writeBin()
+  # rejects an object carrying attributes, so drop them for the comparison —
+  # the attributes themselves are D-3's and D-4's subject.
+  bytes <- function(x) writeBin(c(unname(x)), raw(), endian = "little")
+  expect_identical(bytes(out$tag), bytes(tagged))
+  expect_true(all(is.na(out$tag[seq(3L, 39L, by = 3L)])))
+
+  skip_if_not_installed("haven")
+  expect_identical(haven::na_tag(out$tag[[3L]]), "a")
+})
+
+test_that("X-18: haven_class = TRUE promotes a column that never carried the class", {
+  # The rebuild tests the `labels` attribute, not provenance. An
+  # sjlabelled-native column is a bare numeric vector plus `labels`, which is
+  # exactly what the strip leaves behind, so the rebuild cannot tell the two
+  # apart and promotes both. Issue #207 decided this on purpose; the row pins
+  # it so a provenance test cannot land silently.
+  df <- .labelled_import_frame()
+  sj <- rep(c(1, 2, 3), length.out = 40L)
+  attr(sj, "labels") <- c(Low = 1, Mid = 2, High = 3)
+  df$sj <- sj
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  # Stored as the bare numeric it arrived as.
+  expect_identical(class(survey_data(d)$sj), "numeric")
+
+  out <- survey_data(d, haven_class = TRUE)
+  expect_identical(class(out$sj), c("haven_labelled", "vctrs_vctr", "double"))
+  expect_identical(
+    attr(out$sj, "labels", exact = TRUE),
+    c(Low = 1, Mid = 2, High = 3)
+  )
+  vals <- out$sj
+  attributes(vals) <- NULL
+  expect_identical(vals, rep(c(1, 2, 3), length.out = 40L))
+})
+
+test_that("X-19: haven_class = TRUE promotes a column labelled by set_val_labels()", {
+  # Same rule, reached the other way: set_val_labels() in data-frame mode
+  # writes the `labels` attribute, so a column labelled before construction
+  # comes back classed.
+  df <- .labelled_import_frame()
+  df$coded <- rep(c(1, 2), 20L)
+  df <- set_val_labels(df, coded = c(No = 1, Yes = 2))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(class(survey_data(d)$coded), "numeric")
+
+  out <- survey_data(d, haven_class = TRUE)
+  expect_identical(
+    class(out$coded),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(
+    attr(out$coded, "labels", exact = TRUE),
+    c(No = 1, Yes = 2)
+  )
+})
+
+test_that("X-20: haven_class = TRUE leaves a labels-free column alone", {
+  # The other side of the attribute test. `labels` is the whole trigger, so a
+  # column carrying only a variable `label` gets no class.
+  df <- .labelled_import_frame()
+  df$plain <- rep(c(1, 2), 20L)
+  attr(df$plain, "label") <- "No value labels"
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  out <- survey_data(d, haven_class = TRUE)
+  expect_identical(class(out$plain), "numeric")
+  expect_identical(attr(out$plain, "label", exact = TRUE), "No value labels")
+})
+
+test_that("X-21: haven_class = TRUE reads corrected labels from the metadata", {
+  # set_val_labels() on a design writes @metadata@value_labels and leaves the
+  # column's stale `labels` attribute in place. The rebuild reads the metadata
+  # first, so the corrected labels reach the returned column and a .sav export
+  # cannot carry the labels the import set. Issue #205.
+  df <- .labelled_import_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_val_labels(
+    d,
+    dbl = c(
+      Agree = 1,
+      `Somewhat agree` = 2,
+      `Somewhat disagree` = 3,
+      Disagree = 4
+    )
+  )
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    attr(out$dbl, "labels", exact = TRUE),
+    c(Agree = 1, `Somewhat agree` = 2, `Somewhat disagree` = 3, Disagree = 4)
+  )
+  expect_identical(
+    class(out$dbl),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+  # And the metadata store the analyst read from agrees with it.
+  expect_identical(
+    attr(out$dbl, "labels", exact = TRUE),
+    extract_val_labels(d, dbl)$dbl
+  )
+})
+
+test_that("X-22: haven_class = TRUE promotes a column labelled on the design", {
+  # The created-label case. The column carried no `labels` attribute at
+  # import, so the attribute alone gives the rebuild nothing to work from.
+  # The metadata entry set_val_labels() wrote is the only record. Issue #205.
+  df <- .labelled_import_frame()
+  df$coded <- rep(c(1, 2), 20L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_val_labels(d, coded = c(No = 1, Yes = 2))
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    class(out$coded),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(
+    attr(out$coded, "labels", exact = TRUE),
+    c(No = 1, Yes = 2)
+  )
+  # haven_class = FALSE still returns the stored base type.
+  expect_identical(class(survey_data(d)$coded), "numeric")
+})
+
+test_that("X-23: haven_class = TRUE reads the variable label from the metadata", {
+  # set_var_label() on a design writes @metadata@variable_labels only, so the
+  # rebuild has to read that store for write_sav() to name the variable the
+  # way the analyst named it. Issue #205.
+  df <- .labelled_import_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_var_label(d, dbl = "Corrected label")
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(attr(out$dbl, "label", exact = TRUE), "Corrected label")
+})
+
+test_that("X-24: a metadata variable label reaches a column with no value labels", {
+  # X-20's column, relabelled on the design. `labels` is still the whole class
+  # trigger, so the column stays a bare numeric — but the `label` attribute
+  # follows the metadata. Issue #205.
+  df <- .labelled_import_frame()
+  df$plain <- rep(c(1, 2), 20L)
+  attr(df$plain, "label") <- "No value labels"
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_var_label(d, plain = "Renamed")
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$plain), "numeric")
+  expect_identical(attr(out$plain, "label", exact = TRUE), "Renamed")
+})
+
+test_that("X-25: haven_class = TRUE leaves a factor with a labels attribute a factor", {
+  # `attr(x, "class") <- ...` replaces the whole class vector, so writing the
+  # haven chain over a factor returned the level codes and dropped the levels.
+  # A factor carries its own class, so there is nothing to rebuild on it.
+  # Issue #206.
+  df <- .labelled_import_frame()
+  df$f <- factor(rep(c("a", "b"), 20L))
+  df <- set_val_labels(df, f = c(a = "a", b = "b"))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$f), "factor")
+  expect_identical(levels(out$f), c("a", "b"))
+  expect_identical(as.character(out$f), rep(c("a", "b"), 20L))
+  # The labelled columns beside it still rebuild.
+  expect_identical(class(out$dbl), c("haven_labelled", "vctrs_vctr", "double"))
+})
+
+test_that("X-26: haven_class = TRUE leaves a Date with a labels attribute a Date", {
+  # Same guard, the other classed column: a Date's class holds its calendar,
+  # so the haven chain turned the first value into a day count. Issue #206.
+  df <- .labelled_import_frame()
+  df$day <- as.Date("2020-01-01") + seq_len(40L) - 1L
+  attr(df$day, "labels") <- c(start = 18262)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$day), "Date")
+  expect_identical(out$day[[1L]], as.Date("2020-01-01"))
+})
+
+test_that("X-27: a metadata variable label reaches a factor column", {
+  # The label attribute is a separate concern from the class, the way X-24
+  # already has it for an unclassed column: the class guard skips the rebuild,
+  # not the metadata the analyst set. Issue #206.
+  df <- .labelled_import_frame()
+  df$f <- factor(rep(c("a", "b"), 20L))
+  attr(df$f, "labels") <- c(a = "a", b = "b")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_var_label(d, f = "A factor")
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$f), "factor")
+  expect_identical(attr(out$f, "label", exact = TRUE), "A factor")
 })

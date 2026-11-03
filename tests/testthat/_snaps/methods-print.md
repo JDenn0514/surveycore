@@ -519,6 +519,161 @@
       10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     FALSE                
       # i 40 more rows
 
+# print.survey_replicate() renders each FPC state
+
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state("rscales")), sep = "\n")
+    Output
+      * FPC: fpc (applied in replicate scales)
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state("repweights")), sep = "\n")
+    Output
+      * FPC: fpc (applied in replicate weights)
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state("none")), sep = "\n")
+    Output
+      * FPC: fpc (not applied)
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state(NULL)), sep = "\n")
+    Output
+      * FPC: fpc (application not recorded)
+    Code
+      cat(replicate_fpc_lines(make_rep_design()), sep = "\n")
+    Output
+      * FPC: not specified
+
+# print.survey_replicate() shows the fraction of a numeric fpc
+
+    Code
+      cat(replicate_fpc_lines(make_rep_numeric_fpc(0.1)), sep = "\n")
+    Output
+      * FPC: f = 0.1 (applied in replicate scales)
+    Code
+      cat(replicate_fpc_lines(make_rep_numeric_fpc(c(0.05, 0.1, 0.1, 0.2, 0.25))),
+      sep = "\n")
+    Output
+      * FPC: f = 0.05 to 0.25 (applied in replicate scales)
+
+# summary.survey_replicate() renders each FPC state
+
+    Code
+      summary(make_rep_fpc_state("rscales"))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (applied in replicate scales)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+---
+
+    Code
+      summary(make_rep_fpc_state("repweights"))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (applied in replicate weights)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+---
+
+    Code
+      summary(make_rep_fpc_state("none"))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (not applied)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+---
+
+    Code
+      summary(make_rep_fpc_state(NULL))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (application not recorded)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+# summary.survey_replicate() shows the fraction of a numeric fpc
+
+    Code
+      summary(make_rep_numeric_fpc(0.1))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (JK1, 5 replicates)
+      Sample size: 50
+      Weighted N: 660
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 7.23 – 21.26
+      * Mean: 13.21
+      * CV: 0.258
+      Scale: 0.8
+      MSE: TRUE
+      FPC: f = 0.1 (applied in replicate scales)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
 # print.survey_taylor shows per-stage FPC for 2-stage design
 
     Code
@@ -885,4 +1040,475 @@
       Calibration provenance: none stored
       
       Metadata: 0 of 6 variable(s) labeled
+
+# summary(survey_taylor): Dataset line snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: Taylor series linearization
+      Sample size: 100
+      Weighted N: 1250
+      
+      
+      -- Design --
+      
+      IDs: psu (10 PSUs)
+      Strata: strata (2 strata)
+      Weights: wt
+      * Range: 5.38 – 22.99
+      * Mean: 12.5
+      * CV: 0.283
+      FPC: fpc
+      
+      Dataset: AAA Ipsos (February-March 2026)
+      Metadata: 0 of 8 variable(s) labeled
+
+# print(survey_taylor, metadata_info = TRUE): all six keys snapshot
+
+    Code
+      print(d, metadata_info = TRUE, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+      
+      -- Metadata --
+      
+      Survey: Antisemitic Attitudes in America 2026
+      Vendor: Ipsos KnowledgePanel Omnibus
+      Field dates: 2026-02-10 to 2026-03-04 (February-March 2026)
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_taylor, metadata_info = TRUE): period-only snapshot
+
+    Code
+      print(d, metadata_info = TRUE, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+      
+      -- Metadata --
+      
+      Field dates: February-March 2026
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_taylor): survey_name fallback header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Dataset: Antisemitic Attitudes in America 2026
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_replicate): Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (BRR, 5 replicates)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 13
+        psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C        15.3    13.2    15.3
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A        21.4    22.9    18.6
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C        12.0    15.8    12.1
+      # i 97 more rows
+      # i 2 more variables: repwt_4 <dbl>, repwt_5 <dbl>
+
+# print(survey_twophase): Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_twophase> (method: approx)
+      Dataset: AAA Ipsos (February-March 2026)
+      Phase 1 sample size: 100
+      Phase 2 sample size: 42
+      
+    Output
+      # A tibble: 100 x 11
+        psu   strata      fpc    wt    y1     y2    y3 group subset phase1_prob
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr> <lgl>        <dbl>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C     FALSE       0.0687
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A     TRUE        0.0687
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C     FALSE       0.0687
+      # i 97 more rows
+      # i 1 more variable: phase2_prob <dbl>
+
+# print(survey_nonprob): Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_nonprob) with repweights: Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, BOOTSTRAP, 3 replicates) [experimental]
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 11
+        psu   strata      fpc    wt    y1     y2    y3 group   rw1   rw2   rw3
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr> <dbl> <dbl> <dbl>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C      14.6  14.0  14.4
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A      22.2  21.3  22.0
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C      14.7  14.1  14.5
+      # i 97 more rows
+
+# T-1: previously labelled columns print their own type tokens
+
+    Code
+      print(survey_data(d))
+    Output
+      # A tibble: 6 x 4
+           wt   dbl   int chr  
+        <dbl> <dbl> <int> <chr>
+      1   1.5     1     0 a    
+      2   0.8     2     1 b    
+      3   1.2     3     0 a    
+      4   2       4     1 b    
+      5   0.9     1     0 a    
+      6   1.1     2     1 b    
+
+# T-2: haven_class = TRUE prints the labelled token again
+
+    Code
+      print(survey_data(d, haven_class = TRUE))
+    Output
+      # A tibble: 6 x 4
+           wt dbl       int       chr      
+        <dbl> <dbl+lbl> <int+lbl> <chr+lbl>
+      1   1.5 1 [One]   0 [No]    a [Alpha]
+      2   0.8 2 [Two]   1 [Yes]   b [Beta] 
+      3   1.2 3 [Three] 0 [No]    a [Alpha]
+      4   2   4 [Four]  1 [Yes]   b [Beta] 
+      5   0.9 1 [One]   0 [No]    a [Alpha]
+      6   1.1 2 [Two]   1 [Yes]   b [Beta] 
+
+# T-3: labelled input leaves the design print output unchanged
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 6
+      
+    Output
+      # A tibble: 6 x 4
+           wt   dbl   int chr  
+        <dbl> <dbl> <int> <chr>
+      1   1.5     1     0 a    
+      2   0.8     2     1 b    
+      3   1.2     3     0 a    
+      4   2       4     1 b    
+      5   0.9     1     0 a    
+      6   1.1     2     1 b    
+
+# print.survey_replicate class line shows rho for a Fay design
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (FAY, 10 replicates, rho = 0.5)
+      Sample size: 200
+      
+    Output
+      # A tibble: 200 x 18
+         psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+       2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+       3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+       4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+       5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+       6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+       7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+       8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+       9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+      10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+      # i 190 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+
+# print.survey_replicate full=TRUE puts the Rho line after Scale
+
+    Code
+      print(d, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (FAY, 10 replicates, rho = 0.5)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design specification --
+      
+      * Weights: wt
+      * Replicates: 10 FAY replicate weight column(s)
+      * Scale: 0.4
+      * Rho: 0.5
+      * MSE: TRUE
+      * FPC: not specified
+      
+      
+      -- Weight distribution --
+      
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 200 x 18
+         psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+       2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+       3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+       4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+       5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+       6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+       7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+       8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+       9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+      10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+      # i 190 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+
+# summary.survey_replicate shows rho on the type line and after Scale
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (FAY, 10 replicates, rho = 0.5)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      Scale: 0.4
+      Rho: 0.5
+      MSE: TRUE
+      
+      Metadata: 0 of 18 variable(s) labeled
+
+# a Fay design with no rho key prints and summarises no rho
+
+    Code
+      print(d, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (FAY, 10 replicates)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design specification --
+      
+      * Weights: wt
+      * Replicates: 10 FAY replicate weight column(s)
+      * Scale: 0.4
+      * MSE: TRUE
+      * FPC: not specified
+      
+      
+      -- Weight distribution --
+      
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 200 x 18
+         psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+       2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+       3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+       4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+       5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+       6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+       7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+       8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+       9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+      10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+      # i 190 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (FAY, 10 replicates)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      Scale: 0.4
+      MSE: TRUE
+      
+      Metadata: 0 of 18 variable(s) labeled
+
+# print() with visible_vars output matches snapshot
+
+    Code
+      print(d, n = 3L)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      
+    Output
+      # A tibble: 50 x 2
+           y1     y2
+        <dbl>  <dbl>
+      1  50.9 -0.122
+      2  20.1  0.188
+      3  52.8  0.119
+      # i 47 more rows
+    Message
+      
+      i Design variables preserved but hidden: psu, wt, strata, and fpc.
+      i Use `print(x, full = TRUE)` to show all variables.
+    Code
+      print(d, n = 3L, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design specification --
+      
+      * IDs: psu (10 PSUs)
+      * Strata: strata (2 strata)
+      * Weights: wt
+      * Weights provided as: sampling weights
+      * FPC: fpc
+      * Nesting: TRUE
+      
+      Design variables: psu, wt, strata, and fpc
+      
+      
+      -- Weight distribution --
+      
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 50 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   378  14.3  50.9 -0.122     1 A    
+      2 psu_1 stratum_1   378  21.8  20.1  0.188     0 B    
+      3 psu_1 stratum_1   378  14.4  52.8  0.119     1 B    
+      # i 47 more rows
 

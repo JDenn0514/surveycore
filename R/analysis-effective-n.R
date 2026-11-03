@@ -97,6 +97,9 @@
 #' # Kish effective N (weight-only approximation)
 #' get_effective_n(d)
 #'
+#' # Kish effective N by group (one row per level of riagendr)
+#' get_effective_n(d, group = riagendr)
+#'
 #' # Full DEFF effective N for a specific variable
 #' get_effective_n(d, ridageyr, method = "deff")
 #' @family analysis

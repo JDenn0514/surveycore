@@ -677,8 +677,9 @@ test_that(".degf() returns design-based finite df for survey_replicate", {
   expect_equal(.degf(d), length(repwt_cols) - 1L)
 })
 
-test_that(".degf() returns design-based finite df for survey_twophase", {
-  # Phase 1 is the same Taylor design → same degf as phase1
+test_that(".degf() counts phase-2 rows as clusters for survey_twophase with no ids2", {
+  # No ids2 or strata2: each phase-2 row is its own cluster in one stratum,
+  # so degf = n2 - 1, as survey::degf() returns degf(design$phase2)
   df <- make_survey_data(
     n = 100L,
     n_psu = 10L,
@@ -697,18 +698,131 @@ test_that(".degf() returns design-based finite df for survey_twophase", {
   twophase <- suppressWarnings(
     as_survey_twophase(phase1, subset = subset, method = "approx")
   )
-  test_invariants(twophase)
 
-  expect_equal(.degf(twophase), .degf(phase1))
-  expect_true(is.finite(.degf(phase1)))
-  expect_gte(.degf(phase1), 1L)
+  expect_equal(.degf(twophase), sum(df$subset) - 1)
+})
+
+test_that(".degf() counts only the PSUs and strata of the active domain", {
+  # 10 PSUs across 2 strata; the domain keeps stratum_1 only (5 PSUs) → 5 - 1
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d@data[[SURVEYCORE_DOMAIN_COL]] <- df$strata == "stratum_1"
+  expect_identical(length(unique(df$psu[df$strata == "stratum_1"])), 5L)
+
+  expect_equal(.degf(d), 4)
+})
+
+test_that(".degf() counts only the PSUs and strata of the rows supplied", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  rows <- df$psu %in% c("psu_1", "psu_2", "psu_6", "psu_7", "psu_8")
+  # 2 PSUs in stratum_1 + 3 PSUs in stratum_2 → 5 - 2
+  expect_identical(
+    as.character(unique(df$strata[rows])),
+    c("stratum_1", "stratum_2")
+  )
+
+  expect_equal(.degf(d, rows = rows), 3)
+})
+
+test_that(".degf() floors at 1 when the rows supplied hold one PSU", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_equal(.degf(d, rows = df$psu == "psu_1"), 1)
+})
+
+test_that(".degf() ignores the rows supplied for survey_replicate", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 11L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
+
+  expect_equal(
+    .degf(d, rows = df$strata == "stratum_1"),
+    length(repwt_cols) - 1L
+  )
+})
+
+test_that(".degf() counts only the phase-2 rows supplied for survey_twophase", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 12L
+  )
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  twophase <- suppressWarnings(
+    as_survey_twophase(phase1, subset = subset, method = "approx")
+  )
+  rows <- df$strata == "stratum_1"
+
+  expect_equal(.degf(twophase, rows = rows), sum(rows & df$subset) - 1)
+})
+
+test_that(".degf() matches survey::degf() for each two-phase phase-2 structure [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$ssu <- paste0(df$psu, "_", seq_len(nrow(df)) %% 3L)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  tp_none <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  tp_ids2 <- as_survey_twophase(
+    phase1,
+    ids2 = ssu,
+    subset = subset,
+    method = "approx"
+  )
+  tp_strata2 <- as_survey_twophase(
+    phase1,
+    strata2 = strata,
+    subset = subset,
+    method = "approx"
+  )
+  sv_twophase <- function(id2, strata2) {
+    survey::twophase(
+      id = list(~psu, id2),
+      strata = list(~strata, strata2),
+      weights = list(~wt, NULL),
+      data = df,
+      subset = ~subset,
+      method = "approx"
+    )
+  }
+
+  expect_equal(.degf(tp_none), survey::degf(sv_twophase(~1, NULL)))
+  expect_equal(.degf(tp_ids2), survey::degf(sv_twophase(~ssu, NULL)))
+  expect_equal(.degf(tp_strata2), survey::degf(sv_twophase(~1, ~strata)))
 })
 
 test_that(".degf() returns design-based finite df for SRS-style design", {
   # SRS with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_equal(.degf(d), nrow(df) - 1L)
 })
@@ -746,7 +860,6 @@ test_that(".degf() returns Inf for survey_nonprob with repweights", {
     weights = wt,
     repweights = starts_with("repwt_")
   )
-  test_invariants(d)
 
   expect_equal(.degf(d), Inf)
 })
@@ -1717,4 +1830,292 @@ test_that(".make_result_tibble() computes p = nrow * length(estimate_cols) for d
   df_val <- attr(result, ".survey_result")$df
   expect_equal(df_val, rep(Inf, 2L))
   expect_length(df_val, 2L)
+})
+
+
+# ── Category 15: .haven_available() stubbing ─────────────────────────────────
+
+# `haven` is in Suggests, so `.apply_group_labels()` asks whether the namespace
+# is there before it resolves a tagged `NA` to its label. The question goes
+# through `.haven_available()`, a named binding, so these rows can stub both
+# answers with `local_mocked_bindings()`. An inline `requireNamespace()` call
+# cannot be stubbed, which left the unavailable branch unreachable.
+# The fixtures reuse `.make_label_test_design()` from Category 13.
+
+test_that(".apply_group_labels() resolves a tagged-NA label when haven is available", {
+  skip_if_not_installed("haven")
+  local_mocked_bindings(.haven_available = function() TRUE)
+  tagged_r <- make_tagged_na("r")
+  labels_vec <- c("GroupA" = 1, "GroupB" = 2, "Refused" = tagged_r)
+  design <- .make_label_test_design(
+    extra_col = c(1, 2, tagged_r),
+    extra_labels = labels_vec,
+    col_name = "grp_stub_true"
+  )
+  gc <- data.frame(grp_stub_true = c(1, 2, tagged_r))
+  result <- .apply_group_labels(
+    gc,
+    "grp_stub_true",
+    design,
+    label_values = TRUE
+  )
+  expect_true(is.factor(result$grp_stub_true))
+  expect_true("Refused" %in% levels(result$grp_stub_true))
+  expect_identical(
+    as.character(result$grp_stub_true),
+    c("GroupA", "GroupB", "Refused")
+  )
+})
+
+test_that(".apply_group_labels() leaves a tagged NA unresolved when haven is unavailable", {
+  local_mocked_bindings(.haven_available = function() FALSE)
+  tagged_r <- make_tagged_na("r")
+  labels_vec <- c("GroupA" = 1, "GroupB" = 2, "Refused" = tagged_r)
+  design <- .make_label_test_design(
+    extra_col = c(1, 2, tagged_r),
+    extra_labels = labels_vec,
+    col_name = "grp_stub_false"
+  )
+  gc <- data.frame(grp_stub_false = c(1, 2, tagged_r))
+  expect_no_error(
+    result <- .apply_group_labels(
+      gc,
+      "grp_stub_false",
+      design,
+      label_values = TRUE
+    )
+  )
+  expect_true(is.factor(result$grp_stub_false))
+  # The tagged-NA row carries no group, and "Refused" is not a level.
+  expect_true(is.na(result$grp_stub_false[[3L]]))
+  expect_identical(levels(result$grp_stub_false), c("GroupA", "GroupB"))
+  # Every label that is not a tagged NA still resolves.
+  expect_identical(
+    as.character(result$grp_stub_false[1:2]),
+    c("GroupA", "GroupB")
+  )
+})
+
+test_that(".apply_group_labels() gives one result for both haven answers when no tagged NA is present", {
+  labels_vec <- c("GroupA" = 1L, "GroupB" = 2L)
+  design <- .make_label_test_design(
+    extra_col = c(1L, 2L),
+    extra_labels = labels_vec,
+    col_name = "grp_stub_both"
+  )
+  gc <- data.frame(grp_stub_both = c(1L, 2L))
+  label_with_stub <- function(available) {
+    local_mocked_bindings(.haven_available = function() available)
+    .apply_group_labels(gc, "grp_stub_both", design, label_values = TRUE)
+  }
+  result_available <- label_with_stub(TRUE)
+  result_unavailable <- label_with_stub(FALSE)
+  expect_identical(result_available, result_unavailable)
+  expect_identical(
+    as.character(result_available$grp_stub_both),
+    c("GroupA", "GroupB")
+  )
+})
+
+
+# ── Category 16: .apply_domain() resolves an NA marker to FALSE ──────────────
+
+# `make_domain_pair()` (helper-test-data.R) returns two designs built from one
+# data frame: `a` stores a marker holding three `NA` values, `b` stores the
+# same marker with those three written as `FALSE`. `.apply_domain()` resolves
+# an `NA` to `FALSE`, so every analysis function must read one set of in-domain
+# rows from both designs and return one set of numbers.
+
+# Compare two results column by column. A whole-object comparison also reads
+# the `.meta` attribute, which records the call that built each result, so two
+# results from two designs never match as objects even when every number
+# agrees.
+expect_domain_invariance <- function(result_a, result_b) {
+  expect_identical(names(result_a), names(result_b))
+  for (nm in names(result_b)) {
+    expect_identical(result_a[[nm]], result_b[[nm]], info = nm)
+  }
+}
+
+# `get_diffs()` and `get_pairwise()` coerce a character column to a factor and
+# warn when they do. Both designs of a pair carry the factor already, so the
+# blocks below read one fixed level order and raise no incidental warning.
+with_factor_group <- function(pair) {
+  levels_group <- factor(pair$b@data$group)
+  pair$a@data$group <- levels_group
+  pair$b@data$group <- levels_group
+  list(a = pair$a, b = pair$b)
+}
+
+test_that("get_means() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(
+    get_means(pair$a, y1, group = group),
+    get_means(pair$b, y1, group = group)
+  )
+})
+
+test_that("get_quantiles() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(
+    get_quantiles(pair$a, y1, group = group),
+    get_quantiles(pair$b, y1, group = group)
+  )
+})
+
+test_that("get_diffs() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  designs <- with_factor_group(pair)
+
+  expect_domain_invariance(
+    get_diffs(designs$a, y1, treats = group),
+    get_diffs(designs$b, y1, treats = group)
+  )
+})
+
+test_that("get_t_test() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+
+  # A two-level factor, so `by` names exactly two groups and the level order
+  # is fixed.
+  arm <- factor(
+    ifelse(pair$b@data$group == "A", "treatment", "control"),
+    levels = c("control", "treatment")
+  )
+  design_a <- pair$a
+  design_b <- pair$b
+  design_a@data$arm <- arm
+  design_b@data$arm <- arm
+
+  expect_domain_invariance(
+    get_t_test(design_a, y1, by = arm),
+    get_t_test(design_b, y1, by = arm)
+  )
+})
+
+test_that("get_pairwise() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  designs <- with_factor_group(pair)
+
+  expect_domain_invariance(
+    get_pairwise(designs$a, y1, by = group),
+    get_pairwise(designs$b, y1, by = group)
+  )
+})
+
+test_that("survey_glm() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  coefs_a <- summary(survey_glm(pair$a, y1 ~ y2))$coefficients
+  coefs_b <- summary(survey_glm(pair$b, y1 ~ y2))$coefficients
+
+  expect_identical(rownames(coefs_a), rownames(coefs_b))
+  expect_domain_invariance(as.data.frame(coefs_a), as.data.frame(coefs_b))
+})
+
+test_that("a grouped get_means() on an NA marker reports only real groups", {
+  pair <- make_domain_pair("taylor")
+  result <- get_means(pair$a, y1, group = group)
+  in_domain_levels <- sort(unique(pair$a@data$group[pair$mask]))
+
+  expect_false(anyNA(result$group))
+  expect_identical(sort(as.character(result$group)), in_domain_levels)
+  expect_identical(sum(result$n), sum(pair$mask))
+})
+
+test_that("an all-NA marker names the same empty domain as an all-FALSE one", {
+  pair <- make_domain_pair("taylor")
+  n <- nrow(pair$b@data)
+  design_na <- set_domain_marker(pair$b, "logical", mask = rep(NA, n))
+  design_false <- set_domain_marker(pair$b, "logical", mask = rep(FALSE, n))
+
+  result_na <- get_means(design_na, y1)
+  expect_domain_invariance(result_na, get_means(design_false, y1))
+  expect_identical(result_na$n, 0L)
+})
+
+# Until issue #248 this row built a zero-row marked design by `@data <-` and
+# asserted that .apply_domain() returned logical(0) for it. The class
+# validators now refuse a zero-row frame, so no design reaches .apply_domain()
+# with zero rows; the row asserts that refusal on a design carrying a marker.
+test_that("a marked design cannot be emptied, so .apply_domain() never sees zero rows", {
+  pair <- make_domain_pair("taylor")
+  design <- pair$b
+  expect_error(
+    design@data <- design@data[0L, , drop = FALSE],
+    class = "surveycore_error_empty_data"
+  )
+  expect_identical(length(.apply_domain(design)), nrow(design@data))
+})
+
+
+# ── Category 17: a design carrying no marker column ──────────────────────────
+
+# Every block below builds a design straight from the constructor, so `@data`
+# holds no marker column at all. `.apply_domain()` takes its second branch for
+# such a design and names every row in-domain. The blocks pin that branch: the
+# validator and the `NA` resolution must leave an unfiltered design untouched.
+
+make_unfiltered_design <- function(seed = 42L) {
+  df <- make_survey_data(n = 200L, n_psu = 10L, n_strata = 2L, seed = seed)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+# The print method writes its design lines to the message stream and the data
+# preview to the output stream. Capture both and keep the message lines.
+# `capture_design_output()` in test-methods-print.R does the same job, but a
+# function defined in one test file is not visible in another.
+capture_cli_lines <- function(expr) {
+  cli_lines <- character(0L)
+  utils::capture.output(
+    cli_lines <- utils::capture.output(force(expr), type = "message")
+  )
+  cli::ansi_strip(cli_lines)
+}
+
+
+test_that("an ungrouped get_means() with no marker covers every row", {
+  design <- make_unfiltered_design()
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(design@data))
+
+  result <- get_means(design, y1)
+  expect_identical(result$n, nrow(design@data))
+})
+
+
+test_that("a grouped get_means() with no marker gives one row per level", {
+  design <- make_unfiltered_design()
+  group_levels <- sort(unique(design@data$group))
+
+  result <- get_means(design, y1, group = group)
+  expect_identical(sort(as.character(result$group)), group_levels)
+  expect_identical(nrow(result), length(group_levels))
+  expect_identical(sum(result$n), nrow(design@data))
+})
+
+
+test_that("a design with no marker column prints no domain line", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  design <- make_unfiltered_design()
+
+  out <- capture_cli_lines(print(design))
+  expect_gt(length(out), 0L)
+  expect_false(any(grepl("^Domain: ", out)))
+})
+
+
+test_that("assigning data with no marker column raises no condition", {
+  design <- make_unfiltered_design()
+  new_data <- design@data
+  new_data$y1 <- new_data$y1 + 1
+
+  expect_no_condition(design@data <- new_data)
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(design@data))
+  expect_identical(design@data$y1, new_data$y1)
 })

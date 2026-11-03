@@ -71,8 +71,8 @@ for each of these categories:
     is that tested?
 
 Also check the mechanic rules:
-- Is `test_invariants()` specified as the first assertion in every
-  constructor test block?
+- Is `test_invariants()` specified once per constructor per test file,
+  rather than in every constructing block?
 - Is the dual pattern (class= + snapshot) specified for all Layer 3 errors?
 - Is `class=` required on every error class in the spec?
 

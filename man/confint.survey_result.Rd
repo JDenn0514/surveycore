@@ -32,7 +32,11 @@ using the t-distribution with per-parameter degrees of freedom stored in
 For non-calibrated Taylor, replicate, and nonprob designs, \code{df = Inf} is
 stored, so \code{qt(1 - (1 - level)/2, df = Inf)} equals \code{qnorm(...)} — a normal
 approximation. For calibrated Taylor designs, per-cell finite df values are
-used.
+used. Either way the stored df is the one behind the result's \code{ci_low} and
+\code{ci_high} columns, so for \code{get_means()}, \code{get_totals()}, \code{get_freqs()},
+\code{get_ratios()} and \code{get_covariance()}, \code{confint(object, level = l)} returns
+the same interval as those columns when the result was computed at
+\code{conf_level = l}. This holds on a filtered (domain) design too.
 
 When \code{SE(object)[i]} is \code{NA}, the corresponding CI row is \code{c(NA, NA)}.
 }

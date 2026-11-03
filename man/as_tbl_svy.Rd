@@ -7,11 +7,14 @@
 as_tbl_svy(x)
 }
 \arguments{
-\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.
-\code{survey_nonprob} is not supported and will error.}
+\item{x}{A \code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, or
+\code{survey_nonprob} object.}
 }
 \value{
-A \code{srvyr::tbl_svy} object.
+A \code{srvyr::tbl_svy} object. Value labels are not carried into the
+returned object — the \code{survey} package has no metadata system. To read the
+data back with \code{haven}-style classes rebuilt, use
+\code{survey_data(x, haven_class = TRUE)} on the surveycore design instead.
 }
 \description{
 Converts a surveycore design object to an \code{srvyr} \code{tbl_svy} by first
@@ -39,9 +42,9 @@ if (
 \seealso{
 \code{\link[=from_tbl_svy]{from_tbl_svy()}} to convert back from a \code{tbl_svy} object
 
-Other conversion: 
-\code{\link{as_svydesign}()},
-\code{\link{from_svydesign}()},
-\code{\link{from_tbl_svy}()}
+Other conversion:
+\code{\link[=as_svydesign]{as_svydesign()}},
+\code{\link[=from_svydesign]{from_svydesign()}},
+\code{\link[=from_tbl_svy]{from_tbl_svy()}}
 }
 \concept{conversion}

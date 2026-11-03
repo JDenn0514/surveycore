@@ -69,7 +69,7 @@ For every PR:
   - Changelog entry written and committed on this branch
 - Are function-specific criteria present and complete?
   (e.g., for constructors: all three design types tested, `test_invariants()`
-  as first assertion; for analysis functions: oracle values verified)
+  once per constructor per file; for analysis functions: oracle values verified)
 - Is the 98%+ line coverage requirement stated?
 - Is `plans/error-messages.md` update listed as a criterion where new error
   classes are introduced?
@@ -92,7 +92,7 @@ For every PR, check that all required files are listed:
 
 - `R/[function].R` — implementation file
 - `tests/testthat/test-[function].R` — test file
-- `changelog/phase-{X}/feature-[name].md` — changelog entry
+- `changelog/feat-[slug].md` — changelog entry
 - NAMESPACE and man/ (implicitly via `devtools::document()` criterion)
 - `plans/error-messages.md` update (if new error classes are introduced)
 - `tests/testthat/helper-test-data.R` update (if new test helpers are needed)

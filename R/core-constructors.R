@@ -66,7 +66,12 @@
 #'     on a calibrated design with [update_design()] makes `@calibration`
 #'     stale. Clear `@calibration` manually after any weight column change.
 #'
-#' @return A `survey_taylor` object.
+#' @return A `survey_taylor` object. Columns imported with `haven`-style value
+#'   labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @section Tidy-select:
 #' All design variable arguments (`ids`, `probs`, `weights`, `strata`,
@@ -182,6 +187,12 @@ as_survey <- function(
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
+
+  # Drops the haven labelled class from every column, keeping every other
+  # attribute. This runs before any validation because the weight and fpc
+  # checks below read this frame, not @data, so the `data` property setter has
+  # not fired when they run. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
 
   # ── Capture all quosures at top (before any resolution) ────────────────────
   ids_quo <- rlang::enquo(ids)
@@ -546,6 +557,7 @@ as_survey <- function(
 
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Validate calibration argument ──────────────────────────────────────────
 
@@ -560,6 +572,173 @@ as_survey <- function(
     calibration = calibration,
     call = call
   )
+}
+
+
+# ── as_survey_replicate() FPC helpers (issue #320) ────────────────────────────
+
+# The column a replicate `fpc` names, or NULL. A bare symbol or a single
+# string equal to a column name of `data` is a column, whatever the calling
+# environment holds. Anything else is a value, evaluated by
+# .resolve_replicate_fpc(). Returns NULL when `data` is not a data frame, so
+# .validate_data_frame() reports that first.
+.replicate_fpc_column <- function(fpc_quo, data) {
+  if (!is.data.frame(data)) {
+    return(NULL)
+  }
+  expr <- rlang::quo_get_expr(fpc_quo)
+  name <- if (rlang::is_symbol(expr)) {
+    rlang::as_string(expr)
+  } else if (rlang::is_string(expr)) {
+    expr
+  } else {
+    return(NULL)
+  }
+  if (name %in% names(data)) name else NULL
+}
+
+#' Evaluate and check a numeric replicate FPC
+#'
+#' Applies the rules of `survey:::svrepdesign.default` lines 132-147, with two
+#' differences: `fpctype` must match exactly, and a scalar recycles to `R`.
+#' Raises `surveycore_error_replicate_fpc_invalid` (register rows RF-3a to
+#' RF-3g), in that order.
+#'
+#' @param fpc_quo The `fpc` quosure. Evaluated with an empty data mask, so
+#'   the `.env` pronoun works and no column of `data` is visible.
+#' @param fpctype The `fpctype` argument as supplied.
+#' @param n_rep The number of replicate columns.
+#' @param call The environment the error is reported from.
+#' @return A list of two unnamed double vectors of length `n_rep`:
+#'   `fraction` (`f`) and `correction` (`1 - f`), each exactly as the caller
+#'   gave its own form.
+#' @keywords internal
+#' @noRd
+.resolve_replicate_fpc <- function(
+  fpc_quo,
+  fpctype,
+  n_rep,
+  call = rlang::caller_env()
+) {
+  type_fix <- paste0(
+    "Pass {.code fpctype = \"fraction\"} or ",
+    "{.code fpctype = \"correction\"}."
+  )
+  if (is.null(fpctype)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg fpc} needs {.arg fpctype}.",
+        "i" = paste0(
+          "The same value reads as the sampling fraction {.code f} or as ",
+          "the correction {.code 1 - f}, and the two give different ",
+          "standard errors."
+        ),
+        "v" = type_fix
+      ),
+      class = "surveycore_error_replicate_fpc_invalid",
+      call = call
+    )
+  }
+  if (!rlang::is_string(fpctype, c("fraction", "correction"))) {
+    fpctype_txt <- if (is.character(fpctype) && length(fpctype) > 0L) {
+      paste0('"', utils::head(fpctype, 5L), '"', collapse = ", ")
+    } else {
+      paste0("an object of class <", class(fpctype)[[1L]], ">")
+    }
+    cli::cli_abort(
+      c(
+        "x" = "{.arg fpctype} must be {.val fraction} or {.val correction}.",
+        "i" = "Got {fpctype_txt}.",
+        "v" = type_fix
+      ),
+      class = "surveycore_error_replicate_fpc_invalid",
+      call = call
+    )
+  }
+
+  value_fix <- "Pass a number or one value per replicate column."
+  fpc <- rlang::try_fetch(
+    rlang::eval_tidy(fpc_quo, data = list()),
+    error = function(cnd) {
+      cli::cli_abort(
+        c(
+          "x" = "{.arg fpc} could not be evaluated.",
+          "i" = paste0(
+            "Only a bare column name is read as a column. Any other ",
+            "{.arg fpc} is evaluated in the calling environment."
+          ),
+          "v" = value_fix
+        ),
+        class = "surveycore_error_replicate_fpc_invalid",
+        parent = cnd,
+        call = call
+      )
+    }
+  )
+  if (!is.numeric(fpc) || !is.null(dim(fpc))) {
+    fpc_cls <- class(fpc)[[1L]]
+    cli::cli_abort(
+      c(
+        "x" = "{.arg fpc} must be a numeric vector.",
+        "i" = "Got {.cls {fpc_cls}}.",
+        "v" = value_fix
+      ),
+      class = "surveycore_error_replicate_fpc_invalid",
+      call = call
+    )
+  }
+  n_fpc <- length(fpc)
+  if (!n_fpc %in% c(1L, n_rep)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg fpc} must have length 1 or {n_rep}, one value per ",
+          "replicate column."
+        ),
+        "i" = "Got length {n_fpc}."
+      ),
+      class = "surveycore_error_replicate_fpc_invalid",
+      call = call
+    )
+  }
+  n_bad <- sum(!is.finite(fpc))
+  if (n_bad > 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg fpc} contains {n_bad} missing or non-finite value{?s}.",
+        "i" = "Every replicate needs a finite correction."
+      ),
+      class = "surveycore_error_replicate_fpc_invalid",
+      call = call
+    )
+  }
+  is_fraction <- identical(fpctype, "fraction")
+  in_range <- if (is_fraction) fpc >= 0 & fpc < 1 else fpc > 0 & fpc <= 1
+  n_bad <- sum(!in_range)
+  if (n_bad > 0L) {
+    bounds <- if (is_fraction) "[0, 1)" else "(0, 1]"
+    cli::cli_abort(
+      c(
+        "x" = "{.arg fpc} has {n_bad} value{?s} outside {.code {bounds}}.",
+        "i" = paste0(
+          "With {.code fpctype = \"fraction\"} each value is a sampling ",
+          "fraction {.code f} in {.code [0, 1)}; with ",
+          "{.code fpctype = \"correction\"} it is {.code 1 - f}, in ",
+          "{.code (0, 1]}."
+        ),
+        "v" = "Check {.arg fpctype}, or pass {.code n / N} for each replicate."
+      ),
+      class = "surveycore_error_replicate_fpc_invalid",
+      call = call
+    )
+  }
+
+  fpc <- rep_len(as.double(unname(fpc)), n_rep)
+  if (is_fraction) {
+    list(fraction = fpc, correction = 1 - fpc)
+  } else {
+    list(fraction = 1 - fpc, correction = fpc)
+  }
 }
 
 
@@ -581,26 +760,156 @@ as_survey <- function(
 #'   columns. Must select at least one column. Supports tidy-select helpers
 #'   (e.g., `starts_with("repwt")`). Required.
 #' @param type Character. Replicate weight method. One of `"JK1"` (delete-1
-#'   jackknife), `"JK2"` (delete-1 jackknife, stratified), `"JKn"` (delete-1
-#'   jackknife with varying replication counts), `"BRR"` (balanced repeated
-#'   replication), `"Fay"` (Fay's method, a modified BRR), `"bootstrap"`,
-#'   `"ACS"` (used in American Community Survey), `"successive-difference"`,
-#'   or `"other"` (user-specified scale). Case-sensitive.
+#'   jackknife), `"JK2"` (paired jackknife, two PSUs per stratum), `"JKn"`
+#'   (delete-1 jackknife with varying replication counts), `"BRR"` (balanced
+#'   repeated replication), `"Fay"` (Fay's method, a modified BRR; needs
+#'   `rho`), `"bootstrap"`, `"ACS"` (used in American Community Survey),
+#'   `"successive-difference"`, or `"other"` (user-specified scale).
+#'   Case-sensitive.
+#' @param rho Numeric scalar or `NULL` (default). The Fay shrinkage factor:
+#'   the factor the replicate weights were built with. Each Fay replicate
+#'   multiplies the weights of one half sample by `2 - rho` and the weights
+#'   of the other half sample by `rho`. Required when `type = "Fay"`. The
+#'   valid range is `[0, 1)`, and `rho = 0` gives BRR. An integer is
+#'   accepted and stored as a double; a value with a `dim` attribute is
+#'   refused. Find the value in the survey's technical documentation, where
+#'   it is often called the Fay coefficient or epsilon. surveycore cannot
+#'   check that the value matches the replicate columns.
+#'
+#'   The Fay scale `1 / (R * (1 - rho)^2)` assumes a two-PSU-per-stratum
+#'   layout with Hadamard-balanced half samples, which surveycore does not
+#'   check; the scale is exact for totals and first-order for means and
+#'   ratios. `type` stays `"Fay"` at `rho = 0`, unlike
+#'   `survey::as.svrepdesign()`, which relabels it `"BRR"`.
+#'
+#'   For every other `type`, a supplied `rho` is ignored with a warning and
+#'   the design stores no `rho`. The warning has the class
+#'   `surveycore_warning_rho_ignored` and also the class
+#'   `surveycore_warning_replicate_arg_ignored`. For `"JKn"` with no
+#'   `rscales`, the refusal fires and no `rho` warning is raised, where
+#'   `survey::svrepdesign()` raises both.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
-#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`, `"JK2"`, and
-#'   `"JKn"`; `1/R` for `"BRR"`, `"Fay"`, and `"bootstrap"`; `4/R` for
-#'   `"ACS"` and `"successive-difference"` (per Ash 2014 / Fay & Train 1995);
-#'   `1` for `"other"`.
+#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for
+#'   `"BRR"`; `1 / (R * (1 - rho)^2)` for `"Fay"`; `1/(R-1)` for
+#'   `"bootstrap"`; `4/R` for `"ACS"` and `"successive-difference"` (per
+#'   Ash 2014 / Fay & Train 1995); `1` for `"JKn"`, `"JK2"` and `"other"`.
+#'
+#'   For `"JK1"`, `"JKn"`, `"bootstrap"` and `"other"`, a supplied `scale`
+#'   is stored as given.
+#'
+#'   For `"BRR"`, `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied
+#'   `scale` is ignored with a warning of class
+#'   `surveycore_warning_replicate_arg_ignored`, and the design stores the
+#'   type's own value from the list above. `survey::svrepdesign()` also
+#'   ignores a supplied `scale` for these four types. Any value other than
+#'   `NULL` counts as supplied, even one equal to the type's own value, and
+#'   surveycore does not check it.
+#'
+#'   surveycore warns only when the caller supplies `scale` or `rscales`.
+#'   `survey::svrepdesign()` warns on every `"JK2"` call, even when the
+#'   caller supplies neither. surveycore does not copy that warning: a
+#'   warning that fires when the caller passed nothing tells the caller
+#'   nothing, and warnings that no one asserts hide new ones.
+#'
+#'   For `"Fay"`, a supplied `scale` is discarded with no warning, as
+#'   `survey::svrepdesign()` does, and the Fay scale always comes from
+#'   `rho`.
+#'
+#'   `"JK2"` is the paired jackknife. Each replicate is a half sample, so
+#'   the per-stratum factor is already inside the replicate weights:
+#'   `rscales` stays at `rep(1, R)` and the overall scale stays at `1`.
+#'   `survey::svrepdesign()` forces both. [as_survey_nonprob()] uses the
+#'   same scale of `1` but requires `rscales` for `"JK2"`.
+#'
+#'   `"JKn"` is the stratified delete-one jackknife. Its per-stratum factor
+#'   belongs in `rscales` and not in the overall scale. The factor is
+#'   `(n_h - 1) / n_h` when PSUs are selected with replacement, or when the
+#'   sampling fraction is negligible. `"JKn"` requires `rscales`, and
+#'   `rscales = NULL` is refused, as `survey::svrepdesign()` refuses it for
+#'   combined weights.
+#'
+#'   A caller who samples PSUs without replacement at a sampling fraction
+#'   that is not negligible folds the correction into each `rscales` entry
+#'   by hand, which makes the entry `(n_h - 1) * (1 - n_h / N_h) / n_h`.
+#'   Here `n_h` is the number of sample PSUs in stratum `h`, and `N_h` is
+#'   the number of population PSUs in stratum `h`. The caller supplies
+#'   `N_h` from their own sampling frame. The `fpc` argument applies the
+#'   same correction: `fpc = n_h / N_h` per replicate, with
+#'   `fpctype = "fraction"`.
+#'
+#'   `"bootstrap"` divides by `R - 1`, which is the value
+#'   `survey::svrepdesign()` computes at `bootstrap.average = 1`.
+#'   surveycore has no `bootstrap.average` argument, so a caller cannot
+#'   build a design with one and this default is always `1/(R-1)`; a design
+#'   imported from `survey` keeps its effective scale exactly, in both
+#'   directions. A bootstrap design of one replicate column gives
+#'   `scale = Inf`, and `survey::svrepdesign()` stores `Inf` for the same
+#'   input.
+#'
+#'   [as_survey_nonprob()] keeps `1/R` for `"bootstrap"`, so the same
+#'   `type` string means a different divisor in the two constructors. The
+#'   difference is a decision and not a defect; see [as_survey_nonprob()]
+#'   for the reason and the size of the gap.
+#'
+#'   Pass `scale` explicitly to reproduce numbers published before these
+#'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
+#'   `scale = 1 / R` for `"bootstrap"`. An old `"JKn"` call that passed no
+#'   `rscales` also needs `rscales = rep(1, R)`, because `"JKn"` refuses
+#'   `rscales = NULL`.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
-#'   replicate weight columns selected by `repweights`.
-#' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
-#'   correction column (a single column). Used by some replicate methods to
-#'   adjust the variance estimator. `NULL` means no FPC correction.
-#' @param fpctype Character. How `fpc` is interpreted: `"fraction"` (sampling
-#'   fraction, 0–1) or `"correction"` (multiplier for the replicate variance).
-#'   Default `"fraction"`. Case-sensitive.
+#'   replicate weight columns selected by `repweights`, with no `NA` and no
+#'   negative value. These length and value checks run on a supplied
+#'   `rscales` for every `type`, including the three that ignore it.
+#'
+#'   Required for `"JKn"`: `rscales = NULL` is refused with
+#'   `surveycore_error_stratified_jk_rscales_unset`.
+#'
+#'   For `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied
+#'   `rscales` is ignored with the same warning as a supplied `scale`,
+#'   `surveycore_warning_replicate_arg_ignored`. The design stores `NULL`,
+#'   which the variance treats as `rep(1, R)`. `survey::svrepdesign()`
+#'   forces `rep(1, R)` for these three types.
+#'
+#'   For `"JKn"` and the other five types, `"JK1"`, `"BRR"`, `"Fay"`,
+#'   `"bootstrap"` and `"other"`, a supplied `rscales` is stored as given.
+#'
+#'   For a stratified jackknife whose PSUs are selected without replacement
+#'   at a sampling fraction that is not negligible, the `scale` argument
+#'   gives the entry to build here.
+#' @param fpc A finite population correction, as a number or as one value per
+#'   replicate column, or `NULL` (default, no correction). A number is
+#'   recycled to every replicate. Accepted for `"JK1"`, `"JKn"` and
+#'   `"other"` only, as in `survey::svrepdesign()`; every other type raises
+#'   an error of class `surveycore_error_replicate_fpc_type_unsupported`.
+#'   For `"bootstrap"` the correction belongs in the replicate weights
+#'   themselves.
+#'
+#'   The correction is applied the way `survey::svrepdesign()` applies its
+#'   own `fpc`: each `rscales` entry is multiplied by `1 - f`, where `f` is
+#'   the sampling fraction for that replicate. A `NULL` `rscales` starts from
+#'   `rep(1, R)`. For `"JKn"`, `f` is the sampling fraction of the stratum
+#'   the replicate drops a PSU from, and `rscales` is still required. The
+#'   design stores the corrected `rscales` and records the fraction, so
+#'   `print()` shows it.
+#'
+#'   A column is not accepted. A bare name, or a single string, that names a
+#'   column of `data` raises an error of class
+#'   `surveycore_error_replicate_fpc_unsupported`, even when a variable of
+#'   the same name exists in the calling environment. No replicate variance
+#'   formula reads a per-row FPC column. To use such a variable, write
+#'   `.env$name`. Any other expression is evaluated in the calling
+#'   environment. A value that is not numeric, has the wrong length, holds
+#'   `NA` or lies out of range raises an error of class
+#'   `surveycore_error_replicate_fpc_invalid`.
+#' @param fpctype How to read `fpc`: `"fraction"` (the sampling fraction
+#'   `f`, with `0 <= f < 1`) or `"correction"` (`1 - f`, used as given,
+#'   with `0 < 1 - f <= 1`). Required whenever `fpc` is supplied, as in
+#'   `survey::svrepdesign()`, because the same number reads either way and
+#'   the two give different standard errors. Must match exactly. Supplying
+#'   `fpctype` without `fpc` raises an error of class
+#'   `surveycore_error_replicate_fpc_unsupported`.
 #' @param mse Logical. If `TRUE` (default), use mean-squared-error estimates
 #'   (subtract the full-sample estimate rather than the mean replicate estimate
 #'   when computing variance). Recommended for most designs.
@@ -616,7 +925,12 @@ as_survey <- function(
 #'   - *Stale calibration after `update_design()`*: changing the weight column
 #'     makes `@calibration` stale; clear it manually.
 #'
-#' @return A `survey_replicate` object.
+#' @return A `survey_replicate` object. Columns imported with `haven`-style
+#'   value labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @section Tidy-select:
 #' Both `weights` and `repweights` support tidy-select syntax:
@@ -661,6 +975,36 @@ as_survey <- function(
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
 #'   type = "JK1"
 #' )
+#'
+#' # A finite population correction: a 5% sampling fraction, folded into
+#' # the replicate scales
+#' d_fpc <- as_survey_replicate(
+#'   acs_pums_wy,
+#'   weights = pwgtp,
+#'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
+#'   type = "JK1",
+#'   fpc = 0.05,
+#'   fpctype = "fraction"
+#' )
+#'
+#' # Fay's method: 4 replicate columns built with rho = 0.5
+#' set.seed(1)
+#' df_fay <- data.frame(
+#'   y = rnorm(20),
+#'   wt = runif(20, 1, 3)
+#' )
+#' for (r in 1:4) {
+#'   factor_r <- sample(c(0.5, 1.5), 20, replace = TRUE)
+#'   df_fay[[paste0("rep", r)]] <- df_fay$wt * factor_r
+#' }
+#' d_fay <- as_survey_replicate(
+#'   df_fay,
+#'   weights = wt,
+#'   repweights = starts_with("rep"),
+#'   type = "Fay",
+#'   rho = 0.5
+#' )
+#' d_fay
 #' @references
 #' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
 #' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
@@ -674,8 +1018,7 @@ as_survey <- function(
 #' Association} \bold{88}(423), 1013--1020.
 #'
 #' Judkins, D.R. (1990) Fay's method for variance estimation.
-#' \emph{Journal of the American Statistical Association}
-#' \bold{85}(410), 895--904.
+#' \emph{Journal of Official Statistics} \bold{6}(3), 223--239.
 #'
 #' Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
 #' methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
@@ -705,19 +1048,77 @@ as_survey_replicate <- function(
     "successive-difference",
     "other"
   ),
+  rho = NULL,
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
-  fpctype = c("fraction", "correction"),
+  fpctype = NULL,
   mse = TRUE,
   calibration = NULL
 ) {
   call <- match.call()
   type <- match.arg(type)
-  fpctype <- match.arg(fpctype)
+
+  # ── Refuse the column form of a finite population correction ──────────────
+  # Issues #251 and #320. A replicate FPC is one value per replicate, which
+  # the FPC step below folds into rscales, as survey::svrepdesign() does. A
+  # per-row column cannot be applied, so a bare name or a single string that
+  # names a column of `data` is refused, even when a variable of that name
+  # exists in the calling environment: the column wins, as in data masking,
+  # and `.env$f` reaches the variable. fpctype without fpc is refused too.
+  # Both run before every other check, as the #251 refusal did.
+
+  fpc_quo <- rlang::enquo(fpc)
+  fpc_supplied <- !rlang::quo_is_null(fpc_quo)
+  if (!fpc_supplied && !is.null(fpctype)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg fpctype} was supplied without {.arg fpc}.",
+        "i" = paste0(
+          "{.arg fpctype} says how to read {.arg fpc}: {.val fraction} for ",
+          "the sampling fraction {.code f}, {.val correction} for ",
+          "{.code 1 - f}."
+        ),
+        "v" = "Remove {.arg fpctype}, or pass {.arg fpc} with it."
+      ),
+      class = "surveycore_error_replicate_fpc_unsupported"
+    )
+  }
+  fpc_col <- .replicate_fpc_column(fpc_quo, data)
+  if (!is.null(fpc_col)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg fpc} names the column {.field {fpc_col}}, and ",
+          "{.fn as_survey_replicate} does not accept an FPC column."
+        ),
+        "i" = paste0(
+          "No replicate variance formula reads a finite population ",
+          "correction column, so a column {.arg fpc} never changed a ",
+          "standard error."
+        ),
+        "i" = paste0(
+          "A replicate FPC is one value per replicate: ",
+          "{.fn survey::svrepdesign} multiplies {.arg rscales} by ",
+          "{.code 1 - f}, where {.code f} is the sampling fraction."
+        ),
+        "i" = "For a Taylor series design with an FPC, use {.fn as_survey}.",
+        "v" = paste0(
+          "Pass a number or one value per replicate column, for example ",
+          "{.code fpc = 0.05}, or write {.code .env${fpc_col}} to use a ",
+          "variable of that name from the calling environment."
+        )
+      ),
+      class = "surveycore_error_replicate_fpc_unsupported"
+    )
+  }
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
+
+  # Same strip as as_survey(), for the same reason: .validate_weights() below
+  # reads this frame, not @data. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
 
   # ── Resolve tidy-select expressions ────────────────────────────────────────
 
@@ -743,14 +1144,6 @@ as_survey_replicate <- function(
   repweights_vars <- names(repweights_cols)
   n_rep <- length(repweights_vars)
 
-  fpc_var <- .resolve_single_col(
-    rlang::enquo(fpc),
-    data,
-    "fpc",
-    class_none = "surveycore_error_fpc_not_found",
-    class_multi = "surveycore_error_fpc_multiple"
-  )
-
   # ── Business-rule validations ───────────────────────────────────────────────
 
   # Validate weights column (all zero / non-positive check via Layer 2)
@@ -759,26 +1152,218 @@ as_survey_replicate <- function(
   # Validate repweights columns are numeric (Layer 2)
   .validate_repweights(repweights_vars, data)
 
-  # Validate fpc column if provided (no NAs allowed)
-  .validate_fpc(fpc_var, data)
-
   # Error 17: rscales length must match number of replicates (Layer 2)
   .validate_rscales(rscales, n_rep)
 
+  # ── JKn requires rscales (issue #255) ───────────────────────────────────────
+  # JKn replicate weights are combined weights, so the stratum factor
+  # (n_h - 1) / n_h reaches the variance only through rscales. This check
+  # runs before the rho step, so a JKn call that also passes rho raises this
+  # error and no rho warning.
+
+  if (identical(type, "JKn") && is.null(rscales)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.code type = \"JKn\"} requires {.arg rscales}.",
+        "i" = paste0(
+          "JKn replicate weights are combined weights, so the stratum factor ",
+          "{.code (n_h - 1) / n_h} reaches the variance only through ",
+          "{.arg rscales}. {.fn survey::svrepdesign} refuses the same input."
+        ),
+        "v" = paste0(
+          "Pass {.arg rscales} with one entry per replicate column: ",
+          "{.code (n_h - 1) / n_h}, where {.code n_h} is the number of PSUs ",
+          "in the stratum the replicate drops a PSU from."
+        )
+      ),
+      class = "surveycore_error_stratified_jk_rscales_unset"
+    )
+  }
+
+  # ── Fay shrinkage factor (issue #243) ───────────────────────────────────────
+  # These rules run after every existing check, so an empty frame or a bad
+  # rscales length raises its own error first. For Fay the scale always
+  # comes from rho: a supplied `scale` is discarded with no condition, as
+  # survey::svrepdesign() does.
+
+  if (identical(type, "Fay")) {
+    if (is.null(rho)) {
+      cli::cli_abort(
+        c(
+          "x" = "{.code type = \"Fay\"} requires {.arg rho}.",
+          "i" = paste0(
+            "{.arg rho} is the Fay shrinkage factor the replicate weights were ",
+            "built with, and the Fay scale {.code 1 / (R * (1 - rho)^2)} ",
+            "needs it."
+          ),
+          "v" = paste0(
+            "Pass the value the survey's technical documentation gives, for ",
+            "example {.code rho = 0.5}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_missing"
+      )
+    }
+    if (!.is_valid_rho(rho)) {
+      rho_cls <- class(rho)[[1L]]
+      rho_txt <- if (length(rho) == 0L) {
+        "a value of length 0"
+      } else {
+        paste(format(utils::head(rho, 5L)), collapse = ", ")
+      }
+      cli::cli_abort(
+        c(
+          "x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.",
+          "i" = "Got {.cls {rho_cls}}: {rho_txt}.",
+          "v" = paste0(
+            "Pass the Fay shrinkage factor as one number, for example ",
+            "{.code rho = 0.5}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_invalid"
+      )
+    }
+    rho <- as.double(unname(rho))
+    scale <- 1 / (n_rep * (1 - rho)^2)
+  } else if (!is.null(rho)) {
+    # The value of rho is not checked for the other types (decision P2).
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.arg rho} applies only to {.code type = \"Fay\"} and was ",
+          "ignored."
+        ),
+        "i" = "The design has type {.val {type}} and stores no {.arg rho}.",
+        "v" = paste0(
+          "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate ",
+          "weights are Fay weights."
+        )
+      ),
+      class = c(
+        "surveycore_warning_rho_ignored",
+        "surveycore_warning_replicate_arg_ignored"
+      )
+    )
+    rho <- NULL
+  }
+
+  # ── Numeric finite population correction (issue #320) ─────────────────────
+  # survey::svrepdesign() applies a replicate FPC by multiplying rscales by
+  # 1 - f (svrepdesign.default lines 132-147), for JK1, JKn and "other" only.
+  # This step copies that rule. It runs after the rscales checks above, so
+  # .validate_rscales() sees the caller's rscales and JKn without rscales
+  # still raises its own error. A NULL rscales starts from rep(1, R), as
+  # survey's does. The record keys say where the correction went.
+
+  fpc_applied <- NULL
+  fpc_fraction <- NULL
+  if (fpc_supplied) {
+    if (!type %in% c("JK1", "JKn", "other")) {
+      type_bullet <- if (identical(type, "bootstrap")) {
+        paste0(
+          "A bootstrap FPC belongs in the replicate weights, built in when ",
+          "the weights are drawn. {.fn survey::svrepdesign} also refuses a ",
+          "separate one."
+        )
+      } else {
+        paste0(
+          "The design has type {.val {type}}, and ",
+          "{.fn survey::svrepdesign} refuses {.arg fpc} for it too."
+        )
+      }
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg fpc} applies to {.code type = \"JK1\"}, {.code \"JKn\"} ",
+            "and {.code \"other\"} only."
+          ),
+          "i" = type_bullet,
+          "v" = "Remove {.arg fpc}."
+        ),
+        class = "surveycore_error_replicate_fpc_type_unsupported"
+      )
+    }
+    fpc_vals <- .resolve_replicate_fpc(fpc_quo, fpctype, n_rep)
+    rscales <- (if (is.null(rscales)) rep(1, n_rep) else rscales) *
+      fpc_vals$correction
+    fpc_applied <- "rscales"
+    fpc_fraction <- fpc_vals$fraction
+  }
+
+  # ── Discard arguments survey::svrepdesign() ignores (issue #255) ────────────
+  # A supplied scale for BRR, JK2, ACS or successive-difference is discarded,
+  # and the switch below stores the type's own value. The value is not
+  # checked: any non-NULL scale counts as supplied. Fay is in the predicate's
+  # set but is excluded here, because the Fay step above has already set
+  # scale from rho and discards a supplied scale silently. A supplied rscales
+  # for JK2, ACS or successive-difference is discarded too, and the design
+  # stores NULL. .validate_rscales() has already checked it above. One
+  # warning names every discarded argument, "scale" before "rscales".
+
+  ignored <- character(0)
+  if (
+    .replicate_ignores_scale(type) &&
+      !identical(type, "Fay") &&
+      !is.null(scale)
+  ) {
+    ignored <- c(ignored, "scale")
+  }
+  if (.replicate_ignores_rscales(type) && !is.null(rscales)) {
+    ignored <- c(ignored, "rscales")
+  }
+  if (length(ignored) > 0L) {
+    n_ignored <- length(ignored)
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.arg {ignored}} {?has/have} no effect for this replicate type ",
+          "and {?was/were} ignored."
+        ),
+        "i" = paste0(
+          "For type {.val {type}}, the design stores the type's own ",
+          "{cli::qty(n_ignored)}value{?s}, as {.fn survey::svrepdesign} does."
+        ),
+        "v" = "Remove {.arg {ignored}} from the call."
+      ),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    if ("scale" %in% ignored) {
+      scale <- NULL
+    }
+    if ("rscales" %in% ignored) {
+      rscales <- NULL
+    }
+  }
+
   # ── Compute default scale based on type and n_rep ───────────────────────────
+  # No Fay entry: the Fay scale is set above from rho, whatever `scale` held.
 
   if (is.null(scale)) {
     scale <- switch(
       type,
       JK1 = (n_rep - 1L) / n_rep,
-      JK2 = (n_rep - 1L) / n_rep,
-      JKn = (n_rep - 1L) / n_rep,
+      # JK2 is the paired jackknife: each replicate is a half sample, so the
+      # per-stratum factor is already inside the replicate weights. It is not
+      # in `rscales` and not in the overall scale. The (R-1)/R delete-one
+      # jackknife factor does not apply.
+      # survey::svrepdesign() fixes scale = 1 for JK2, and
+      # as_survey_nonprob() already agrees with it (issue #242).
+      JK2 = 1,
+      # JKn is the stratified delete-one jackknife. Its per-stratum factor
+      # belongs in `rscales`, not in the overall scale. (R-1)/R is the
+      # factor of the unstratified jackknife and names "JK1" only.
+      # survey::svrepdesign() fixes scale = 1 for JKn; @param scale carries
+      # the formula and its with-replacement condition (issue #253).
+      JKn = 1,
       # BRR variance formula: (1/R) * sum((theta_r - theta)^2). The survey
       # package hardcodes this same formula internally (scale= is ignored for
       # BRR). Oracle test in test-variance-replicate.R verifies agreement.
       BRR = 1 / n_rep,
-      Fay = 1 / n_rep,
-      bootstrap = 1 / n_rep,
+      # survey::svrepdesign() computes bootstrap.average / (R - 1).
+      # surveycore has no bootstrap.average argument, so this line is
+      # always 1 / (R - 1). as_survey_nonprob() keeps 1 / R by decision
+      # D1; @param scale carries the rest (issue #253).
+      bootstrap = 1 / (n_rep - 1L),
       ACS = 4 / n_rep,
       `successive-difference` = 4 / n_rep,
       other = 1
@@ -793,9 +1378,14 @@ as_survey_replicate <- function(
     type = type,
     scale = scale,
     rscales = rscales,
-    fpc = fpc_var,
-    fpctype = fpctype,
+    # No column is ever named: a numeric fpc is recorded in the two keys
+    # below. from_svydesign() stores the same two values.
+    fpc = NULL,
+    fpctype = "fraction",
+    fpc_applied = fpc_applied,
+    fpc_fraction = fpc_fraction,
     mse = isTRUE(mse),
+    rho = rho,
     visible_vars = NULL
   )
 
@@ -803,6 +1393,7 @@ as_survey_replicate <- function(
 
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Validate calibration argument ──────────────────────────────────────────
 
@@ -830,21 +1421,30 @@ as_survey_replicate <- function(
 #' for all Phase 2 design variable arguments.
 #'
 #' @param phase1 A survey design object (inheriting from `survey_base`)
-#'   representing the Phase 1 design. Accepts `survey_taylor` or
-#'   `survey_replicate` objects.
+#'   representing the Phase 1 design. Accepts a `survey_taylor` object.
+#'   A `survey_replicate` object is refused: the phase-1 variance for a
+#'   replicate design is not implemented.
 #'   Its `@data` must contain ALL rows from both phases, plus a logical
-#'   indicator column for Phase 2 membership. Create with [as_survey()]
-#'   or [as_survey_replicate()].
+#'   indicator column for Phase 2 membership. Create with [as_survey()].
 #' @param ids2 <[`tidy-select`][tidyselect::language]> Phase 2 cluster ID
-#'   column(s). For single-stage Phase 2: `ids2 = psu2`. For multi-stage:
-#'   `ids2 = c(psu2, ssu2)`. Omit if Phase 2 has no within-stratum
-#'   clustering.
+#'   column: a single column, such as `ids2 = psu2`. Omit if Phase 2 has no
+#'   within-stratum clustering. Without `probs2` or `fpc2`, the Phase 2
+#'   inclusion probability is the fraction of clusters selected within each
+#'   Phase 2 stratum, not the fraction of rows.
+#'
+#'   Multi-stage Phase 2 is not supported. The two-phase variance uses one
+#'   Phase 2 sampling stage, so selecting more than one column, such as
+#'   `ids2 = c(psu2, ssu2)`, is an error
+#'   (`surveycore_error_twophase_multistage_phase2`) rather than a standard
+#'   error that silently ignores the later stages.
 #' @param strata2 <[`tidy-select`][tidyselect::language]> Phase 2
-#'   stratification column (a single column). Optional.
+#'   stratification column (a single column; more than one is an error, as
+#'   Phase 2 has one sampling stage). Optional.
 #' @param probs2 <[`tidy-select`][tidyselect::language]> Phase 2 inclusion
 #'   probability column (a single column, values in (0, 1]). Optional.
 #' @param fpc2 <[`tidy-select`][tidyselect::language]> Phase 2 finite
-#'   population correction column (a single column). Optional.
+#'   population correction column (a single column; more than one is an
+#'   error, as Phase 2 has one sampling stage). Optional.
 #' @param subset <[`tidy-select`][tidyselect::language]> Single logical column
 #'   in `phase1@data`. `TRUE` = row selected into Phase 2;
 #'   `FALSE` = Phase 1 only. Required. Must contain both `TRUE` and `FALSE`
@@ -853,46 +1453,99 @@ as_survey_replicate <- function(
 #'   and Phase 2 variability. One of `"full"` (default), `"approx"`, or
 #'   `"simple"`. Case-sensitive. See Details.
 #'
+#'   `"full"` and `"approx"` both match `survey::twophase()`, and both can give
+#'   standard errors that are too large (conservative) for some designs:
+#'
+#'   * `"full"` without an `fpc` on the Phase 1 design treats the Phase 1
+#'     sampling units (clusters, or rows when Phase 1 is unclustered) as
+#'     Poisson-sampled. For a fixed-size Phase 1 sample that is very
+#'     conservative for totals: in a simulation of a stratified cluster
+#'     sample, about 13 times the true variance, or 3.7 times the standard
+#'     error, and an unclustered, unstratified Phase 1 was overstated by a
+#'     similar amount. Means are much less affected when Phase 1 is
+#'     unstratified, but are still overstated when it is stratified. Supply
+#'     `fpc` to [as_survey()] for Phase 1; a weighted Phase 1 with no `fpc`
+#'     raises a warning; see Details.
+#'   * `"approx"` (and so `"simple"`) is conservative when Phase 1 is
+#'     clustered and Phase 2 subsamples rows within the Phase 1 clusters,
+#'     that is, when `ids2` is absent or finer than the Phase 1 cluster: in a
+#'     simulation, about 2.4 times the true variance, or 1.55 times the
+#'     standard error. It is close to unbiased when Phase 2 draws whole Phase 1
+#'     clusters or Phase 1 is unclustered. For the first kind of design,
+#'     `method = "full"` with a Phase 1 `fpc` is the alternative.
+#'
 #' @details
 #' ## Variance methods
 #'
-#' * `"full"` — Full two-phase variance formula. Accounts for variability in
-#'   both phases. Requires Phase 2 design information (`probs2`, `ids2`,
-#'   `strata2`) when Phase 2 is not a simple random subsample. If none of
-#'   these are provided, an error is raised.
+#' * `"full"` — Full two-phase variance formula: the double-expansion
+#'   Horvitz-Thompson estimator of `survey::twophase(method = "full")`
+#'   (Breslow and Chatterjee, 1999). Accounts for variability in both phases,
+#'   using the Phase 1 weights as inclusion probabilities, and treats a
+#'   Phase 1 with no weights, strata or `fpc` as an iid sample. Requires
+#'   Phase 2 design information (`probs2`, `ids2`, `strata2`) when Phase 2 is
+#'   not a simple random subsample. If none of these are provided, an error
+#'   is raised.
 #'
-#' * `"approx"` — Approximation that ignores Phase 1 sampling variability.
-#'   Faster but less accurate than `"full"` when the Phase 1 sampling fraction
-#'   is non-negligible.
+#' * `"approx"` — The two-phase variance formula from survey 3.14 and
+#'   earlier: a Phase 1 term plus a Phase 2 term. Needs less memory than
+#'   `"full"`, and is exact for some special cases, most importantly Phase 1
+#'   simple random sampling with stratified random sampling at Phase 2.
 #'
-#' * `"simple"` — Treats Phase 2 as a single-phase design, ignoring Phase 1.
-#'   Only valid when Phase 1 is a census (no sampling). Issues a warning when
-#'   Phase 1 has PSU cluster variables, because this understates variance for
-#'   clustered designs.
+#' * `"simple"` — The same method as `"approx"`, as in
+#'   `survey::twophase()`. The design records `"simple"`, and every
+#'   estimate and standard error equals the `"approx"` one.
 #'
-#' @return A `survey_twophase` object.
+#' ## Phase 1 fpc and `method = "full"`
+#'
+#' The `"full"` variance needs the Phase 1 sampling probabilities and, for a
+#' fixed-size sample, the Phase 1 population sizes. Without a Phase 1 `fpc` it
+#' treats each Phase 1 sampling unit as drawn independently with probability
+#' `1 / weight` (Poisson sampling), so it never centres the unit totals. For
+#' a fixed-size Phase 1 sample the resulting standard error of a total can be
+#' several times too large, whether or not Phase 1 is clustered or
+#' stratified. With an `fpc`, the variance is that of a fixed-size sample in
+#' each Phase 1 stratum, and is close to unbiased.
+#'
+#' `as_survey_twophase()` raises a warning of class
+#' `surveycore_warning_twophase_full_no_fpc` when all three hold:
+#' `method = "full"`, the Phase 1 design has no `fpc`, and the Phase 1
+#' weights are not all 1. Phase 1 weights of all 1 mean the design was built
+#' with no weights, which `"full"` treats as an iid sample, or is a census,
+#' which contributes no Phase 1 variance; neither is overstated. The warning
+#' fires once, when the design is built. [from_svydesign()] raises the same
+#' warning for a `twophase2` object under the same rule.
+#'
+#' @return A `survey_twophase` object. Columns imported with `haven`-style
+#'   value labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @examples
-#' # Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
+#' # Minimal two-phase design: Phase 1 = a sample of 20 from 40, Phase 2 =
+#' # random subset. The Phase 1 fpc gives method = "full" the population size.
 #' df <- data.frame(
 #'   id = 1:20,
 #'   wt = rep(2, 20),
+#'   pop = rep(40, 20),
 #'   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
 #'   y = rnorm(20)
 #' )
-#' phase1 <- as_survey(df, ids = id, weights = wt)
+#' phase1 <- as_survey(df, ids = id, weights = wt, fpc = pop)
 #' d2 <- as_survey_twophase(phase1, subset = in_phase2)
 #'
 #' # With Phase 2 stratification and inclusion probabilities
 #' df2 <- data.frame(
 #'   id = 1:30,
 #'   wt = rep(3, 30),
+#'   pop = rep(90, 30),
 #'   in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
 #'   arm = rep(c("A", "B", "C"), 10),
 #'   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
 #'   y = rnorm(30)
 #' )
-#' phase1b <- as_survey(df2, ids = id, weights = wt)
+#' phase1b <- as_survey(df2, ids = id, weights = wt, fpc = pop)
 #' d2b <- as_survey_twophase(
 #'   phase1b,
 #'   strata2 = arm,
@@ -915,8 +1568,7 @@ as_survey_replicate <- function(
 #' \doi{10.1007/s12561-009-9001-6}
 #'
 #' @seealso
-#'   [as_survey()] for Taylor series designs,
-#'   [as_survey_replicate()] for replicate-weight designs
+#'   [as_survey()] for Taylor series designs
 #'
 #' @family constructors
 #' @export
@@ -941,16 +1593,44 @@ as_survey_twophase <- function(
           "{.arg phase1} must be a survey design object ",
           "({.cls survey_base}), not {.cls {class(phase1)[[1L]]}}."
         ),
-        "i" = paste0(
-          "Create it first with {.fn as_survey} or ",
-          "{.fn as_survey_replicate}."
-        )
+        "i" = "Create it first with {.fn as_survey}."
       ),
       class = "surveycore_error_phase1_class"
     )
   }
 
+  # ── Error TP-1: phase1 must not be a replicate design ───────────────────────
+  # The phase-1 variance code reads only the phase-1 strata, ids and fpc keys,
+  # so a replicate phase 1 would get a standard error that ignores its
+  # replicate weights. This check runs before every subset check.
+
+  if (S7::S7_inherits(phase1, survey_replicate)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.fn as_survey_twophase} does not accept a {.cls survey_replicate} ",
+          "phase 1."
+        ),
+        "i" = paste0(
+          "Phase 1 variance for a replicate design is not implemented, and ",
+          "{.pkg survey} has no two-phase design with a replicate phase 1."
+        ),
+        "v" = paste0(
+          "Build phase 1 with {.fn as_survey} from the design's cluster, ",
+          "strata and weight columns."
+        )
+      ),
+      class = "surveycore_error_twophase_replicate_phase1"
+    )
+  }
+
   data <- phase1@data
+
+  # Defence in depth. `phase1` is a survey_base, so the `data` property setter
+  # has already stripped its columns and this call finds nothing. It stays so
+  # that a reader of the subset check below need not first work out how
+  # `phase1` was built. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
 
   # ── Error 20: subset is required ────────────────────────────────────────────
 
@@ -1047,7 +1727,9 @@ as_survey_twophase <- function(
 
   # ── Resolve optional Phase 2 design columns via tidy-select ─────────────────
 
-  # ids2 (may select multiple columns for multi-stage Phase 2 clustering)
+  # ids2 is resolved with eval_select() rather than .resolve_single_col() so
+  # that a multi-column selection reaches the typed refusal below instead of
+  # the generic "must select exactly one column" error.
   ids2_quo <- rlang::enquo(ids2)
   if (rlang::quo_is_null(ids2_quo)) {
     ids2_vars <- NULL
@@ -1055,6 +1737,16 @@ as_survey_twophase <- function(
     ids2_cols <- tidyselect::eval_select(ids2_quo, data)
     ids2_vars <- if (length(ids2_cols) == 0L) NULL else names(ids2_cols)
   }
+
+  # ── Error TP-3: multi-stage phase 2 is refused (issue #338) ─────────────────
+  # The two-phase variance reads one phase 2 stage. strata2 and fpc2 need no
+  # check here: .resolve_single_col() below already refuses more than one
+  # column for each.
+
+  .abort_twophase_multistage_phase2(
+    c(ids2 = length(ids2_vars)),
+    fn = "as_survey_twophase"
+  )
 
   strata2_var <- .resolve_single_col(
     rlang::enquo(strata2),
@@ -1077,22 +1769,6 @@ as_survey_twophase <- function(
     class_none = "surveycore_error_fpc_not_found",
     class_multi = "surveycore_error_fpc_multiple"
   )
-
-  # ── Warning 24: method = "simple" with clustered Phase 1 ────────────────────
-
-  if (method == "simple" && !is.null(phase1@variables$ids)) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          '{.code method = "simple"} ignores the Phase 1 cluster design ',
-          "(PSUs: {.field {phase1@variables$ids}}). ",
-          "This understates variance. ",
-          'Use {.code method = "full"} or {.code method = "approx"}.'
-        )
-      ),
-      class = "surveycore_warning_simple_clustered"
-    )
-  }
 
   # ── Build @variables list ───────────────────────────────────────────────────
 
@@ -1117,12 +1793,18 @@ as_survey_twophase <- function(
 
   # ── Construct and return survey_twophase object ─────────────────────────────
 
-  survey_twophase(
+  design <- survey_twophase(
     data = data,
     metadata = metadata,
     variables = variables,
     call = call
   )
+
+  # ── Warning TP-2: method = "full" with a weighted phase 1 and no fpc ────────
+
+  .warn_twophase_full_no_fpc(phase1@variables, data, method)
+
+  design
 }
 
 
@@ -1179,12 +1861,14 @@ as_survey_twophase <- function(
 #' non-probability samples.
 #'
 #' @param data A `data.frame` containing the survey responses with
-#'   pre-computed calibration weights. Must have at least one row and
+#'   pre-computed calibration weights. Must have at least two rows and
 #'   unique column names.
 #' @param weights <[`tidy-select`][tidyselect::language]> Calibration weight
 #'   column (a single column, values strictly > 0). Typically produced by
 #'   an external raking function (e.g., `anesrake::anesrake()`) or a
-#'   \pkg{surveywts} calibration function.
+#'   \pkg{surveywts} calibration function. Zero weights are refused here
+#'   but may appear later, after a \pkg{surveywts} adjustment such as
+#'   nonresponse sets some weights to 0.
 #' @param repweights <[`tidy-select`][tidyselect::language]> Replicate weight
 #'   columns (bootstrap or jackknife; at least 2). Each column must be numeric
 #'   and represents one set of calibrated weights re-estimated on one replicate
@@ -1206,7 +1890,11 @@ as_survey_twophase <- function(
 #'       \code{"JK1"}, never \code{"jackknife"}.}
 #'     \item{\code{"JK2"}}{Stratified jackknife. Default scale: \code{1}.
 #'       Requires explicit \code{rscales} (stratum-specific scale factors of
-#'       the form \code{(n_h - 1) / n_h}).}
+#'       the form \code{(n_h - 1) / n_h}). \code{as_survey_replicate()}
+#'       accepts \code{"JK2"} with no \code{rscales}, as
+#'       \code{survey::svrepdesign()} does; \code{as_survey_nonprob()} keeps
+#'       the refusal, because \code{survey} has no non-probability design
+#'       class and so is not the reference for this constructor.}
 #'     \item{\code{"JKn"}}{Equivalent to \code{"JK2"} for stratified nonprob
 #'       designs. Default scale: \code{1}. Requires explicit \code{rscales}.}
 #'   }
@@ -1216,7 +1904,9 @@ as_survey_twophase <- function(
 #'   [as_survey_replicate()], which uses type-specific defaults.
 #' @param rscales Numeric vector of length `R`. Per-replicate scale factors.
 #'   All values must be non-negative and non-NA. Default `NULL`, which sets
-#'   `rscales = rep(1, R)`.
+#'   `rscales = rep(1, R)`, except for `"JK2"` and `"JKn"`, which require
+#'   `rscales`: `rscales = NULL` is refused with
+#'   `surveycore_error_stratified_jk_rscales_unset`.
 #' @param mse Logical. If `TRUE` (the default), the mean-squared-error form
 #'   of the variance estimator is used: `(1/R) * sum((theta_r - theta)^2)`.
 #'   If `FALSE`, the centered form is used instead. Default `TRUE`. Note:
@@ -1237,7 +1927,12 @@ as_survey_twophase <- function(
 #'   when `calibration$R` is non-`NULL`. Supply `NULL` (the default) when no
 #'   provenance metadata is available.
 #'
-#' @return A `survey_nonprob` object.
+#' @return A `survey_nonprob` object. Columns imported with `haven`-style value
+#'   labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @details
 #' Unlike probability samples, non-probability samples have no design weights
@@ -1257,7 +1952,13 @@ as_survey_twophase <- function(
 #' When `repweights` is supplied, the variance estimator uses the replicate
 #' formula: `V = scale * sum(rscales * (theta_r - theta)^2)`. For bootstrap
 #' replicates (`type = "bootstrap"`), the default `scale = 1/R` follows Wu
-#' (2022) and Chen et al. (2021). For jackknife replicates (`type = "JK1"`,
+#' (2022) and Chen et al. (2021). `survey::svrepdesign()` uses `1/(R - 1)`
+#' for the bootstrap, and [as_survey_replicate()] matches that value. This
+#' constructor keeps `1/R` because `survey` has no non-probability design
+#' class and so is not an oracle for one. On the same frame the bootstrap
+#' standard error from `as_survey_nonprob()` is therefore smaller than the
+#' one from [as_survey_replicate()] by a factor of `sqrt((R - 1)/R)`, a
+#' fall of 2.5% at `R = 20`. For jackknife replicates (`type = "JK1"`,
 #' `"JK2"`, or `"JKn"`), scale and rscales follow the standard jackknife
 #' variance conventions; see `type` for defaults.
 #'
@@ -1350,6 +2051,10 @@ as_survey_nonprob <- function(
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
 
+  # Same strip as as_survey(), for the same reason: .validate_weights() below
+  # reads this frame, not @data. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
+
   # ── Resolve weights (required) ──────────────────────────────────────────────
 
   weights_quo <- rlang::enquo(weights)
@@ -1382,6 +2087,10 @@ as_survey_nonprob <- function(
   # ── Extract haven metadata ──────────────────────────────────────────────────
 
   metadata <- .extract_haven_metadata(data)
+  # This branch promoted neither attribute before 1.2.0, unlike as_survey() and
+  # as_survey_replicate(). Both promotions run here now.
+  metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Resolve repweights (optional) ──────────────────────────────────────────
 

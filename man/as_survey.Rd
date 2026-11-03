@@ -67,7 +67,12 @@ stale. Clear \verb{@calibration} manually after any weight column change.
 }}
 }
 \value{
-A \code{survey_taylor} object.
+A \code{survey_taylor} object. Columns imported with \code{haven}-style value
+labels are stored as their underlying type: the \code{label} and \code{labels}
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the \code{haven_labelled} class is not stored. Use
+\code{survey_data(x, haven_class = TRUE)} to read the data back with that class
+rebuilt.
 }
 \description{
 Creates a survey design object using Taylor series (linearization) for
@@ -180,16 +185,16 @@ Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs,
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=as_survey_twophase]{as_survey_twophase()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

@@ -16,25 +16,34 @@ as_survey_twophase(
 }
 \arguments{
 \item{phase1}{A survey design object (inheriting from \code{survey_base})
-representing the Phase 1 design. Accepts \code{survey_taylor} or
-\code{survey_replicate} objects.
+representing the Phase 1 design. Accepts a \code{survey_taylor} object.
+A \code{survey_replicate} object is refused: the phase-1 variance for a
+replicate design is not implemented.
 Its \verb{@data} must contain ALL rows from both phases, plus a logical
-indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}
-or \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
+indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}.}
 
 \item{ids2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 cluster ID
-column(s). For single-stage Phase 2: \code{ids2 = psu2}. For multi-stage:
-\code{ids2 = c(psu2, ssu2)}. Omit if Phase 2 has no within-stratum
-clustering.}
+column: a single column, such as \code{ids2 = psu2}. Omit if Phase 2 has no
+within-stratum clustering. Without \code{probs2} or \code{fpc2}, the Phase 2
+inclusion probability is the fraction of clusters selected within each
+Phase 2 stratum, not the fraction of rows.
+
+Multi-stage Phase 2 is not supported. The two-phase variance uses one
+Phase 2 sampling stage, so selecting more than one column, such as
+\code{ids2 = c(psu2, ssu2)}, is an error
+(\code{surveycore_error_twophase_multistage_phase2}) rather than a standard
+error that silently ignores the later stages.}
 
 \item{strata2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2
-stratification column (a single column). Optional.}
+stratification column (a single column; more than one is an error, as
+Phase 2 has one sampling stage). Optional.}
 
 \item{probs2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 inclusion
 probability column (a single column, values in (0, 1]). Optional.}
 
 \item{fpc2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 finite
-population correction column (a single column). Optional.}
+population correction column (a single column; more than one is an
+error, as Phase 2 has one sampling stage). Optional.}
 
 \item{subset}{<\code{\link[tidyselect:language]{tidy-select}}> Single logical column
 in \code{phase1@data}. \code{TRUE} = row selected into Phase 2;
@@ -43,10 +52,37 @@ values (non-degenerate).}
 
 \item{method}{Character. Variance estimation method for combining Phase 1
 and Phase 2 variability. One of \code{"full"} (default), \code{"approx"}, or
-\code{"simple"}. Case-sensitive. See Details.}
+\code{"simple"}. Case-sensitive. See Details.
+
+\code{"full"} and \code{"approx"} both match \code{survey::twophase()}, and both can give
+standard errors that are too large (conservative) for some designs:
+\itemize{
+\item \code{"full"} without an \code{fpc} on the Phase 1 design treats the Phase 1
+sampling units (clusters, or rows when Phase 1 is unclustered) as
+Poisson-sampled. For a fixed-size Phase 1 sample that is very
+conservative for totals: in a simulation of a stratified cluster
+sample, about 13 times the true variance, or 3.7 times the standard
+error, and an unclustered, unstratified Phase 1 was overstated by a
+similar amount. Means are much less affected when Phase 1 is
+unstratified, but are still overstated when it is stratified. Supply
+\code{fpc} to \code{\link[=as_survey]{as_survey()}} for Phase 1; a weighted Phase 1 with no \code{fpc}
+raises a warning; see Details.
+\item \code{"approx"} (and so \code{"simple"}) is conservative when Phase 1 is
+clustered and Phase 2 subsamples rows within the Phase 1 clusters,
+that is, when \code{ids2} is absent or finer than the Phase 1 cluster: in a
+simulation, about 2.4 times the true variance, or 1.55 times the
+standard error. It is close to unbiased when Phase 2 draws whole Phase 1
+clusters or Phase 1 is unclustered. For the first kind of design,
+\code{method = "full"} with a Phase 1 \code{fpc} is the alternative.
+}}
 }
 \value{
-A \code{survey_twophase} object.
+A \code{survey_twophase} object. Columns imported with \code{haven}-style
+value labels are stored as their underlying type: the \code{label} and \code{labels}
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the \code{haven_labelled} class is not stored. Use
+\code{survey_data(x, haven_class = TRUE)} to read the data back with that class
+rebuilt.
 }
 \description{
 Creates a two-phase (double) sampling design from an existing
@@ -57,41 +93,69 @@ for all Phase 2 design variable arguments.
 \details{
 \subsection{Variance methods}{
 \itemize{
-\item \code{"full"} — Full two-phase variance formula. Accounts for variability in
-both phases. Requires Phase 2 design information (\code{probs2}, \code{ids2},
-\code{strata2}) when Phase 2 is not a simple random subsample. If none of
-these are provided, an error is raised.
-\item \code{"approx"} — Approximation that ignores Phase 1 sampling variability.
-Faster but less accurate than \code{"full"} when the Phase 1 sampling fraction
-is non-negligible.
-\item \code{"simple"} — Treats Phase 2 as a single-phase design, ignoring Phase 1.
-Only valid when Phase 1 is a census (no sampling). Issues a warning when
-Phase 1 has PSU cluster variables, because this understates variance for
-clustered designs.
+\item \code{"full"} — Full two-phase variance formula: the double-expansion
+Horvitz-Thompson estimator of \code{survey::twophase(method = "full")}
+(Breslow and Chatterjee, 1999). Accounts for variability in both phases,
+using the Phase 1 weights as inclusion probabilities, and treats a
+Phase 1 with no weights, strata or \code{fpc} as an iid sample. Requires
+Phase 2 design information (\code{probs2}, \code{ids2}, \code{strata2}) when Phase 2 is
+not a simple random subsample. If none of these are provided, an error
+is raised.
+\item \code{"approx"} — The two-phase variance formula from survey 3.14 and
+earlier: a Phase 1 term plus a Phase 2 term. Needs less memory than
+\code{"full"}, and is exact for some special cases, most importantly Phase 1
+simple random sampling with stratified random sampling at Phase 2.
+\item \code{"simple"} — The same method as \code{"approx"}, as in
+\code{survey::twophase()}. The design records \code{"simple"}, and every
+estimate and standard error equals the \code{"approx"} one.
 }
+}
+
+\subsection{Phase 1 fpc and \code{method = "full"}}{
+
+The \code{"full"} variance needs the Phase 1 sampling probabilities and, for a
+fixed-size sample, the Phase 1 population sizes. Without a Phase 1 \code{fpc} it
+treats each Phase 1 sampling unit as drawn independently with probability
+\code{1 / weight} (Poisson sampling), so it never centres the unit totals. For
+a fixed-size Phase 1 sample the resulting standard error of a total can be
+several times too large, whether or not Phase 1 is clustered or
+stratified. With an \code{fpc}, the variance is that of a fixed-size sample in
+each Phase 1 stratum, and is close to unbiased.
+
+\code{as_survey_twophase()} raises a warning of class
+\code{surveycore_warning_twophase_full_no_fpc} when all three hold:
+\code{method = "full"}, the Phase 1 design has no \code{fpc}, and the Phase 1
+weights are not all 1. Phase 1 weights of all 1 mean the design was built
+with no weights, which \code{"full"} treats as an iid sample, or is a census,
+which contributes no Phase 1 variance; neither is overstated. The warning
+fires once, when the design is built. \code{\link[=from_svydesign]{from_svydesign()}} raises the same
+warning for a \code{twophase2} object under the same rule.
 }
 }
 \examples{
-# Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
+# Minimal two-phase design: Phase 1 = a sample of 20 from 40, Phase 2 =
+# random subset. The Phase 1 fpc gives method = "full" the population size.
 df <- data.frame(
   id = 1:20,
   wt = rep(2, 20),
+  pop = rep(40, 20),
   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
   y = rnorm(20)
 )
-phase1 <- as_survey(df, ids = id, weights = wt)
+phase1 <- as_survey(df, ids = id, weights = wt, fpc = pop)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
 
 # With Phase 2 stratification and inclusion probabilities
 df2 <- data.frame(
   id = 1:30,
   wt = rep(3, 30),
+  pop = rep(90, 30),
   in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
   arm = rep(c("A", "B", "C"), 10),
   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
   y = rnorm(30)
 )
-phase1b <- as_survey(df2, ids = id, weights = wt)
+phase1b <- as_survey(df2, ids = id, weights = wt, fpc = pop)
 d2b <- as_survey_twophase(
   phase1b,
   strata2 = arm,
@@ -115,19 +179,18 @@ two-phase stratified samples: applications in epidemiology.
 \doi{10.1007/s12561-009-9001-6}
 }
 \seealso{
-\code{\link[=as_survey]{as_survey()}} for Taylor series designs,
-\code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
+\code{\link[=as_survey]{as_survey()}} for Taylor series designs
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

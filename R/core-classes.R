@@ -32,6 +32,11 @@
 #' @param question_prefaces A named list mapping variable names to shared
 #'   question battery preface text.
 #' @param notes A named list mapping variable names to analyst notes.
+#' @param var_extra A named list mapping variable names to a pass-through
+#'   extension payload — itself a named list, or `NULL`. surveycore never
+#'   inspects, type-checks, or acts on the payload's values; it stores and
+#'   returns them as-is. Use [set_var_extra()] and [extract_var_extra()] to
+#'   access this property. Default `list()`.
 #' @param universe A named list mapping variable names to universe
 #'   descriptions (e.g., `list(age = "Adults 18+")`). Describes the
 #'   population to which a variable applies.
@@ -57,6 +62,25 @@
 #'   parameters, effective sample size before/after, and design effect.
 #'   Always `list()` until a \pkg{surveywts} weighting function is
 #'   applied. Reserved for Phase 2.5.
+#' @param dataset_metadata A named list of whole-dataset facts. The key
+#'   vocabulary is **closed** — exactly six keys are valid, each with a
+#'   declared type:
+#'   * `survey_name` — `character(1)`, the full formal survey name.
+#'   * `data_name` — `character(1)`, the display label for this dataset.
+#'   * `vendor` — `character(1)`, the fielding vendor.
+#'   * `field_start` — `Date` of length 1, the first day in the field.
+#'   * `field_end` — `Date` of length 1, the last day in the field.
+#'   * `field_period` — `character(1)`, the prose field period.
+#'
+#'   No value may be `NA` and no element may be `NULL`. Any other key is
+#'   rejected. `survey_name` and `data_name` are independent: no function
+#'   derives one from the other. Use [set_dataset_metadata()] to write keys
+#'   and [extract_dataset_metadata()] to read them; the default is `list()`.
+#'   Each key also has a convenience pair: [set_survey_name()],
+#'   [set_data_name()], [set_vendor()], [set_field_dates()],
+#'   [set_field_period()], and the matching [extract_survey_name()],
+#'   [extract_data_name()], [extract_vendor()], [extract_field_dates()],
+#'   [extract_field_period()].
 #'
 #' @return A `survey_metadata` object.
 #'
@@ -72,6 +96,10 @@
 #' )
 #' m@variable_labels$age
 #' m@value_labels$sex
+#'
+#' # Dataset-level metadata (closed six-key vocabulary)
+#' m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+#' m@dataset_metadata$vendor
 #' @family metadata
 #' @export
 survey_metadata <- S7::new_class(
@@ -90,6 +118,10 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     notes = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    var_extra = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
@@ -124,8 +156,126 @@ survey_metadata <- S7::new_class(
     weighting_history = S7::new_property(
       S7::class_list,
       default = quote(list())
+    ),
+    # Dataset-level metadata. Closed vocabulary — exactly six valid keys:
+    # survey_name, data_name, vendor, field_start, field_end, field_period.
+    dataset_metadata = S7::new_property(
+      S7::class_list,
+      default = quote(list())
     )
-  )
+  ),
+  # Layer 1 validator. Checks @dataset_metadata only. Messages are plain
+  # one-line text (the C1 / C4 / G1 precedent), not the CLI x/i/v register.
+  # S7 runs this on construction and again on every @<- assignment.
+  validator = function(self) {
+    dm <- self@dataset_metadata
+
+    # Every check below applies to a non-empty list only.
+    if (length(dm) == 0L) {
+      return(NULL)
+    }
+
+    nms <- names(dm)
+
+    # Checks 2-3 — every element has a name, and no name is NA or empty.
+    if (is.null(nms) || anyNA(nms) || !all(nzchar(nms))) {
+      cli::cli_abort(
+        "All dataset metadata entries must have a non-empty name.",
+        class = "surveycore_error_dataset_metadata_unnamed"
+      )
+    }
+
+    # Check 4 — no name is duplicated.
+    dupes <- unique(nms[duplicated(nms)])
+    if (length(dupes) > 0L) {
+      dupes_txt <- paste(dupes, collapse = ", ")
+      cli::cli_abort(
+        "Duplicate dataset metadata key(s): {dupes_txt}.",
+        class = "surveycore_error_dataset_metadata_duplicate_key"
+      )
+    }
+
+    # Check 5 — every name is one of the six valid keys.
+    unknown <- setdiff(nms, .dataset_metadata_keys)
+    if (length(unknown) > 0L) {
+      key <- unknown[[1L]]
+      cli::cli_abort(
+        "Unknown dataset metadata key: {key}.",
+        class = "surveycore_error_dataset_key_unknown"
+      )
+    }
+
+    # Check 6 — no element is NULL. Deletion removes the element; it never
+    # stores a NULL.
+    null_elements <- vapply(dm, is.null, logical(1L))
+    if (any(null_elements)) {
+      key <- nms[null_elements][[1L]]
+      cli::cli_abort(
+        paste0(
+          "Dataset metadata key {key} must be a single non-NA ",
+          "character string."
+        ),
+        class = "surveycore_error_dataset_metadata_bad_type"
+      )
+    }
+
+    # Check 7 — every present key's value passes the canonical value table.
+    for (key in nms) {
+      value <- dm[[key]]
+
+      # Delegate to the shared checker FIRST, then re-raise each of its
+      # CLI-formatted errors as the matching plain Layer 1 one-liner. Every
+      # line the checker adds is reachable through this call.
+      tryCatch(
+        .check_dataset_key_value(key, value, mode = "error"),
+        surveycore_error_dataset_metadata_bad_type = function(cnd) {
+          cli::cli_abort(
+            paste0(
+              "Dataset metadata key {key} must be a single non-NA ",
+              "character string."
+            ),
+            class = "surveycore_error_dataset_metadata_bad_type"
+          )
+        },
+        surveycore_error_field_date_invalid = function(cnd) {
+          cli::cli_abort(
+            "Dataset metadata key {key} must be a Date scalar.",
+            class = "surveycore_error_field_date_invalid"
+          )
+        }
+      )
+
+      # Validator narrowing: a STORED date is always a Date scalar, because
+      # only coerced values reach storage. DO NOT deduplicate this against the
+      # checker's date branch, even while the two agree — the checker widens to
+      # accept strict-ISO strings for setter callers, and this branch is what
+      # keeps the class layer rejecting a stored ISO string after that.
+      if (key %in% .dataset_date_keys) {
+        date_ok <- inherits(value, "Date") &&
+          length(value) == 1L &&
+          !is.na(value)
+        if (!date_ok) {
+          cli::cli_abort(
+            "Dataset metadata key {key} must be a Date scalar.",
+            class = "surveycore_error_field_date_invalid"
+          )
+        }
+      }
+    }
+
+    # Check 8 — when both dates are present, field_start must not be after
+    # field_end. A single date needs no comparison.
+    if (all(.dataset_date_keys %in% nms)) {
+      if (dm[["field_start"]] > dm[["field_end"]]) {
+        cli::cli_abort(
+          "field_start is after field_end.",
+          class = "surveycore_error_field_dates_reversed"
+        )
+      }
+    }
+
+    NULL
+  }
 )
 
 
@@ -141,7 +291,9 @@ survey_metadata <- S7::new_class(
 #'
 #' @section Properties:
 #' \describe{
-#'   \item{`data`}{A `data.frame` containing the survey data.}
+#'   \item{`data`}{A `data.frame` containing the survey data. A column that
+#'     carries the domain marker name must be logical; a column of any other
+#'     type is rejected on construction and on every property write.}
 #'   \item{`metadata`}{A [survey_metadata] object.}
 #'   \item{`variables`}{A named list of design specification (varies by
 #'     subclass).}
@@ -163,7 +315,15 @@ survey_base <- S7::new_class(
   properties = list(
     data = S7::new_property(
       S7::class_data.frame,
-      default = quote(data.frame())
+      default = quote(data.frame()),
+      # Drops the haven labelled class from every column, on every write.
+      # Value labels stay on the column and in @metadata@value_labels.
+      # S7 does not re-enter a setter already running for the same
+      # property, so the assignment below does not loop. Measured.
+      setter = function(self, value) {
+        self@data <- .strip_labelled_columns(value)
+        self
+      }
     ),
     metadata = S7::new_property(
       class = survey_metadata,
@@ -180,7 +340,37 @@ survey_base <- S7::new_class(
       default = quote(character(0))
     ),
     call = S7::new_property(default = NULL)
-  )
+  ),
+  # Layer 1 validator. It runs for every subclass, on construction and on
+  # every property write. The name lookup comes first: it is the cheap test
+  # and it returns on the common path, where no design carries the column.
+  validator = function(self) {
+    if (!SURVEYCORE_DOMAIN_COL %in% names(self@data)) {
+      return(NULL)
+    }
+
+    # ── Domain marker column must be logical ─────────────────────────────────
+    # The storage type is the whole check. A logical vector carrying
+    # attributes, or a logical matrix, passes.
+    if (!is.logical(self@data[[SURVEYCORE_DOMAIN_COL]])) {
+      col_class <- class(self@data[[SURVEYCORE_DOMAIN_COL]])
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Domain column {.field {SURVEYCORE_DOMAIN_COL}} must be ",
+            "logical, not {.cls {col_class}}."
+          ),
+          "i" = paste0(
+            "{.fn surveytidy::filter} writes this column as a logical ",
+            "mask; {.code TRUE} marks a row inside the active domain."
+          )
+        ),
+        class = "surveycore_error_domain_not_logical"
+      )
+    }
+
+    NULL
+  }
 )
 
 
@@ -268,6 +458,12 @@ survey_taylor <- S7::new_class(
     calibration = S7::new_property(default = NULL)
   ),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # Runs first, so a 0-row frame reports its row count and not a weight
+    # condition that an empty column trips incidentally.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     # ── Gather all named design column names ─────────────────────────────────
     # c() with NULL args drops them automatically
     design_vars <- c(
@@ -391,8 +587,8 @@ survey_taylor <- S7::new_class(
 #' @param metadata A [survey_metadata] object. Created automatically by
 #'   [as_survey_replicate()].
 #' @param variables A named list of design specification (weights,
-#'   repweights, type, scale, rscales, fpc, fpctype, mse). Set
-#'   automatically by [as_survey_replicate()].
+#'   repweights, type, scale, rscales, fpc, fpctype, fpc_applied,
+#'   fpc_fraction, mse, rho). Set automatically by [as_survey_replicate()].
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
@@ -414,9 +610,22 @@ survey_taylor <- S7::new_class(
 #'   \item{`scale`}{Numeric scaling factor for variance estimation.}
 #'   \item{`rscales`}{Numeric vector of replicate-specific scales, or
 #'     `NULL`.}
-#'   \item{`fpc`}{FPC column name or `NULL`.}
-#'   \item{`fpctype`}{`"fraction"` or `"correction"`.}
+#'   \item{`fpc`}{Name of the FPC column the design was built from, or
+#'     `NULL`. Provenance only: no replicate variance formula reads it.}
+#'   \item{`fpctype`}{`"fraction"` or `"correction"`: how to read the `fpc`
+#'     column.}
+#'   \item{`fpc_applied`}{Where the finite population correction reached
+#'     the variance: `"rscales"` (inside `rscales`), `"repweights"` (inside
+#'     the replicate weight columns), `"none"` (an FPC was available and was
+#'     not applied), or `NULL` (no FPC was available, or the design predates
+#'     this key). With `fpc` set and `fpc_applied` `NULL`, whether the FPC
+#'     was applied is not recorded.}
+#'   \item{`fpc_fraction`}{The sampling fraction `f` per replicate, a numeric
+#'     vector with one value per replicate column, when
+#'     [as_survey_replicate()] applied a numeric `fpc`; otherwise `NULL`.}
 #'   \item{`mse`}{Logical. Use MSE estimates?}
+#'   \item{`rho`}{Fay shrinkage factor for \code{type = "Fay"}; \code{NULL}
+#'     for every other type.}
 #' }
 #'
 #' @return A `survey_replicate` object.
@@ -458,8 +667,7 @@ survey_taylor <- S7::new_class(
 #' Association} \bold{88}(423), 1013--1020.
 #'
 #' Judkins, D.R. (1990) Fay's method for variance estimation.
-#' \emph{Journal of the American Statistical Association}
-#' \bold{85}(410), 895--904.
+#' \emph{Journal of Official Statistics} \bold{6}(3), 223--239.
 #'
 #' Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
 #' methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
@@ -477,6 +685,12 @@ survey_replicate <- S7::new_class(
     calibration = S7::new_property(default = NULL)
   ),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # Runs first, so a 0-row frame reports its row count and not a weight
+    # condition that an empty column trips incidentally.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     weights_var <- self@variables$weights
     repweights_vars <- self@variables$repweights
     all_design_vars <- c(weights_var, repweights_vars)
@@ -559,6 +773,44 @@ survey_replicate <- S7::new_class(
       }
     }
 
+    # ── FPC record keys (issue #320) ─────────────────────────────────────────
+    # [[ ]] reads a missing key as NULL: a design saved before #320, or one
+    # built here without the keys, records no FPC application and is valid.
+    fpc_applied <- self@variables[["fpc_applied"]]
+    if (
+      !is.null(fpc_applied) &&
+        !rlang::is_string(fpc_applied, c("rscales", "repweights", "none"))
+    ) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.field @variables$fpc_applied} must be {.code NULL}, ",
+            "{.val rscales}, {.val repweights} or {.val none}."
+          )
+        ),
+        class = "surveycore_error_replicate_fpc_record_invalid"
+      )
+    }
+    fpc_fraction <- self@variables[["fpc_fraction"]]
+    if (
+      !is.null(fpc_fraction) &&
+        !(is.numeric(fpc_fraction) &&
+          length(fpc_fraction) == length(repweights_vars) &&
+          all(is.finite(fpc_fraction)) &&
+          all(fpc_fraction >= 0 & fpc_fraction <= 1))
+    ) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.field @variables$fpc_fraction} must be {.code NULL} or a ",
+            "finite numeric vector in {.code [0, 1]} with one value per ",
+            "replicate column."
+          )
+        ),
+        class = "surveycore_error_replicate_fpc_record_invalid"
+      )
+    }
+
     NULL
   }
 )
@@ -614,7 +866,7 @@ survey_replicate <- S7::new_class(
 #'   in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60))
 #' )
 #' phase1 <- as_survey(df, weights = wt)
-#' d <- as_survey_twophase(phase1, subset = in_phase2)
+#' d <- as_survey_twophase(phase1, subset = in_phase2, method = "approx")
 #' class(d)
 #' @seealso [as_survey_twophase()] to create a `survey_twophase` object.
 #' @family constructors
@@ -624,6 +876,14 @@ survey_twophase <- S7::new_class(
   parent = survey_base,
   properties = list(),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # The count is nrow(@data), the full phase 1 sample. The phase 2 subset
+    # is not counted: no constructor applies a row-count rule to it, and
+    # as_survey_twophase() refuses an all-TRUE or all-FALSE subset with
+    # surveycore_error_subset_degenerate, a different rule kept at Layer 3.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     subset_var <- self@variables$subset
     phase2_vars <- self@variables$phase2
 
@@ -674,6 +934,19 @@ survey_twophase <- S7::new_class(
           class = "surveycore_error_design_var_missing"
         )
       }
+    }
+
+    # ── Phase 2 must have one sampling stage (issue #338) ────────────────────
+    # The exported constructor and every @variables assignment reach this
+    # check, so a design built or modified without as_survey_twophase() or
+    # from_svydesign() cannot carry a phase 2 stage the variance ignores.
+    if (!is.null(phase2_vars)) {
+      p2_keys <- c("ids", "strata", "fpc")
+      .abort_twophase_multistage_phase2(
+        stats::setNames(lengths(phase2_vars[p2_keys]), p2_keys),
+        fn = "survey_twophase",
+        call = NULL
+      )
     }
 
     # ── Warning 26: phase 2 design var all-NA within phase 2 subset ──────────
@@ -1045,6 +1318,12 @@ survey_nonprob <- S7::new_class(
     reference_sample = S7::new_property(default = NULL)
   ),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # Runs first, so a 0-row frame reports its row count and not a weight
+    # condition that an empty column trips incidentally.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     weights_var <- self@variables$weights
 
     # ── Weight column must exist in @data ─────────────────────────────────────
@@ -1102,6 +1381,16 @@ survey_nonprob <- S7::new_class(
           class = "surveycore_error_weights_all_zero"
         )
       }
+
+      # Conditions 4a and 4b are deliberately looser than .validate_weights()
+      # in R/core-validators.R, which as_survey_nonprob() calls and which
+      # refuses any non-positive weight. surveywts's adjust_nonresponse() sets
+      # nonrespondent weights to 0 by writing `@data` on a survey_nonprob, and
+      # S7 re-runs this validator on that write, so a zero must pass here.
+      # The constructor stays strict so that zeros arise only from adjustment
+      # after construction, never from input data. Recorded in
+      # archive/nonprob-zero-weights/ (#80) and plans/error-messages.md rows
+      # 33 and 101; confirmed as intended in issue #248.
 
       # Condition 4a — reject negative weights
       n_neg <- sum(non_na < 0)

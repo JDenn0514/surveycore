@@ -4,18 +4,84 @@
 \alias{survey_data}
 \title{Access the Data Component of a Survey Design Object}
 \usage{
-survey_data(x)
+survey_data(x, haven_class = FALSE)
 }
 \arguments{
-\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.}
+\item{x}{A \code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, or
+\code{survey_nonprob} object.}
+
+\item{haven_class}{Rebuild the \code{haven_labelled} class on every column that
+has value labels. The design's metadata is read first, and the column's
+\code{labels} attribute is the fallback, so labels set by \code{\link[=set_val_labels]{set_val_labels()}}
+on the design reach the returned column. The variable label follows the
+same order, so \code{\link[=set_var_label]{set_var_label()}} on the design reaches the returned
+column's \code{label} attribute. Value labels are the whole class test, not a
+record of which columns arrived as \code{haven_labelled}: a column that never
+carried the class is promoted too, so a column labelled by \code{sjlabelled}
+comes back with the class on it. A column that carries a class of its own
+is left alone: a \code{factor} keeps its levels and a \code{Date} keeps its
+calendar, whatever attributes they hold. \code{FALSE}, the default,
+returns base types, which is
+what every arithmetic and modelling operation needs. \code{TRUE} returns
+columns that \code{haven} and \code{labelled} recognise, so that
+\code{haven::as_factor()} and \code{labelled::to_factor()} give the label strings
+instead of the codes, and so that \code{haven::write_sav()} writes the
+labels the design holds. \code{haven} does not need to be installed for either
+value. Two known limits: \code{haven::write_sav()} raises on a column holding
+a tagged \code{NA} — that is a \code{.sav} format limit inside \code{haven}, and a
+column built by \code{haven} itself fails the same way. And
+\code{set_val_labels(x, v = NULL)} clears the metadata entry without touching
+the column, so the fallback rebuilds the class from the column's own
+attribute.}
 }
 \value{
-A \code{data.frame} with all variables, including design variables.
+A \code{data.frame} with all variables, including design variables. It is
+a tibble when the design stores a tibble.
+
+With \code{haven_class = FALSE}, the default, no column carries the
+\code{haven_labelled} or \code{haven_labelled_spss} class. A survey design object
+stores base types. Every attribute the import set — the \code{label} string,
+the \code{labels} value-label vector, and the SPSS \code{na_values} and \code{na_range}
+vectors — stays on the column, and the value labels are also available
+through \code{\link[=extract_val_labels]{extract_val_labels()}}. In a printed tibble a previously labelled
+column shows the type token for its own type — \verb{<dbl>}, \verb{<int>} or
+\verb{<chr>} — in place of the labelled token.
+
+With \code{haven_class = TRUE}, every column that has value labels and no class
+of its own is returned with its \code{haven_labelled} class rebuilt, and a
+column that also carries \code{na_values} or \code{na_range} is returned as
+\code{haven_labelled_spss}. A \code{factor}, a \code{Date}, and any other classed column
+keep the class they have. The
+\code{labels} and \code{label} attributes on the returned column hold what the
+design's metadata holds, which is what \code{\link[=extract_val_labels]{extract_val_labels()}} and
+\code{\link[=extract_var_label]{extract_var_label()}} report. Values are unchanged, and the printed type
+token reads as the labelled token again — \verb{<dbl+lbl>} for a
+double-backed column when the \code{haven} namespace is loaded, since \code{haven}
+supplies the method that renders it.
 }
 \description{
 Returns the underlying data frame stored in a survey design object.
 This is a thin accessor for \code{x@data} that provides a stable public name
 independent of the S7 property structure.
+}
+\details{
+\code{nrow()} and \code{dim()} report the stored row count, not the in-domain
+count. A domain filter keeps every row of the design and marks
+membership in a flag column, so the two counts differ after a filter.
+Printing a filtered design shows both, on the \verb{Domain: n of N rows}
+line.
+
+To get the in-domain count, call \code{\link[=get_effective_n]{get_effective_n()}} and read its \code{n}
+column. That function honours the domain flag, takes a \code{group}
+argument, and accepts a \code{survey_collection}.
+
+\code{ncol()} counts the full stored width. The count includes the weight
+column, the cluster and stratum ids, \code{fpc}, the domain flag when
+present, and every replicate-weight column. It is not a count of
+analysis variables, and it is not comparable across design classes.
+
+\code{nrow()} is the unweighted count of sample rows. It is not a
+population estimate.
 }
 \examples{
 d <- as_survey(
@@ -26,5 +92,16 @@ d <- as_survey(
   nest = TRUE
 )
 head(survey_data(d))
+
+# Read the data back with the labelled class rebuilt. gss_2024 carries
+# value labels, so the class comes back on the columns that had one.
+g <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat)
+class(survey_data(g)$happy)
+class(survey_data(g, haven_class = TRUE)$happy)
+
+# Value labels set on the design reach the rebuilt column, so an export
+# carries the labels the analyst set rather than the labels the file had.
+g <- set_val_labels(g, happy = c(Happy = 1, `So-so` = 2, Unhappy = 3))
+attr(survey_data(g, haven_class = TRUE)$happy, "labels")
 }
 \concept{accessors}

@@ -2,19 +2,6 @@
 
 ## Step 8: Monitor CI
 
-Create a CI run tracking task:
-
-```
-TaskCreate:
-  subject:    "CI Run #1: monitoring"
-  description: "Monitoring CI for PR #[N]"
-  activeForm: "Monitoring CI Run #1"
-
-TaskUpdate:
-  status: in_progress
-  addBlockedBy: [pr task ID]
-```
-
 Wait for the run to appear, then watch it:
 
 ```bash
@@ -26,14 +13,7 @@ gh run watch <run-id> --exit-status > /dev/null 2>&1
 echo "CI exit: $?"
 ```
 
-Store the run ID:
-
-```
-TaskUpdate (CI task):
-  metadata: { runId: "<run-id>" }
-```
-
-**If CI passes:** mark CI task `completed`, return to SKILL.md Step 10.
+**If CI passes:** return to SKILL.md Step 10.
 
 **If CI fails:** proceed to Step 9.
 
@@ -62,17 +42,8 @@ diagnose faster:
 - **Platform-specific failure** (Windows or macOS only, not ubuntu-latest):
   environment issue; confirm it does not reproduce locally before handing off
 
-Update the CI task:
-
-```
-TaskUpdate (CI task):
-  subject:  "CI Run #1: failed"
-  status:   completed
-  metadata: { status: "failed", failureReason: "<brief reason>" }
-```
-
 Produce the handoff block per `refs/ci-handoff-template.md` and show it to
 the user.
 
-**DO NOT write code to fix the failure.** This violates the hard constraint
-at the top of SKILL.md.
+The fix itself belongs to `r-implement` — the hard constraint at the top of
+SKILL.md applies here too.

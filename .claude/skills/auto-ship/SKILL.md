@@ -1,15 +1,10 @@
 ---
 name: auto-ship
 description: >
-  Drives a surveycore implementation plan end-to-end — TDD implementation,
-  spec compliance + code quality review, changelog, commit, PR, CI monitoring,
-  and squash-merge to develop — with no manual handoffs. Analyzes the plan for
-  independent sections and dispatches them as parallel subagents; dependent
-  sections are processed in sequence. Stops only for spec ambiguity or
-  unrecoverable CI failures. Trigger when the user says "auto-ship", "ship the
-  plan", "drive the plan", "drive it", "hands-off", "do it all", or "run the
-  plan". Also trigger when the user says any of those phrases combined with a
-  plan file path, phase number, or section description.
+  Legacy autonomous plan-execution workflow, superseded by pipeline-ship.
+  Drives an implementation plan end-to-end via section subagents: implement,
+  review, changelog, commit, PR, CI, merge.
+disable-model-invocation: true
 ---
 
 # auto-ship

@@ -18,13 +18,15 @@ as_survey_nonprob(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the survey responses with
-pre-computed calibration weights. Must have at least one row and
+pre-computed calibration weights. Must have at least two rows and
 unique column names.}
 
 \item{weights}{<\code{\link[tidyselect:language]{tidy-select}}> Calibration weight
 column (a single column, values strictly > 0). Typically produced by
 an external raking function (e.g., \code{anesrake::anesrake()}) or a
-\pkg{surveywts} calibration function.}
+\pkg{surveywts} calibration function. Zero weights are refused here
+but may appear later, after a \pkg{surveywts} adjustment such as
+nonresponse sets some weights to 0.}
 
 \item{repweights}{<\code{\link[tidyselect:language]{tidy-select}}> Replicate weight
 columns (bootstrap or jackknife; at least 2). Each column must be numeric
@@ -48,7 +50,11 @@ replication unit. For clustered designs, use \code{"JK2"} or
 \code{"JK1"}, never \code{"jackknife"}.}
 \item{\code{"JK2"}}{Stratified jackknife. Default scale: \code{1}.
 Requires explicit \code{rscales} (stratum-specific scale factors of
-the form \code{(n_h - 1) / n_h}).}
+the form \code{(n_h - 1) / n_h}). \code{as_survey_replicate()}
+accepts \code{"JK2"} with no \code{rscales}, as
+\code{survey::svrepdesign()} does; \code{as_survey_nonprob()} keeps
+the refusal, because \code{survey} has no non-probability design
+class and so is not the reference for this constructor.}
 \item{\code{"JKn"}}{Equivalent to \code{"JK2"} for stratified nonprob
 designs. Default scale: \code{1}. Requires explicit \code{rscales}.}
 }}
@@ -60,7 +66,9 @@ number of replicate columns). Note: this default differs from
 
 \item{rscales}{Numeric vector of length \code{R}. Per-replicate scale factors.
 All values must be non-negative and non-NA. Default \code{NULL}, which sets
-\code{rscales = rep(1, R)}.}
+\code{rscales = rep(1, R)}, except for \code{"JK2"} and \code{"JKn"}, which require
+\code{rscales}: \code{rscales = NULL} is refused with
+\code{surveycore_error_stratified_jk_rscales_unset}.}
 
 \item{mse}{Logical. If \code{TRUE} (the default), the mean-squared-error form
 of the variance estimator is used: \code{(1/R) * sum((theta_r - theta)^2)}.
@@ -85,7 +93,12 @@ when \code{calibration$R} is non-\code{NULL}. Supply \code{NULL} (the default) w
 provenance metadata is available.}
 }
 \value{
-A \code{survey_nonprob} object.
+A \code{survey_nonprob} object. Columns imported with \code{haven}-style value
+labels are stored as their underlying type: the \code{label} and \code{labels}
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the \code{haven_labelled} class is not stored. Use
+\code{survey_data(x, haven_class = TRUE)} to read the data back with that class
+rebuilt.
 }
 \description{
 Creates a survey design object for non-probability samples (e.g., online
@@ -111,7 +124,13 @@ for non-probability samples.
 When \code{repweights} is supplied, the variance estimator uses the replicate
 formula: \code{V = scale * sum(rscales * (theta_r - theta)^2)}. For bootstrap
 replicates (\code{type = "bootstrap"}), the default \code{scale = 1/R} follows Wu
-(2022) and Chen et al. (2021). For jackknife replicates (\code{type = "JK1"},
+(2022) and Chen et al. (2021). \code{survey::svrepdesign()} uses \code{1/(R - 1)}
+for the bootstrap, and \code{\link[=as_survey_replicate]{as_survey_replicate()}} matches that value. This
+constructor keeps \code{1/R} because \code{survey} has no non-probability design
+class and so is not an oracle for one. On the same frame the bootstrap
+standard error from \code{as_survey_nonprob()} is therefore smaller than the
+one from \code{\link[=as_survey_replicate]{as_survey_replicate()}} by a factor of \code{sqrt((R - 1)/R)}, a
+fall of 2.5\% at \code{R = 20}. For jackknife replicates (\code{type = "JK1"},
 \code{"JK2"}, or \code{"JKn"}), scale and rscales follow the standard jackknife
 variance conventions; see \code{type} for defaults.
 
@@ -226,16 +245,16 @@ Association} \bold{115}(532), 2011--2021.
 \code{\link[=as_survey]{as_survey()}} for probability designs with Taylor variance,
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=as_survey_twophase]{as_survey_twophase()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

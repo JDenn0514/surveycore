@@ -39,9 +39,11 @@ survey_glm_fit(
 
 \item{degf}{Raw design degrees of freedom (positive scalar). For
 \code{survey_taylor} designs (including SRS, which is absorbed into Taylor):
-number of PSUs minus number of strata. For \code{survey_replicate} designs:
-number of replicates minus one. For \code{survey_twophase}: Phase 1 PSUs
-minus Phase 1 strata. For \code{survey_nonprob}: \code{Inf} (no design-based
+number of PSUs minus number of strata, counting only those holding a row
+used in the fit. For \code{survey_replicate} designs: number of replicates
+minus one. For \code{survey_twophase}: phase-2 clusters minus phase-2
+strata over the rows used in the fit, as \code{survey::degf()} counts it
+(each phase-2 row is a cluster when \code{ids2} is not set). For \code{survey_nonprob}: \code{Inf} (no design-based
 df). This is \emph{not} the residual degrees of freedom used for
 t-statistics and confidence intervals; those are computed as
 \code{degf - (p - 1)} where \code{p} is the number of model coefficients.}
@@ -96,16 +98,16 @@ fit@coefficients
 \seealso{
 \code{\link[=survey_glm]{survey_glm()}} to create a \code{survey_glm_fit}.
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=as_survey_twophase]{as_survey_twophase()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

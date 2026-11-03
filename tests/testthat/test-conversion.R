@@ -49,8 +49,8 @@
 #    27. rejects plain data.frame
 #   as_svydesign() — survey_taylor with no ids uses ids = ~1
 #    37. as_svydesign(survey_taylor) with ids = NULL produces ids = ~1
-#   from_svydesign() — twophase method unknown fallback warning
-#    38. warns when twophase x$method is unrecognised
+#   from_svydesign() — twophase method from the object's class
+#    38. a twophase object converts to "approx" with no condition
 #   from_tbl_svy() — happy path
 #    28. tbl_svy → survey_taylor
 #   from_tbl_svy() — error on non-tbl_svy input
@@ -129,7 +129,6 @@ test_that("as_svydesign() converts survey_taylor without error", {
 test_that("as_svydesign() converts SRS-style survey_taylor without error", {
   skip_if_not_installed("survey")
   d <- make_srs()
-  test_invariants(d)
   sv <- as_svydesign(d)
   expect_true(!is.null(sv))
 })
@@ -140,7 +139,6 @@ test_that("as_svydesign() converts SRS-style survey_taylor without error", {
 test_that("as_svydesign() converts survey_replicate without error", {
   skip_if_not_installed("survey")
   d <- make_rep()
-  test_invariants(d)
   sv <- as_svydesign(d)
   expect_true(!is.null(sv))
 })
@@ -151,7 +149,6 @@ test_that("as_svydesign() converts survey_replicate without error", {
 test_that("as_svydesign() converts survey_twophase without error", {
   skip_if_not_installed("survey")
   d <- make_twophase()
-  test_invariants(d)
   sv <- suppressWarnings(as_svydesign(d))
   expect_true(!is.null(sv))
 })
@@ -281,10 +278,26 @@ test_that("as_svydesign(survey_replicate) gives svymean matching survey::svrepde
 
 # ── 12. as_svydesign() — error on non-survey input ───────────────────────────
 
+# E-1 and E-3. The dual pattern. The nonprob branch takes one input class
+#              out of the else branch, and the message is only correct
+#              afterwards, so the snapshot records the current text as the
+#              text the four call sites keep.
 test_that("as_svydesign() rejects a plain data.frame", {
   skip_if_not_installed("survey")
   expect_error(
     as_svydesign(data.frame(x = 1)),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_snapshot(error = TRUE, as_svydesign(data.frame(x = 1)))
+})
+
+# E-2. The same guard on an atomic input, which inherits no S7 class at
+#      all. The message reports the class it got, so the two rows exercise
+#      two different renderings of the "i" bullet.
+test_that("as_svydesign() rejects a character string", {
+  skip_if_not_installed("survey")
+  expect_error(
+    as_svydesign("apistrat"),
     class = "surveycore_error_not_survey_object"
   )
 })
@@ -296,7 +309,6 @@ test_that("as_tbl_svy() converts survey_taylor to tbl_svy", {
   skip_if_not_installed("survey")
   skip_if_not_installed("srvyr")
   d <- make_taylor()
-  test_invariants(d)
   ts <- as_tbl_svy(d)
   expect_true(inherits(ts, "tbl_svy"))
 })
@@ -462,7 +474,6 @@ test_that("from_svydesign() preserves all data rows", {
     nest = TRUE
   )
   d <- from_svydesign(sv)
-  test_invariants(d)
   expect_identical(nrow(d@data), nrow(df))
 })
 
@@ -605,7 +616,6 @@ test_that("from_tbl_svy() converts tbl_svy to survey_taylor", {
   skip_if_not_installed("survey")
   skip_if_not_installed("srvyr")
   d <- make_taylor()
-  test_invariants(d)
   ts <- as_tbl_svy(d)
   d2 <- from_tbl_svy(ts)
   expect_true(S7::S7_inherits(d2, survey_taylor))
@@ -654,7 +664,7 @@ test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
   skip_if_not_installed("survey")
   df <- make_survey_data(n = 100L, design = "twophase", seed = 301L)
   # phase1 with no ids (SRS-like) — p1$ids will be NULL
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   d2 <- as_survey_twophase(phase1, subset = subset)
   sv <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
@@ -664,7 +674,7 @@ test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
 test_that("as_svydesign() handles twophase design with phase2 ids", {
   skip_if_not_installed("survey")
   df <- make_survey_data(n = 100L, design = "twophase", seed = 302L)
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
   sv <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
@@ -764,30 +774,4836 @@ test_that("as_svydesign() uses ids = ~1 when survey_taylor has ids = NULL", {
 })
 
 
-# 38. from_svydesign() warns when twophase x$method is unrecognised (lines 465-472)
-test_that("from_svydesign() warns surveycore_warning_twophase_method_unknown for unknown method", {
+# 38. survey::twophase() stores no method: twophase2 is "full" and twophase
+# is "approx". The route once guessed the second and warned
+# surveycore_warning_twophase_method_unknown on every approx object (#335).
+test_that("from_svydesign() converts a twophase object to method approx with no warning", {
   skip_if_not_installed("survey")
   set.seed(42)
   n <- 30L
   df <- data.frame(x = rnorm(n), wt = rep(1, n))
   sub <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.6, 0.4))
-  # method = "approx" creates a plain "twophase" object (not "twophase2"), so
-  # the class-based fallback does not fire and only x$method controls dispatch.
+  sv <- survey::twophase(
+    id = list(~1, ~1),
+    strata = list(NULL, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = sub,
+    method = "approx"
+  )
+
+  expect_no_warning(d <- from_svydesign(sv))
+  expect_true(S7::S7_inherits(d, survey_twophase))
+  expect_identical(d@variables$method, "approx")
+})
+
+
+# ── Round trip through the survey package ────────────────────────────────────
+#
+# as_svydesign() builds a survey::svydesign() object, and survey stores its own
+# call. R records the unevaluated argument expressions there, so passing a
+# variable that holds a formula recorded the variable's name rather than the
+# formula. from_svydesign() reads those back with all.vars() to recover the
+# design column names, so every Taylor design failed to rebuild. These rows
+# pin the repair.
+
+test_that("from_svydesign() rebuilds a Taylor design that as_svydesign() made", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 3L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+
+  back <- from_svydesign(as_svydesign(d))
+
+  expect_identical(back@variables$ids, d@variables$ids)
+  expect_identical(back@variables$strata, d@variables$strata)
+  expect_identical(back@variables$weights, d@variables$weights)
+  expect_identical(back@variables$fpc, d@variables$fpc)
+})
+
+test_that("the survey round trip preserves the estimate and its standard error", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 3L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+
+  back <- from_svydesign(as_svydesign(d))
+  before <- suppressWarnings(get_means(d, y1, variance = "se"))
+  after <- suppressWarnings(get_means(back, y1, variance = "se"))
+
+  expect_equal(after$mean, before$mean, tolerance = 0)
+  expect_equal(after$se, before$se, tolerance = 0)
+})
+
+test_that("the survey round trip works for every Taylor design shape", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 4L)
+  # A constant FPC. make_survey_data() varies fpc by PSU, which makes survey
+  # warn that it varies within a stratum. That warning is about the fixture,
+  # not about the round trip under test.
+  df$fpc_const <- 1000
+
+  shapes <- list(
+    ids_only = as_survey(df, ids = psu, weights = wt),
+    with_strata = as_survey(df, ids = psu, weights = wt, strata = strata),
+    with_fpc = as_survey(df, ids = psu, weights = wt, fpc = fpc_const),
+    srs = as_survey(df, weights = wt)
+  )
+
+  for (nm in names(shapes)) {
+    back <- from_svydesign(as_svydesign(shapes[[nm]]))
+    expect_identical(
+      back@variables$weights,
+      shapes[[nm]]@variables$weights,
+      label = paste("shape:", nm)
+    )
+  }
+})
+
+test_that("as_svydesign() stores a call naming real columns, not local variables", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 5L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  sv <- as_svydesign(d)
+
+  # The regression this guards: these read "ids_formula" and "strata_var"
+  # before the fix, because R recorded the argument expressions rather than
+  # the formulas they evaluated to.
+  expect_identical(all.vars(sv$call$ids), "psu")
+  expect_identical(all.vars(sv$call$strata), "strata")
+  expect_identical(all.vars(sv$call$weights), "wt")
+})
+
+
+# ── C-0–C-9. haven-labelled data on the conversion routes ────────────────────
+#
+# Gate 10 (spec section XI.10): `@metadata@value_labels` is populated on every
+# route that builds a design from a frame carrying a `labels` attribute,
+# `from_svydesign()` included. C-3, C-5 and C-6 are the proof.
+#
+# `make_labelled()` is in `tests/testthat/helper-test-data.R`. It builds the
+# `haven_labelled` class vector with base R, so `haven` stays in Suggests.
+
+# A source frame with two labelled analysis columns and a plain weight.
+make_labelled_frame <- function(n = 40L, seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    psu = rep(seq_len(10L), each = n %/% 10L),
+    strata = rep(1:2, each = n %/% 2L),
+    wt = runif(n, 1, 3)
+  )
+  df$y1 <- make_labelled(rnorm(n), label = "Outcome variable 1")
+  df$y3 <- make_labelled(
+    rep(c(0, 1), n %/% 2L),
+    labels = c("No" = 0, "Yes" = 1),
+    label = "Outcome variable 3"
+  )
+  df
+}
+
+# Names of the columns of `data` that still carry the labelled class.
+labelled_cols <- function(data) {
+  names(data)[vapply(data, inherits, logical(1L), "haven_labelled")]
+}
+
+# The value labels y3 carries in every fixture below.
+y3_labels <- c("No" = 0, "Yes" = 1)
+
+
+# C-0. get_means(label_vars = TRUE) over a from_svydesign() design shows the
+#      variable label rather than the raw column name.
+test_that("get_means() on a from_svydesign() design reports the variable label", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df
+  )
+  d <- from_svydesign(sv)
+
+  res <- get_means(d, y1, variance = "se", label_vars = TRUE)
+  shown <- attr(res, ".meta")$x$y1$variable_label
+
+  expect_identical(shown, "Outcome variable 1")
+  expect_false(identical(shown, "y1"))
+})
+
+
+# C-1. as_svydesign() hands over plain columns that keep their attributes.
+test_that("as_svydesign() returns plain columns that keep their labels", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  sv <- as_svydesign(d)
+
+  expect_true(inherits(sv, "survey.design"))
+  expect_identical(labelled_cols(sv$variables), character(0))
+  expect_identical(attr(sv$variables$y3, "labels", exact = TRUE), y3_labels)
+  expect_identical(
+    attr(sv$variables$y1, "label", exact = TRUE),
+    "Outcome variable 1"
+  )
+})
+
+
+# C-2. The converted object estimates identically to the surveycore design.
+test_that("svymean() on the as_svydesign() output matches get_means() [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  sv <- as_svydesign(d)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv)
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+
+# C-3. from_svydesign() harvests the labels into @metadata. Gate 10.
+test_that("from_svydesign() captures value labels from a labelled svydesign", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(extract_val_labels(d), list(y3 = y3_labels))
+  expect_identical(d@metadata@value_labels, list(y3 = y3_labels))
+  expect_identical(
+    extract_var_label(d),
+    c(y1 = "Outcome variable 1", y3 = "Outcome variable 3")
+  )
+})
+
+
+# C-4. A labelled weight column no longer aborts the Taylor route.
+test_that("from_svydesign() converts a design whose weight column is labelled", {
+  skip_if_not_installed("survey")
+  set.seed(11L)
+  n <- 40L
+  w <- runif(n, 1, 3)
+  # `probs` rather than `weights` keeps the weight formula out of the stored
+  # call, so the weight column is recovered by value. That reaches
+  # `.find_col_by_value()`, which casts each candidate with as.numeric().
+  df <- data.frame(y = rnorm(n), p = 1 / w)
+  df$wt <- make_labelled(w, label = "Sampling weight")
+
+  sv <- survey::svydesign(ids = ~1, probs = ~p, data = df)
+  d <- from_svydesign(sv)
+
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(d@variables$weights, "wt")
+  expect_equal(d@data$wt, w, tolerance = 0, ignore_attr = TRUE)
+})
+
+
+# C-5. The replicate route captures labels. Gate 10.
+test_that("from_svydesign() captures value labels from a labelled svrepdesign", {
+  skip_if_not_installed("survey")
+  set.seed(12L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3))
+  df$y3 <- make_labelled(
+    rep(c(0, 1), n %/% 2L),
+    labels = y3_labels,
+    label = "Outcome variable 3"
+  )
+  rep_mat <- matrix(runif(n * 4L), ncol = 4L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_true(S7::S7_inherits(d, survey_replicate))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(extract_val_labels(d), list(y3 = y3_labels))
+  expect_identical(extract_var_label(d), c(y3 = "Outcome variable 3"))
+})
+
+
+# C-6. The two-phase route carries the phase 1 metadata forward. Gate 10.
+test_that("from_svydesign() captures value labels from a labelled twophase", {
+  skip_if_not_installed("survey")
+  set.seed(13L)
+  n <- 30L
+  df <- data.frame(x = rnorm(n), wt = rep(1, n))
+  df$y3 <- make_labelled(
+    rep(c(0, 1), n %/% 2L),
+    labels = y3_labels,
+    label = "Outcome variable 3"
+  )
+  sub <- rep(c(TRUE, FALSE), n %/% 2L)
   sv <- survey::twophase(
     id = list(~1, ~1),
     strata = list(NULL, NULL),
     probs = list(NULL, NULL),
     data = df,
-    subset = sub,
-    method = "approx"
+    subset = sub
   )
-  # Replace method with an unrecognised value to trigger the fallback warning.
-  sv$method <- "nonexistent_method"
+
+  d <- suppressWarnings(from_svydesign(sv))
+
+  expect_true(S7::S7_inherits(d, survey_twophase))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(extract_val_labels(d), list(y3 = y3_labels))
+  expect_identical(extract_var_label(d), c(y3 = "Outcome variable 3"))
+})
+
+
+# C-7. Round trip out through survey and back keeps the labels at both ends.
+test_that("as_survey() to as_svydesign() to from_svydesign() keeps the labels", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  d1 <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(labelled_cols(d1@data), character(0))
+  expect_identical(extract_val_labels(d1), list(y3 = y3_labels))
+
+  sv <- as_svydesign(d1)
+  expect_identical(labelled_cols(sv$variables), character(0))
+
+  # The return leg used to abort for a reason unrelated to labels: `survey`
+  # recorded the local variable names in `$call`, so `from_svydesign()` read
+  # them back as design variables and raised
+  # `surveycore_error_design_var_missing`. Fixed separately in #195, which
+  # inlines the formulas into the stored call. This row asserts the whole
+  # round trip now.
+  d2 <- from_svydesign(sv)
+
+  expect_identical(labelled_cols(d2@data), character(0))
+  expect_identical(extract_val_labels(d2), list(y3 = y3_labels))
+  expect_identical(
+    extract_var_label(d2),
+    c(y1 = "Outcome variable 1", y3 = "Outcome variable 3")
+  )
+})
+
+
+# C-8. The srvyr round trip behaves the same way.
+test_that("as_tbl_svy() to from_tbl_svy() keeps the labels", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  df <- make_labelled_frame()
+  d1 <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  tbl <- as_tbl_svy(d1)
+  expect_identical(labelled_cols(tbl$variables), character(0))
+
+  d2 <- from_tbl_svy(tbl)
+
+  expect_identical(labelled_cols(d2@data), character(0))
+  expect_identical(extract_val_labels(d2), list(y3 = y3_labels))
+  expect_identical(
+    extract_var_label(d2),
+    c(y1 = "Outcome variable 1", y3 = "Outcome variable 3")
+  )
+})
+
+
+# C-9. A source frame with no labels harvests nothing and does not error.
+test_that("from_svydesign() on an unlabelled frame returns no value labels", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(extract_val_labels(d), stats::setNames(list(), character(0)))
+  expect_identical(d@metadata@value_labels, list())
+})
+
+
+# ── R-1 … R-10. from_svydesign() — the replicate bridge (#197) ───────────────
+#
+# The import route expands x$repweights, generates a name for every replicate
+# column survey leaves unnamed, and writes one column per replicate into the
+# data. Spec §III.2 steps 2, 4, 5, 6, 10, 11, 12 and 13.
+
+# R-1. Numerical parity, finished weights, uncompressed source.
+test_that("from_svydesign() matches survey on an uncompressed finished-weight source [numerical]", {
+  skip_if_not_installed("survey")
+  set.seed(101L)
+  n <- 40L
+  df <- data.frame(
+    wt = runif(n, 1, 4),
+    y1 = rnorm(n)
+  )
+  rep_mat <- matrix(runif(n * 16L, 0.5, 2), ncol = 16L) * df$wt
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  # Preconditions: the source must really be uncompressed and must really
+  # declare finished weights, or the block passes without testing anything.
+  expect_false(inherits(sv$repweights, "repweights_compressed"))
+  expect_true(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+  test_invariants(d)
+
+  sm <- survey::svymean(~y1, sv)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+# R-2. Numerical parity, finished weights, compressed source. This is the
+# storage form that a dim() check cannot tell apart from a plain matrix.
+test_that("from_svydesign() matches survey on a compressed finished-weight source [numerical]", {
+  skip_if_not_installed("survey")
+  set.seed(102L)
+  n <- 40L
+  df <- data.frame(
+    wt = runif(n, 1, 4),
+    y1 = rnorm(n)
+  )
+  rep_mat <- matrix(runif(n * 16L, 0.5, 2), ncol = 16L) * df$wt
+  sv_raw <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+  sv <- survey::compressWeights(sv_raw)
+
+  # Preconditions: the installed survey must actually compress, and the
+  # finished-weight declaration must survive compression.
+  expect_true(inherits(sv$repweights, "repweights_compressed"))
+  expect_true(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+
+  sm <- survey::svymean(~y1, sv)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  expect_length(d@variables$repweights, 16L)
+})
+
+# R-3. A factor-form source: structure only. survey::as.svrepdesign() reports
+#      combined.weights FALSE, so step 9 folds the base weight into every
+#      stored column. R-11 carries the standard-error parity this enables.
+test_that("from_svydesign() stores every replicate of a compressed factor-form source", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 103L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn")
+
+  # Preconditions for the factor form, and for survey naming no column.
+  expect_false(isTRUE(sv$combined.weights))
+  expect_length(colnames(sv$repweights), 0L)
+
+  n_rep <- ncol(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, n_rep)
+  expect_true(all(grepl(
+    "^\\.\\.surveycore_repwt_[0-9]+\\.\\.$",
+    d@variables$repweights
+  )))
+  expect_true(all(d@variables$repweights %in% names(d@data)))
+  expect_true(all(vapply(
+    d@data[d@variables$repweights],
+    is.numeric,
+    logical(1L)
+  )))
+  expect_no_error(get_means(d, y1, variance = "se"))
+})
+
+# R-4. The uncompressed factor form. as.matrix() leaves survey's "repweights"
+#      class on the object here, so this is the source that proves the
+#      unclass() in step 4 does its job: the route must still produce n_rep
+#      separate double columns.
+test_that("from_svydesign() writes one double column per replicate for an uncompressed source", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 104L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn", compress = FALSE)
+
+  # Precondition: the class survey puts on the stored object survives
+  # as.matrix(), which is exactly what step 4 has to strip.
+  expect_true(inherits(as.matrix(sv$repweights), "repweights"))
+
+  rep_mat <- unclass(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, ncol(rep_mat))
+  expect_identical(ncol(d@data), ncol(df) + ncol(rep_mat))
+  # survey::as.svrepdesign() reports combined.weights FALSE, so step 9 folds
+  # the base weight in and the stored column is the source column times
+  # x$pweights (§VI property 10). R-11 and R-12 test the fold-in itself; this
+  # block still tests the column count, the names and the double type.
+  for (j in seq_len(ncol(rep_mat))) {
+    expect_identical(typeof(d@data[[d@variables$repweights[[j]]]]), "double")
+    expect_equal(
+      d@data[[d@variables$repweights[[j]]]],
+      as.numeric(rep_mat[, j]) * as.numeric(sv$pweights),
+      tolerance = 1e-12
+    )
+  }
+})
+
+# R-5. No silent loss (spec §VI property 4).
+test_that("from_svydesign() stores one existing data column per source replicate", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 105L)
+  # JK1 needs an unstratified design.
+  sv_t <- survey::svydesign(ids = ~psu, weights = ~wt, data = df)
+  sv <- survey::as.svrepdesign(sv_t, type = "JK1")
+
+  n_rep <- ncol(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, n_rep)
+  expect_identical(setdiff(d@variables$repweights, names(d@data)), character(0))
+})
+
+# R-6. The regression guard for #197 itself. Before this change the route
+#      stored zero names, wrote no columns, and the loss surfaced later at
+#      analysis time as surveycore_error_all_replicates_na.
+test_that("get_means() runs on a design converted from survey::as.svrepdesign()", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 106L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn")
+
+  expect_no_error(get_means(from_svydesign(sv), y1))
+})
+
+# R-7. Generated names pad to the width of the replicate count (§II.2, §III.6).
+test_that("from_svydesign() zero-pads generated replicate names for 20 replicates", {
+  skip_if_not_installed("survey")
+  set.seed(107L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 20L, 0.5, 2), ncol = 20L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, 20L)
+  expect_identical(d@variables$repweights[[1L]], "..surveycore_repwt_01..")
+  expect_identical(d@variables$repweights[[9L]], "..surveycore_repwt_09..")
+  expect_identical(d@variables$repweights[[20L]], "..surveycore_repwt_20..")
+})
+
+# R-8. A one-digit replicate count generates unpadded names.
+test_that("from_svydesign() leaves generated replicate names unpadded for 4 replicates", {
+  skip_if_not_installed("survey")
+  set.seed(108L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(
+    d@variables$repweights,
+    c(
+      "..surveycore_repwt_1..",
+      "..surveycore_repwt_2..",
+      "..surveycore_repwt_3..",
+      "..surveycore_repwt_4.."
+    )
+  )
+})
+
+# R-9. Survey's own names pass through unchanged and in order, and the route
+#      still writes every column from the expanded matrix
+#      (§III.6, §VI property 5).
+test_that("from_svydesign() passes survey's replicate column names through unchanged", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 40L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "brr",
+    seed = 109L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = df[, repwt_cols],
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  # Precondition: survey kept the names, so step 6 must not generate.
+  expect_identical(colnames(sv$repweights), repwt_cols)
+
+  rep_mat <- unclass(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$repweights, repwt_cols)
+  expect_false(any(grepl("surveycore_repwt", names(d@data), fixed = TRUE)))
+  for (j in seq_along(repwt_cols)) {
+    expect_equal(
+      d@data[[repwt_cols[[j]]]],
+      as.numeric(rep_mat[, j]),
+      tolerance = 0
+    )
+  }
+})
+
+# R-10. A replicate column holds exactly x$pweights and no data column does.
+#       Step 10 runs before step 11, so the base weight search never sees the
+#       replicate block and the route manufactures ..surveycore_wt.. (§III.6).
+test_that("from_svydesign() manufactures the weight column when a replicate holds the base weights", {
+  skip_if_not_installed("survey")
+  set.seed(110L)
+  n <- 24L
+  df <- data.frame(y1 = rnorm(n)) # no weight column in the data
+  ext_wts <- runif(n, 1, 3)
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L) * ext_wts
+  rep_mat[, 1L] <- ext_wts # replicate 1 deletes nothing and scales nothing
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ext_wts,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$weights, "..surveycore_wt..")
+  expect_false(d@variables$weights %in% d@variables$repweights)
+  expect_equal(d@data[["..surveycore_wt.."]], ext_wts, tolerance = 0)
+  expect_equal(d@data[[d@variables$repweights[[1L]]]], ext_wts, tolerance = 0)
+})
+
+
+# ── R-11 … R-21. from_svydesign() — the base weight fold-in (#197) ────────────
+#
+# When the source design reports replication factors rather than finished
+# weights — isTRUE(x$combined.weights) is FALSE — the import route multiplies
+# every expanded replicate column by x$pweights. Spec §III.2 step 9.
+#
+# The fold-in is silent on both branches: both weight forms describe the same
+# design, the product is exact, and survey performs the same multiplication
+# itself at call time (§V.8, §V.9). No block here expects a condition.
+
+# R-11. The defect #197 exists to remove. survey::as.svrepdesign() reports the
+#       factor form for every replicate type, so before the fold-in the stored
+#       columns were replication factors and the standard error was wrong by a
+#       design-dependent amount: spec §III.1 measures 35%, 8%, 4%, 10% and
+#       0.1% across five designs, in both directions.
+test_that("from_svydesign() matches survey on a JKn factor-form source [numerical]", {
+  skip_if_not_installed("survey")
+  set.seed(201L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(seq_len(20L), each = 2L),
+    strata = rep(seq_len(4L), each = 10L),
+    # A wide weight spread: the size of the pre-fold-in error depends on how
+    # the factor pattern correlates with the base weights, and barely-varying
+    # weights make it nearly vanish (§III.1).
+    wt = runif(n, 1, 60),
+    y1 = rnorm(n)
+  )
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn")
+
+  # Precondition: this must be a factor-form source, or the block passes on
+  # the branch it is not testing.
+  expect_false(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+
+  sm <- survey::svymean(~y1, sv)
+  sc <- get_means(d, y1, variance = c("se", "ci"))
+  ci <- confint(sm)
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  expect_equal(sc$ci_low[[1L]], ci[1], tolerance = 1e-6)
+  expect_equal(sc$ci_high[[1L]], ci[2], tolerance = 1e-6)
+})
+
+# R-12. The stored value itself (§VI property 10). The product is row-wise:
+#       x$pweights recycles down each column, so [i, r] becomes R[i, r] * p[i].
+test_that("from_svydesign() stores each replicate column times the base weight", {
+  skip_if_not_installed("survey")
+  set.seed(202L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(seq_len(20L), each = 2L),
+    wt = runif(n, 1, 60),
+    y1 = rnorm(n)
+  )
+  sv_t <- survey::svydesign(ids = ~psu, weights = ~wt, data = df)
+  sv <- survey::as.svrepdesign(sv_t, type = "JK1")
+
+  expect_false(isTRUE(sv$combined.weights))
+
+  rep_mat <- unclass(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  # The base weights must vary, or the multiplication is unobservable.
+  expect_gt(diff(range(sv$pweights)), 1)
+
+  for (j in seq_len(ncol(rep_mat))) {
+    expect_equal(
+      d@data[[d@variables$repweights[[j]]]],
+      as.numeric(rep_mat[, j]) * as.numeric(sv$pweights),
+      tolerance = 1e-12
+    )
+  }
+})
+
+# R-13. The other branch of step 9. A finished-weight source passes through
+#       unmultiplied — the fold-in must not fire twice on the same design.
+test_that("from_svydesign() leaves a finished-weight source unmultiplied", {
+  skip_if_not_installed("survey")
+  set.seed(203L)
+  n <- 40L
+  df <- data.frame(wt = runif(n, 1, 60), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 8L, 0.5, 2), ncol = 8L) * df$wt
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  expect_true(isTRUE(sv$combined.weights))
+  # The base weights vary, so a spurious fold-in would be visible.
+  expect_gt(diff(range(sv$pweights)), 1)
+
+  d <- from_svydesign(sv)
+
+  for (j in seq_len(ncol(rep_mat))) {
+    expect_equal(
+      d@data[[d@variables$repweights[[j]]]],
+      as.numeric(rep_mat[, j]),
+      tolerance = 0
+    )
+  }
+})
+
+# R-14. Genuine zeros survive the fold-in and the write (§III.4, §III.6). JK1
+#       and JKn delete a whole PSU per replicate, so a deleted row genuinely
+#       carries weight 0 in that replicate.
+test_that("from_svydesign() keeps genuine zeros on JK1 and JKn conversions", {
+  skip_if_not_installed("survey")
+  set.seed(204L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(seq_len(20L), each = 2L),
+    strata = rep(seq_len(4L), each = 10L),
+    wt = runif(n, 1, 60),
+    y1 = rnorm(n)
+  )
+  sources <- list(
+    JK1 = survey::svydesign(ids = ~psu, weights = ~wt, data = df),
+    JKn = survey::svydesign(
+      ids = ~psu,
+      strata = ~strata,
+      weights = ~wt,
+      data = df
+    )
+  )
+
+  for (ty in names(sources)) {
+    sv <- survey::as.svrepdesign(sources[[ty]], type = ty)
+    rep_mat <- unclass(as.matrix(sv$repweights))
+    n_zero <- sum(rep_mat == 0)
+
+    # Precondition: the deletion pattern must really put zeros in the matrix.
+    expect_gt(n_zero, 0L)
+
+    d <- from_svydesign(sv)
+    stored <- sum(vapply(
+      d@data[d@variables$repweights],
+      function(col) sum(col == 0),
+      numeric(1L)
+    ))
+    expect_identical(stored, as.numeric(n_zero))
+  }
+})
+
+# R-15. An NA in the replicate matrix passes through unchanged (§III.6).
+#       survey::svrepdesign() refuses an NA at construction — "Missing values
+#       not allowed in 'repweights'" — so the only way to hold one is to put
+#       it on the built object. The route reads the field, not the call.
+test_that("from_svydesign() keeps an NA in the replicate matrix", {
+  skip_if_not_installed("survey")
+  set.seed(205L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  # suppressWarnings(): survey guesses at combined.weights from the mean
+  # magnitudes and can warn "Data look like combined weights". Its heuristic
+  # is not under test here.
+  sv <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  ))
+  sv$repweights[2L, 1L] <- NA
+
+  expect_false(isTRUE(sv$combined.weights))
+  expect_identical(sum(is.na(as.matrix(sv$repweights))), 1L)
+
+  d <- from_svydesign(sv)
+  first <- d@data[[d@variables$repweights[[1L]]]]
+
+  expect_true(is.na(first[[2L]]))
+  expect_identical(sum(is.na(first)), 1L)
+  # Every other row of that column still folded in.
+  expect_equal(
+    first[-2L],
+    as.numeric(rep_mat[-2L, 1L]) * as.numeric(sv$pweights)[-2L],
+    tolerance = 1e-12
+  )
+})
+
+# R-16. A negative replicate weight is preserved, not rejected and not
+#       rescaled (§III.4, §III.6). Some calibrated replicate files carry them.
+#       The survey_replicate validator checks each replicate column for
+#       numeric only; the positivity check covers the base weight alone.
+test_that("from_svydesign() preserves a negative replicate weight", {
+  skip_if_not_installed("survey")
+  set.seed(206L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  rep_mat[3L, 2L] <- -0.75
+  rep_mat[4L, 3L] <- 0
+  sv <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  ))
+
+  expect_false(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+  rep_cols <- d@variables$repweights
+
+  expect_equal(
+    d@data[[rep_cols[[2L]]]][[3L]],
+    -0.75 * df$wt[[3L]],
+    tolerance = 1e-12
+  )
+  expect_lt(d@data[[rep_cols[[2L]]]][[3L]], 0)
+  expect_identical(d@data[[rep_cols[[3L]]]][[4L]], 0)
+})
+
+# R-17. A zero or negative base weight is refused at construction. Existing
+#       structural behaviour, unchanged by the fold-in (§III.6). Class only —
+#       no snapshot, since this change does not add the condition.
+test_that("from_svydesign() rejects a replicate source with a nonpositive base weight", {
+  skip_if_not_installed("survey")
+  set.seed(207L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+
+  for (bad in c(0, -2)) {
+    pw <- df$wt
+    pw[[5L]] <- bad
+    sv <- suppressWarnings(survey::svrepdesign(
+      data = df,
+      weights = pw,
+      repweights = rep_mat,
+      type = "BRR",
+      combined.weights = FALSE
+    ))
+    expect_error(
+      from_svydesign(sv),
+      class = "surveycore_error_weights_nonpositive"
+    )
+  }
+})
+
+# R-18. Survey's own names reach @variables$repweights unchanged and in order
+#       on a factor-form source, and the columns hold the folded-in values
+#       (§III.6, §VI property 5). Spec §III.6: "The route overwrites those
+#       columns with the finished weights. The names do not change."
+test_that("from_svydesign() keeps survey's replicate names on a factor-form source", {
+  skip_if_not_installed("survey")
+  set.seed(208L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  colnames(rep_mat) <- c("rw_a", "rw_b", "rw_c", "rw_d")
+  sv <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  ))
+
+  expect_false(isTRUE(sv$combined.weights))
+  expect_identical(colnames(sv$repweights), colnames(rep_mat))
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$repweights, colnames(rep_mat))
+  expect_false(any(grepl("surveycore_repwt", names(d@data), fixed = TRUE)))
+  for (j in seq_len(ncol(rep_mat))) {
+    expect_equal(
+      d@data[[colnames(rep_mat)[[j]]]],
+      as.numeric(rep_mat[, j]) * as.numeric(sv$pweights),
+      tolerance = 1e-12
+    )
+  }
+})
+
+# R-19. A replicate name that also names a column of unrelated values. The
+#       route overwrites that column with the replicate weight (§III.6).
+#       survey::svrepdesign() cross-checks `variables` against `repweights`
+#       for neither name nor value, so the two can disagree, and the
+#       replicate matrix is the source of truth.
+test_that("from_svydesign() overwrites a data column that a replicate name shadows", {
+  skip_if_not_installed("survey")
+  set.seed(209L)
+  n <- 24L
+  df <- data.frame(
+    wt = runif(n, 1, 3),
+    y1 = rnorm(n),
+    rw_a = rep(-999, n), # unrelated values under a replicate name
+    rw_b = rep(-888, n)
+  )
+  rep_mat <- matrix(runif(n * 2L, 0.5, 2), ncol = 2L)
+  colnames(rep_mat) <- c("rw_a", "rw_b")
+  sv <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  ))
+
+  # Precondition: the design really does disagree with itself.
+  expect_identical(sv$variables$rw_a, rep(-999, n))
+  expect_equal(as.matrix(sv$repweights)[, 1L], rep_mat[, 1L], tolerance = 0)
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$repweights, c("rw_a", "rw_b"))
+  # The unrelated values are gone; no column was added to hold them.
+  expect_false(any(d@data$rw_a == -999))
+  expect_false(any(d@data$rw_b == -888))
+  expect_identical(ncol(d@data), ncol(df))
+  expect_equal(
+    d@data$rw_a,
+    as.numeric(rep_mat[, 1L]) * as.numeric(sv$pweights),
+    tolerance = 1e-12
+  )
+})
+
+# R-20. Generated name widths at the narrow end (§III.6). R-7 and R-8 cover
+#       the twenty- and four-replicate widths.
+test_that("from_svydesign() generates unpadded names for one and two replicates", {
+  skip_if_not_installed("survey")
+  set.seed(210L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  expected <- list(
+    "..surveycore_repwt_1..",
+    c("..surveycore_repwt_1..", "..surveycore_repwt_2..")
+  )
+
+  for (k in 1:2) {
+    rep_mat <- matrix(runif(n * k, 0.5, 2), ncol = k)
+    sv <- suppressWarnings(survey::svrepdesign(
+      data = df,
+      weights = ~wt,
+      repweights = rep_mat,
+      type = "other",
+      combined.weights = FALSE,
+      scale = 1,
+      rscales = rep(1, k)
+    ))
+
+    # Precondition: survey names no column, so step 6 must generate.
+    expect_length(colnames(sv$repweights), 0L)
+
+    d <- from_svydesign(sv)
+
+    expect_identical(d@variables$repweights, expected[[k]])
+  }
+})
+
+# R-21. The FPC keys this route records (§III.3). The import route reads no
+#       FPC from the source design, whatever the source carries.
+test_that("from_svydesign() records no FPC on an imported replicate design", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 211L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    fpc = ~fpc,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn")
+
+  d <- from_svydesign(sv)
+
+  expect_null(d@variables$fpc)
+  expect_identical(d@variables$fpctype, "fraction")
+  expect_true("fpc" %in% names(d@variables))
+  expect_true("fpctype" %in% names(d@variables))
+})
+
+# R-22. Oracle parity for the case where a replicate column holds exactly
+#       x$pweights and no data column does (§III.6). Step 10 runs before step
+#       11, so the base weight search never reaches the replicate block. R-10
+#       asserts the resulting name; this asserts the numbers.
+test_that("from_svydesign() matches survey when a replicate equals the base weights [numerical]", {
+  skip_if_not_installed("survey")
+  set.seed(212L)
+  n <- 40L
+  df <- data.frame(y1 = rnorm(n)) # no weight column in the data
+  ext_wts <- runif(n, 1, 3)
+  rep_mat <- matrix(runif(n * 8L, 0.5, 2), ncol = 8L)
+  rep_mat[, 1L] <- 1 # this replicate deletes nothing and scales nothing
+  sv <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    weights = ext_wts,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  ))
+
+  d <- from_svydesign(sv)
+
+  # After the fold-in, replicate 1 holds exactly the base weights.
+  expect_identical(d@variables$weights, "..surveycore_wt..")
+  expect_equal(
+    d@data[[d@variables$repweights[[1L]]]],
+    ext_wts,
+    tolerance = 1e-12
+  )
+
+  sm <- survey::svymean(~y1, sv)
+  sc <- get_means(d, y1, variance = c("se", "ci"))
+  ci <- confint(sm)
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  expect_equal(sc$ci_low[[1L]], ci[1], tolerance = 1e-6)
+  expect_equal(sc$ci_high[[1L]], ci[2], tolerance = 1e-6)
+})
+
+# R-23. The written columns add no metadata entry, and the base columns keep
+#       the entries they arrived with (§III.2 step 13, §VI property 12).
+test_that("from_svydesign() adds no metadata entry for the written replicate columns", {
+  skip_if_not_installed("survey")
+  set.seed(213L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  attr(df$y1, "label") <- "Outcome one"
+  sv_t <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+  sv <- survey::as.svrepdesign(sv_t, type = "JK1")
+
+  expect_false(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+  rep_cols <- d@variables$repweights
+
+  # The base column keeps the label it arrived with.
+  expect_identical(extract_var_label(d), c(y1 = "Outcome one"))
+  expect_identical(d@metadata@variable_labels, list(y1 = "Outcome one"))
+
+  # The written columns contribute nothing.
+  expect_false(any(rep_cols %in% names(d@metadata@variable_labels)))
+  expect_false(any(rep_cols %in% names(d@metadata@value_labels)))
+  for (nm in rep_cols) {
+    expect_identical(typeof(d@data[[nm]]), "double")
+    expect_null(attributes(d@data[[nm]]))
+  }
+})
+
+
+# ── R-24 … R-30. from_svydesign() — the four import refusals (D5, D6, #197) ───
+#
+# The replicate import route refuses four source designs, each with a typed
+# condition, in the step order spec §III.2 gives: the replicate type at step
+# 1, the row count at step 3, the resolved names at step 7, and a generated
+# name that already names a column at step 8.
+#
+# Each class carries one snapshot of its message. The second trigger of a
+# class carries the class assertion alone.
+
+# R-24. Step 1, the route's first step. survey::as.svrepdesign() accepts
+#       "subbootstrap" and stores the literal string, and the
+#       survey_replicate validator does not check `type`, so without this
+#       step the route stores a value the export route cannot use (§V.5).
+test_that("from_svydesign() rejects a subbootstrap replicate design", {
+  skip_if_not_installed("survey")
+  set.seed(240L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(n, 1, 3),
+    y1 = rnorm(n)
+  )
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  # survey's bootstrap heuristics warn on their own; keep them out of the
+  # assertions so the suite gains no warning.
+  sv <- suppressWarnings(
+    survey::as.svrepdesign(sv_t, type = "subbootstrap", replicates = 5L)
+  )
+
+  expect_identical(sv$type, "subbootstrap")
+
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_replicate_type_unsupported"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-25. The second reachable offending value (§III.6). Class only — R-24
+#       snapshots the message.
+test_that("from_svydesign() rejects an mrbbootstrap replicate design", {
+  skip_if_not_installed("survey")
+  set.seed(241L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(n, 1, 3),
+    y1 = rnorm(n)
+  )
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  sv <- suppressWarnings(
+    survey::as.svrepdesign(sv_t, type = "mrbbootstrap", replicates = 5L)
+  )
+
+  expect_identical(sv$type, "mrbbootstrap")
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_replicate_type_unsupported"
+  )
+})
+
+# R-26. Step 3. A zero-row svyrep.design is reachable: a zero-row
+#       survey.design through survey::as.svrepdesign(type = "JK1") builds and
+#       reports nrow(variables) 0 with a 0 x 0 replicate matrix. An empty
+#       replicate design supports no estimate and no variance (§V.6).
+test_that("from_svydesign() rejects a zero-row replicate design", {
+  skip_if_not_installed("survey")
+  df0 <- data.frame(
+    psu = integer(0),
+    wt = numeric(0),
+    y1 = numeric(0)
+  )
+  sv_t <- suppressWarnings(
+    survey::svydesign(ids = ~psu, weights = ~wt, data = df0)
+  )
+  sv <- suppressWarnings(survey::as.svrepdesign(sv_t, type = "JK1"))
+
+  # Precondition: the source really is empty, in both the data and the matrix.
+  expect_identical(nrow(sv$variables), 0L)
+  expect_identical(dim(unclass(as.matrix(sv$repweights))), c(0L, 0L))
+  expect_identical(sv$type, "JK1")
+
+  expect_error(from_svydesign(sv), class = "surveycore_error_empty_data")
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# The Taylor route has no row check of its own: until issue #248 a zero-row
+# survey.design converted to a zero-row survey_taylor. The survey_taylor
+# validator now refuses it. Class only: the error is raised at Layer 1.
+test_that("from_svydesign() rejects a zero-row Taylor design", {
+  skip_if_not_installed("survey")
+  df0 <- data.frame(
+    psu = integer(0),
+    wt = numeric(0),
+    y1 = numeric(0)
+  )
+  sv <- suppressWarnings(
+    survey::svydesign(ids = ~psu, weights = ~wt, data = df0)
+  )
+  expect_identical(nrow(sv$variables), 0L)
+
+  expect_error(from_svydesign(sv), class = "surveycore_error_empty_data")
+})
+
+# R-27. Step 7, first of its two triggers. survey accepts a matrix whose
+#       colnames() holds one or more empty strings, and an empty string
+#       cannot name a column (§V.1).
+test_that("from_svydesign() rejects a partly named replicate matrix", {
+  skip_if_not_installed("survey")
+  set.seed(242L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  colnames(rep_mat) <- c("r1", "", "r3", "")
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  # Precondition: survey kept the empty strings, so step 6 does not generate.
+  expect_identical(colnames(sv$repweights), c("r1", "", "r3", ""))
+
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repweights_names_lost"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-28. Step 7, second trigger. Writing a repeated name would collapse two
+#       replicates into one column (§V.1). Class only — R-27 snapshots the
+#       message.
+test_that("from_svydesign() rejects a replicate matrix with a repeated name", {
+  skip_if_not_installed("survey")
+  set.seed(243L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  colnames(rep_mat) <- c("r1", "r2", "r2", "r4")
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  expect_identical(colnames(sv$repweights), c("r1", "r2", "r2", "r4"))
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repweights_names_lost"
+  )
+})
+
+# R-29. Step 8, at one collision. The route generated the names and one of
+#       them already names a column of the data, which is what an earlier
+#       conversion leaves behind (§V.2). The message pluralizes per bullet,
+#       so this asserts the singular rendering.
+test_that("from_svydesign() rejects one generated name that already names a column", {
+  skip_if_not_installed("survey")
+  set.seed(244L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  df[["..surveycore_repwt_2.."]] <- 1
+  rep_mat <- matrix(runif(n * 3L, 0.5, 2), ncol = 3L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  # Precondition: survey named no column, so step 6 generates three names.
+  expect_length(colnames(sv$repweights), 0L)
+
+  cnd <- expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repwt_name_collision"
+  )
+  expect_match(conditionMessage(cnd), "has a column named", fixed = TRUE)
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-30. Step 8, at three collisions. Each bullet carries its own quantity, so
+#       each pluralizes on its own (§V.2). Class and plural rendering only —
+#       R-29 snapshots the message.
+test_that("from_svydesign() pluralizes the collision message at three collisions", {
+  skip_if_not_installed("survey")
+  set.seed(245L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  df[["..surveycore_repwt_1.."]] <- 1
+  df[["..surveycore_repwt_2.."]] <- 2
+  df[["..surveycore_repwt_3.."]] <- 3
+  rep_mat <- matrix(runif(n * 3L, 0.5, 2), ncol = 3L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  expect_length(colnames(sv$repweights), 0L)
+
+  cnd <- expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repwt_name_collision"
+  )
+  msg <- conditionMessage(cnd)
+  expect_match(msg, "has columns named", fixed = TRUE)
+  expect_match(msg, "conflicting\\s+columns")
+})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Export route — as_svydesign() on a survey_replicate (§IV)
+#
+#   X-1.  The FPC drop warns, and the conversion still returns a design
+#   X-2.  Export parity with a recorded FPC [numerical]
+#   X-3.  Export parity without a recorded FPC [numerical]
+#   X-4.  Every replicate type converts with an FPC recorded
+#   X-5.  No FPC recorded, no warning
+#   X-6.  The drop leaves the surveycore design untouched
+#   X-7.  A design that names no replicate column is refused
+#   X-8.  A Fay design exports with its stored rho, its scale and its SE
+#   X-9.  A Fay design built with rho = 0.3 or rho = 0 carries its rho across
+#   X-10. A Fay design that stores no usable rho is refused
+#   X-11. A Fay design that records neither scale nor rho is refused
+#   X-12. Round-trip parity on a JKn source [numerical]
+#   X-13. Round-trip parity on a Fay source [numerical]
+#   X-14. Round-trip parity through the FPC drop [numerical]
+#   X-15. Export parity for bootstrap [numerical]
+#   X-16. Export parity for JKn [numerical]
+#   X-17. Every accepted replicate type crosses both routes
+#   X-18. Export parity with no FPC recorded, and no condition raised
+#   X-19. A replicate column of zeros passes through [numerical]
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Build a replicate design that records an FPC column. make_survey_data()
+# supplies fpc as a per-stratum population size. as_survey_replicate()
+# refuses an fpc (issue #251), so the column is recorded on @variables
+# afterwards. That is the state the exported survey_replicate() constructor
+# can still produce: surveywts' create_*_weights() carries the source
+# Taylor design's fpc across that way.
+make_rep_fpc <- function(type = "BRR", seed = 401L, rscales = NULL) {
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = type,
+    rscales = rscales
+  )
+  d@variables$fpc <- "fpc"
+  d
+}
+
+# X-1. §IV.2 step 5 and §VI property 6. The warning is not the whole
+#      behaviour: the call has to succeed as well, so the result comes off the
+#      return value of the warned call.
+test_that("as_svydesign() warns and drops a recorded FPC, and still converts", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc()
+  test_invariants(d)
+  expect_identical(d@variables$fpc, "fpc")
 
   expect_warning(
-    d <- from_svydesign(sv),
-    class = "surveycore_warning_twophase_method_unknown"
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
   )
-  expect_true(S7::S7_inherits(d, survey_twophase))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The condition names the dropped column, and the FPC reached none of the
+  # replicate scales survey::svrepdesign() built.
+  cnd <- expect_warning(as_svydesign(d))
+  expect_match(conditionMessage(cnd), "fpc", fixed = TRUE)
+  expect_equal(sv$rscales, rep(1, length(d@variables$repweights)))
+
+  expect_snapshot(sv2 <- as_svydesign(d))
+})
+
+# X-2. §VI property 2 with an FPC recorded. The exported design must report
+#      surveycore's own numbers, which is the reason the FPC is dropped rather
+#      than reshaped (§IV.5).
+test_that("as_svydesign() with a dropped FPC reproduces surveycore's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 402L)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  sv_mean <- survey::svymean(~y1, sv)
+
+  expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sv_mean)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-3. §VI property 2 without an FPC. The same parity has to hold on the
+#      branch that raises nothing, so the drop is the only difference between
+#      the two calls.
+test_that("as_svydesign() without an FPC reproduces surveycore's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep(seed = 403L)
+  expect_null(d@variables$fpc)
+  sc <- get_means(d, y1, variance = "se")
+
+  sv_mean <- survey::svymean(~y1, as_svydesign(d))
+
+  expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sv_mean)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-4. §IV.6 and §IV.7. survey rejects an FPC outright for "BRR", "JK2",
+#      "ACS" and "successive-difference" with 'fpc not available for this
+#      type', and for "bootstrap" with 'Separate fpc not needed for
+#      bootstrap'. It accepts one for "JK1" and "JKn". The rule does not
+#      depend on the type: warn, drop, convert, and let no bare survey error
+#      reach the caller. "Fay" is out of scope here — it needs a stored
+#      rho, which make_rep_fpc() does not pass.
+test_that("as_svydesign() warns and converts for every replicate type carrying an FPC", {
+  skip_if_not_installed("survey")
+  types <- c("JK1", "JK2", "BRR", "bootstrap", "ACS", "successive-difference")
+  for (ty in types) {
+    d <- make_rep_fpc(type = ty, seed = 404L)
+    # Only JK2 makes survey::svrepdesign() warn about ignored arguments: it
+    # reports its own simpleWarning, 'with type JK2 scale= and rscales= are
+    # not needed', on every JK2 call, whatever the call passes. That is not
+    # behaviour of the FPC, so muffle it by class and leave the typed
+    # condition to reach expect_warning().
+    expect_warning(
+      sv <- suppressWarnings(as_svydesign(d), classes = "simpleWarning"),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    )
+    expect_true(inherits(sv, "svyrep.design"))
+    expect_identical(nrow(sv$variables), nrow(d@data))
+  }
+
+  # "JKn" needs rscales of its own — survey::svrepdesign() refuses combined
+  # JKn weights without them, for reasons unrelated to the FPC.
+  d_jkn <- make_rep_fpc(type = "JKn", seed = 404L, rscales = rep(1, 5L))
+  expect_warning(
+    sv_jkn <- suppressWarnings(
+      as_svydesign(d_jkn),
+      classes = "simpleWarning"
+    ),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  expect_true(inherits(sv_jkn, "svyrep.design"))
+})
+
+# X-5. §IV.6 first row. The silent branch.
+test_that("as_svydesign() raises no warning when the design records no FPC", {
+  skip_if_not_installed("survey")
+  d <- make_rep(seed = 405L)
+  expect_null(d@variables$fpc)
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+})
+
+# X-6. §IV.4 and §VI property 7. The drop is a fact about the exported design
+#      only. Nothing on x moves, so a second call warns again.
+test_that("as_svydesign() leaves the surveycore design untouched when it drops the FPC", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 406L)
+  data_before <- d@data
+  vars_before <- d@variables
+
+  expect_warning(
+    as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+
+  expect_identical(d@data, data_before)
+  expect_identical(d@variables, vars_before)
+  expect_identical(d@variables$fpc, "fpc")
+  expect_identical(d@variables$fpctype, "fraction")
+  expect_true("fpc" %in% names(d@data))
+
+  # A second conversion is not quieter than the first.
+  expect_warning(
+    as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+})
+
+# ── Replicate FPC record keys across the bridge (issue #320) ─────────────────
+# CB-3 fires only when @variables$fpc names a column and
+# @variables$fpc_applied is NULL: the design does not record whether the
+# correction was applied. No state passes an fpc to survey::svrepdesign().
+
+test_that("as_svydesign() raises no FPC warning when the design records where the FPC went", {
+  skip_if_not_installed("survey")
+  for (state in c("rscales", "repweights", "none")) {
+    d <- make_rep_fpc(seed = 431L)
+    d@variables$fpc_applied <- state
+    expect_no_warning(sv <- as_svydesign(d))
+    expect_true(inherits(sv, "svyrep.design"))
+    # No fpc reaches survey: the call names none, and rscales is the stored
+    # value (NULL for BRR, which survey fills with rep(1, R)).
+    expect_null(sv$call[["fpc"]])
+    expect_equal(sv$rscales, rep(1, length(d@variables$repweights)))
+  }
+})
+
+test_that("as_svydesign() reproduces surveycore's mean and SE in every FPC state [numerical]", {
+  skip_if_not_installed("survey")
+  for (state in list("rscales", "repweights", "none", NULL)) {
+    d <- make_rep_fpc(seed = 432L)
+    d@variables$fpc_applied <- state
+    sc <- get_means(d, y1, variance = "se")
+    if (is.null(state)) {
+      expect_warning(
+        sv <- as_svydesign(d),
+        class = "surveycore_warning_replicate_fpc_dropped"
+      )
+    } else {
+      expect_no_warning(sv <- as_svydesign(d))
+    }
+    sv_mean <- survey::svymean(~y1, sv)
+    expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+    expect_equal(
+      as.numeric(survey::SE(sv_mean)),
+      sc$se[[1L]],
+      tolerance = 1e-8
+    )
+  }
+})
+
+test_that("as_svydesign() does not apply a numeric fpc a second time [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 433L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  f <- c(0.05, 0.1, 0.15, 0.2, 0.25)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "JK1",
+    fpc = f,
+    fpctype = "fraction"
+  )
+  expect_identical(d@variables$fpc_applied, "rscales")
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  # The export passes the corrected rscales once and no fpc, so survey does
+  # not multiply by 1 - f again.
+  expect_null(sv$call[["fpc"]])
+  expect_equal(sv$rscales, 1 - f)
+  sv_mean <- survey::svymean(~y1, sv)
+  expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sv_mean)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+test_that("as_svydesign() warns on a design with no fpc_applied key at all", {
+  # A design saved before issue #320 carries no key; it reads as NULL.
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 434L)
+  vars <- d@variables
+  vars$fpc_applied <- NULL
+  vars$fpc_fraction <- NULL
+  d@variables <- vars
+  expect_false("fpc_applied" %in% names(d@variables))
+  expect_warning(
+    as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+})
+
+test_that("from_svydesign() records an svrepdesign() fpc as applied in rscales", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 435L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  f <- rep(0.1, n_rep)
+  expect_warning(
+    sv <- survey::svrepdesign(
+      weights = ~wt,
+      repweights = df[, repwt_cols],
+      type = "JK1",
+      fpc = f,
+      fpctype = "fraction",
+      mse = TRUE,
+      combined.weights = TRUE,
+      data = df
+    ),
+    "scale (n-1)/n not provided",
+    fixed = TRUE
+  )
+  d <- from_svydesign(sv)
+  test_invariants(d)
+  expect_identical(d@variables$fpc_applied, "rscales")
+  # The stored call is not evaluated: no column, no fraction.
+  expect_null(d@variables$fpc)
+  expect_null(d@variables$fpc_fraction)
+  # survey already multiplied rscales by 1 - f; the import keeps it.
+  expect_equal(d@variables$rscales, rep(0.9, n_rep))
+
+  # The record keeps the export quiet, and the SE survives the round trip.
+  expect_no_warning(sv2 <- as_svydesign(d))
+  expect_equal(
+    as.numeric(survey::SE(survey::svymean(~y1, sv2))),
+    as.numeric(survey::SE(survey::svymean(~y1, sv))),
+    tolerance = 1e-8
+  )
+})
+
+test_that("from_svydesign() records no FPC for a source built without one", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 436L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    weights = ~wt,
+    repweights = df[, repwt_cols],
+    type = "BRR",
+    mse = TRUE,
+    combined.weights = TRUE,
+    data = df
+  )
+  d <- from_svydesign(sv)
+  expect_true(all(c("fpc_applied", "fpc_fraction") %in% names(d@variables)))
+  expect_null(d@variables$fpc_applied)
+  expect_null(d@variables$fpc_fraction)
+})
+
+test_that("from_svydesign() records no FPC for an as.svrepdesign() source", {
+  # as.svrepdesign() keeps no trace of the source design's FPC: its call
+  # names only the design. The import cannot tell, so it records nothing.
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 100L, n_psu = 20L, n_strata = 4L, seed = 437L)
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    fpc = ~fpc,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  sv <- survey::as.svrepdesign(tay, type = "JKn")
+  expect_null(sv$call[["fpc"]])
+  d <- from_svydesign(sv)
+  expect_null(d@variables$fpc_applied)
+  expect_null(d@variables$fpc)
+})
+
+# X-7. §IV.2 step 2 and §VI property 11. The state is reachable through the
+#      exported survey_replicate() constructor, which takes an untyped
+#      variables list and never calls .validate_data_frame(). No
+#      test_invariants() call here: invariant 4 covers named design columns,
+#      and this design names no replicate column by construction.
+test_that("as_svydesign() rejects a replicate design that names no replicate column", {
+  skip_if_not_installed("survey")
+  set.seed(407L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  d <- survey_replicate(
+    data = df,
+    variables = list(
+      weights = "wt",
+      repweights = character(0),
+      type = "BRR",
+      scale = 1,
+      rscales = NULL,
+      fpc = NULL,
+      fpctype = "fraction",
+      mse = TRUE,
+      visible_vars = NULL
+    )
+  )
+
+  # Precondition: the design built, so the guard is the only thing standing
+  # between this object and survey's untyped
+  # 'missing value where TRUE/FALSE needed'.
+  expect_length(d@variables$repweights, 0L)
+
+  cnd <- expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_repweights_empty"
+  )
+  expect_match(
+    conditionMessage(cnd),
+    "no replicate weight column",
+    fixed = TRUE
+  )
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+# Build the survey Taylor design that the Fay and round-trip blocks convert
+# from. as.svrepdesign() reports the factor form, which is the path nearly
+# every real conversion takes.
+make_taylor_source <- function(seed = 421L, n = 60L) {
+  set.seed(seed)
+  data.frame(
+    strata = rep(1:6, each = n %/% 6L),
+    psu = rep(1:12, each = n %/% 12L),
+    wt = runif(n, 1, 4),
+    y1 = rnorm(n, mean = 10, sd = 2)
+  )
+}
+
+# Build a replicate design of a given type, with no FPC recorded. The data is
+# the same block make_rep_fpc() uses; only the recorded type and the scale
+# arguments change.
+make_rep_type <- function(
+  type = "BRR",
+  rho = NULL,
+  seed = 430L,
+  rscales = NULL
+) {
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = type,
+    rho = rho,
+    rscales = rscales
+  )
+}
+
+# X-8. §IV.2 step 4 and §VI property 9. A survey design built with
+#      fay.rho = 0.3 imports with rho = 0.3, and the export route carries that
+#      stored rho back to survey. Without a rho the call stops with survey's
+#      own 'With type='Fay' you must supply the correct rho'.
+test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  src <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.3)
+
+  d <- from_svydesign(src)
+  expect_identical(d@variables$type, "Fay")
+
+  sv <- as_svydesign(d)
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The shrinkage factor the replicates were built with, carried across in
+  # the stored rho.
+  expect_equal(sv$rho, 0.3, tolerance = 1e-10)
+
+  # The scale is the design's own, and the source's. Step 3 passes no scale
+  # for "Fay": survey computes it from the stored rho.
+  expect_equal(sv$scale, d@variables$scale, tolerance = 1e-10)
+  expect_equal(sv$scale, src$scale, tolerance = 1e-10)
+
+  sm_src <- survey::svymean(~y1, src)
+  sm_out <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm_out)[["y1"]], coef(sm_src)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm_out)),
+    as.numeric(survey::SE(sm_src)),
+    tolerance = 1e-8
+  )
+})
+
+# X-9. The export route passes the stored rho to survey::svrepdesign() and no
+#      scale. survey computes 1 / (R * (1 - rho)^2) from that rho, the same
+#      scale as_survey_replicate() stores, so the SE agrees with get_means().
+test_that("as_svydesign() exports a Fay design built with rho = 0.3 [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "Fay", rho = 0.3)
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+  expect_equal(sv$rho, 0.3, tolerance = 1e-10)
+  expect_equal(sv$scale, 1 / (5 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+test_that("as_svydesign() exports a Fay design built with rho = 0", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "Fay", rho = 0)
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_equal(sv$rho, 0, tolerance = 1e-10)
+  expect_equal(sv$scale, 1 / 5, tolerance = 1e-8)
+})
+
+test_that("as_svydesign() passes no rho for a BRR design", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "BRR")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_null(sv$rho)
+})
+
+# The domain restriction runs after the Fay rho is passed, so a filtered Fay
+# design keeps its rho and its scale, and the SE matches the domain estimate.
+test_that("as_svydesign() exports a Fay design with a domain column [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "fay",
+    seed = 15L
+  )
+  df[[SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "Fay",
+    rho = 0.3
+  )
+
+  sv <- as_svydesign(d)
+  expect_equal(sv$rho, 0.3, tolerance = 1e-10)
+  expect_equal(sv$scale, 1 / (10 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-10. The exported survey_replicate() constructor takes an untyped
+#       variables list, so a Fay design with no usable rho is reachable. Build
+#       one by hand on the make_rep_type() data, with extra entries appended
+#       to the variables list.
+make_fay_by_hand <- function(extra = list()) {
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  survey_replicate(
+    data = df,
+    variables = c(
+      list(
+        weights = "wt",
+        repweights = repwt_cols,
+        type = "Fay",
+        scale = 1 / 5,
+        rscales = NULL,
+        fpc = NULL,
+        fpctype = "fraction",
+        mse = TRUE,
+        visible_vars = NULL
+      ),
+      extra
+    )
+  )
+}
+
+test_that("as_svydesign() refuses a Fay design with no rho key", {
+  skip_if_not_installed("survey")
+  d <- make_fay_by_hand()
+  expect_false("rho" %in% names(d@variables))
+
+  cnd <- expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+  expect_match(conditionMessage(cnd), "rho", fixed = TRUE)
+  expect_match(conditionMessage(cnd), "as_survey_replicate", fixed = TRUE)
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+test_that("as_svydesign() refuses a Fay design whose rho key is NULL", {
+  skip_if_not_installed("survey")
+  d <- make_fay_by_hand(list(rho = NULL))
+  expect_true("rho" %in% names(d@variables))
+
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+test_that("as_svydesign() refuses a Fay design whose stored rho is 1.5", {
+  skip_if_not_installed("survey")
+  d <- make_fay_by_hand(list(rho = 1.5))
+  expect_equal(d@variables$rho, 1.5, tolerance = 1e-10)
+
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+# X-11. The exported survey_replicate() constructor takes an untyped
+#       variables list and its validator checks neither scale nor type, so a
+#       "Fay" design with no scale key and no rho key is reachable — issue
+#       #198's own reproduction builds one. The export route reads rho, not
+#       the scale, so the refusal is the same CB-4 condition.
+test_that("as_svydesign() refuses a Fay design that records no scale", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 424L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- survey_replicate(
+    data = df,
+    variables = list(
+      weights = "wt",
+      repweights = repwt_cols,
+      type = "Fay",
+      rscales = NULL,
+      fpc = NULL,
+      fpctype = "fraction",
+      mse = TRUE,
+      visible_vars = NULL
+    )
+  )
+  expect_null(d@variables$scale)
+  expect_false("rho" %in% names(d@variables))
+
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+# from_svydesign() copies a survey Fay object's rho unchanged and raises
+# nothing, whatever the value. The export route then refuses the design,
+# because the stored rho is not one finite number in [0, 1).
+make_fay_svrep <- function(rho) {
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "fay",
+    seed = 15L
+  )
+  survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = "repwt_[0-9]+",
+    type = "Fay",
+    rho = rho,
+    combined.weights = TRUE,
+    mse = TRUE
+  )
+}
+
+test_that("a survey Fay design with rho = 1.5 imports but does not export", {
+  skip_if_not_installed("survey")
+  src <- make_fay_svrep(rho = 1.5)
+
+  expect_no_condition(d <- from_svydesign(src))
+  expect_equal(d@variables$rho, 1.5, tolerance = 1e-10)
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+test_that("a survey Fay design with rho set to NA imports but does not export", {
+  skip_if_not_installed("survey")
+  src <- make_fay_svrep(rho = 0.3)
+  src$rho <- NA
+
+  expect_no_condition(d <- from_svydesign(src))
+  expect_identical(d@variables$rho, NA)
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+test_that("a survey Fay design with no rho element imports but does not export", {
+  skip_if_not_installed("survey")
+  src <- make_fay_svrep(rho = 0.3)
+  src$rho <- NULL
+  expect_false("rho" %in% names(src))
+
+  expect_no_condition(d <- from_svydesign(src))
+  expect_null(d@variables$rho)
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+# X-12. §VI property 3. The round trip crosses the import route and then the
+#       export route, so a loss on either leg shows here.
+test_that("as_svydesign(from_svydesign(b)) reproduces b's mean, SE and CI [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source(seed = 425L)
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  b <- survey::as.svrepdesign(tay, type = "JKn")
+
+  rt <- as_svydesign(from_svydesign(b))
+  expect_true(inherits(rt, "svyrep.design"))
+
+  sm_b <- survey::svymean(~y1, b)
+  sm_rt <- survey::svymean(~y1, rt)
+  expect_equal(coef(sm_rt)[["y1"]], coef(sm_b)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm_rt)),
+    as.numeric(survey::SE(sm_b)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    as.numeric(confint(sm_rt)),
+    as.numeric(confint(sm_b)),
+    tolerance = 1e-6
+  )
+})
+
+# X-13. §VI properties 3 and 9 together. The Fay leg of the round trip needs
+#       the stored shrinkage factor twice: once to build the exported
+#       design, and once for the numbers it reports.
+test_that("the round trip reproduces a Fay source's mean, SE and CI [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source(seed = 426L)
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  b <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.5)
+
+  # The import leg stores the source's rho before the export leg runs.
+  d <- from_svydesign(b)
+  expect_equal(d@variables$rho, 0.5, tolerance = 1e-10)
+
+  rt <- as_svydesign(d)
+  expect_equal(rt$rho, 0.5, tolerance = 1e-10)
+  expect_equal(rt$scale, b$scale, tolerance = 1e-10)
+
+  sm_b <- survey::svymean(~y1, b)
+  sm_rt <- survey::svymean(~y1, rt)
+  expect_equal(coef(sm_rt)[["y1"]], coef(sm_b)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm_rt)),
+    as.numeric(survey::SE(sm_b)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    as.numeric(confint(sm_rt)),
+    as.numeric(confint(sm_b)),
+    tolerance = 1e-6
+  )
+})
+
+# X-14. §VI properties 2 and 3 on a design that records an FPC. The export
+#       leg warns and drops (§IV.2 step 5); the returned design still
+#       reproduces surveycore's own numbers, because surveycore's replicate
+#       variance never reads the FPC (§IV.5).
+test_that("a round trip through the FPC drop still matches the design [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 427L)
+  sc <- get_means(d, y1, variance = "se")
+  sc_ci <- get_means(d, y1, variance = "ci")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  d2 <- from_svydesign(sv)
+
+  # The re-imported design records no FPC, and reports the same numbers.
+  expect_null(d2@variables$fpc)
+  sc2 <- get_means(d2, y1, variance = "se")
+  sc2_ci <- get_means(d2, y1, variance = "ci")
+  expect_equal(sc2$mean[[1L]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(sc2$se[[1L]], sc$se[[1L]], tolerance = 1e-8)
+  expect_equal(sc2_ci$ci_low[[1L]], sc_ci$ci_low[[1L]], tolerance = 1e-6)
+  expect_equal(sc2_ci$ci_high[[1L]], sc_ci$ci_high[[1L]], tolerance = 1e-6)
+})
+
+# X-15. §VI property 2 for "bootstrap". survey refuses an FPC for this type
+#       with 'Separate fpc not needed for bootstrap', so the drop is what
+#       lets the design convert at all.
+test_that("as_svydesign() reproduces surveycore's mean and SE for bootstrap [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(type = "bootstrap", seed = 428L)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-16. §VI property 2 for "JKn", the type survey accepts an FPC for. It
+#       needs rscales of its own, for reasons unrelated to the FPC.
+test_that("as_svydesign() reproduces surveycore's mean and SE for JKn [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(type = "JKn", seed = 429L, rscales = rep(1, 5L))
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-17. §VI property 8. All nine types as_survey_replicate() accepts cross
+#       the export route and then the import route, Fay included. survey
+#       reports its own simpleWarning for every JK2 design and for "other"
+#       with no rscales. Only JK2 makes survey warn about ignored arguments;
+#       the "other" warning says survey set a missing scale or rscales to 1.
+#       Neither is behaviour of the conversion, so muffle them by class.
+test_that("every accepted replicate type crosses both conversion routes", {
+  skip_if_not_installed("survey")
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "Fay",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    rs <- if (identical(ty, "JKn")) rep(1, 5L) else NULL
+    d <- make_rep_type(
+      type = ty,
+      rho = if (ty == "Fay") 0.3 else NULL,
+      seed = 430L,
+      rscales = rs
+    )
+    expect_identical(d@variables$type, ty)
+
+    sv <- suppressWarnings(as_svydesign(d), classes = "simpleWarning")
+    expect_true(inherits(sv, "svyrep.design"))
+    expect_identical(sv$type, ty)
+
+    d2 <- from_svydesign(sv)
+    expect_identical(d2@variables$type, ty)
+    expect_length(d2@variables$repweights, length(d@variables$repweights))
+    expect_identical(nrow(d2@data), nrow(d@data))
+    if (ty == "Fay") {
+      expect_equal(d2@variables$rho, 0.3, tolerance = 1e-10)
+    }
+  }
+})
+
+# Issue #255. survey::svrepdesign() computes its own scale and sets rscales to
+# rep(1, R) for ACS and successive-difference. A design imported from such a
+# survey object stores both values, and the export route must pass neither:
+# passing them changes no number survey computes and makes survey warn
+# 'scale= and rscales= are not needed'.
+test_that("as_svydesign() passes no scale or rscales for an imported ACS or successive-difference design", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  for (ty in c("ACS", "successive-difference")) {
+    expect_no_warning(
+      src <- survey::svrepdesign(
+        weights = df$wt,
+        repweights = df[, repwt_cols],
+        type = ty,
+        mse = TRUE,
+        data = df
+      )
+    )
+    d <- from_svydesign(src)
+    expect_identical(d@variables$rscales, rep(1, 5))
+
+    expect_no_warning(sv <- as_svydesign(d))
+    expect_equal(
+      as.numeric(survey::SE(survey::svymean(~y1, sv))),
+      as.numeric(survey::SE(survey::svymean(~y1, src))),
+      tolerance = 1e-8
+    )
+  }
+})
+
+# Issue #255. survey::svrepdesign() warns on every JK2 call, whatever the call
+# passes, so the export route cannot avoid that one warning. surveycore adds
+# no condition of its own on either side of the conversion.
+test_that("as_svydesign() raises only survey's JK2 warning for a JK2 design built with no scale", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  expect_no_condition(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK2"
+    )
+  )
+
+  w <- testthat::capture_warnings(sv <- as_svydesign(d))
+  expect_length(w, 1L)
+  expect_match(
+    w,
+    "with type JK2 scale= and rscales= are not needed and will be ignored",
+    fixed = TRUE
+  )
+  expect_equal(
+    as.numeric(survey::SE(survey::svymean(~y1, sv))),
+    get_means(d, y1, variance = "se")$se,
+    tolerance = 1e-8
+  )
+})
+
+# Issue #255. BRR is a member of the set of types whose scale survey
+# computes itself. A design imported from a survey BRR object stores survey's
+# own 1 / R, and the export route passes no scale, so survey raises no
+# 'does not use scale=' warning.
+test_that("as_svydesign() passes no scale for an imported BRR design", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  expect_no_warning(
+    src <- survey::svrepdesign(
+      weights = df$wt,
+      repweights = df[, repwt_cols],
+      type = "BRR",
+      mse = TRUE,
+      data = df
+    )
+  )
+  d <- from_svydesign(src)
+  expect_equal(d@variables$scale, 1 / 5, tolerance = 1e-8)
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_equal(
+    as.numeric(survey::SE(survey::svymean(~y1, sv))),
+    as.numeric(survey::SE(survey::svymean(~y1, src))),
+    tolerance = 1e-8
+  )
+})
+
+# Issue #255. The export route tests the stored type through isTRUE(), so a
+# design that stores no type reaches survey::svrepdesign() and does not fail
+# on a zero-length condition first. The BRR fallback, the one warning and the
+# scale of 0.2 are survey 4.5 behaviour: with type = NULL, svrepdesign()
+# takes its first type, "BRR", and discards the passed scale. A failure on a
+# later survey version means survey changed.
+test_that("as_svydesign() converts a replicate design that stores no type", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- survey_replicate(
+    data = df,
+    variables = list(
+      weights = "wt",
+      repweights = repwt_cols,
+      type = NULL,
+      scale = 1 / 5,
+      rscales = NULL,
+      fpc = NULL,
+      fpctype = "fraction",
+      mse = TRUE,
+      rho = NULL,
+      visible_vars = NULL
+    )
+  )
+
+  w <- testthat::capture_warnings(sv <- as_svydesign(d))
+  expect_length(w, 1L)
+  expect_match(w, "type='BRR' does not use 'scale=' argument", fixed = TRUE)
+  expect_true(inherits(sv, "svyrep.design"))
+  expect_equal(sv$scale, 0.2, tolerance = 1e-8)
+})
+
+# Issue #255, spec §IV numerical property. A design built with a supplied
+# scale exports to a survey object whose svymean() reproduces get_means(), on
+# all nine types. JK1, JKn, bootstrap and other store the supplied 0.6, and
+# the export route passes it to survey, which keeps it. The other five store
+# the type's own value, and survey computes the same value again on export.
+# This block asks whether the conversion carries the number across, so it is
+# a round-trip test and oracle rule 2 does not reach it.
+test_that("as_svydesign() reproduces get_means() for all nine types built with a supplied scale", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  # The scale survey stores on export, one literal per type at R = 5.
+  expected_scale <- list(
+    "JK1" = 0.6,
+    "JK2" = 1,
+    "JKn" = 0.6,
+    "BRR" = 1 / 5,
+    "Fay" = 1 / (5 * (1 - 0.3)^2),
+    "bootstrap" = 0.6,
+    "ACS" = 4 / 5,
+    "successive-difference" = 4 / 5,
+    "other" = 0.6
+  )
+  discards_scale <- c("BRR", "JK2", "ACS", "successive-difference")
+  # survey warns on every JK2 call, and for "other" when the call leaves
+  # rscales out. No other type makes survey warn on export.
+  export_warning <- c(
+    "JK2" = paste(
+      "with type JK2 scale= and rscales= are not needed",
+      "and will be ignored"
+    ),
+    "other" = "scale or rscales not specified, set to 1"
+  )
+
+  for (ty in names(expected_scale)) {
+    build_design <- function() {
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        rho = if (ty == "Fay") 0.3 else NULL,
+        mse = TRUE,
+        scale = 0.6,
+        rscales = if (ty == "JKn") rep(1, 5) else NULL
+      )
+    }
+    if (ty %in% discards_scale) {
+      expect_warning(
+        d <- build_design(),
+        class = "surveycore_warning_replicate_arg_ignored"
+      )
+    } else {
+      expect_no_warning(d <- build_design())
+    }
+
+    if (ty %in% names(export_warning)) {
+      w <- testthat::capture_warnings(sv <- as_svydesign(d))
+      expect_length(w, 1L)
+      expect_match(w, export_warning[[ty]], fixed = TRUE, info = ty)
+    } else {
+      expect_no_warning(sv <- as_svydesign(d))
+    }
+
+    sm <- survey::svymean(~y1, sv)
+    sc <- get_means(d, y1, variance = "se")
+    expect_equal(
+      coef(sm)[["y1"]],
+      sc$mean[[1L]],
+      tolerance = 1e-10,
+      info = ty
+    )
+    expect_equal(
+      as.numeric(survey::SE(sm)),
+      sc$se[[1L]],
+      tolerance = 1e-8,
+      info = ty
+    )
+    expect_equal(sv$scale, expected_scale[[ty]], tolerance = 1e-8, info = ty)
+  }
+})
+
+# from_svydesign() stores survey's rho for a Fay source and NULL for every
+# other type (spec §V). The stored scale stays the source's own, so the
+# imported standard error does not move.
+test_that("from_svydesign() stores the rho of a survey Fay design [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  src <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.3)
+
+  d <- from_svydesign(src)
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+  expect_equal(d@variables$scale, src$scale, tolerance = 1e-10)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, src)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+test_that("from_svydesign() stores rho as NULL for a survey BRR design", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  src <- survey::as.svrepdesign(tay, type = "BRR")
+  expect_identical(src$rho, 0)
+
+  d <- from_svydesign(src)
+  expect_true("rho" %in% names(d@variables))
+  expect_identical(d@variables$rho, NULL)
+})
+
+test_that("from_svydesign() drops the rho a survey BRR design was built with", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  # survey keeps rho on a BRR object and says so with a bare warning, so
+  # match it by message text.
+  expect_warning(
+    src <- survey::svrepdesign(
+      data = df,
+      repweights = "^repwt_",
+      weights = ~wt,
+      type = "BRR",
+      rho = 0.3,
+      combined.weights = TRUE,
+      mse = TRUE
+    ),
+    "does not use 'rho=' argument",
+    fixed = TRUE
+  )
+  expect_equal(src$rho, 0.3, tolerance = 1e-10)
+
+  d <- from_svydesign(src)
+  expect_true("rho" %in% names(d@variables))
+  expect_identical(d@variables$rho, NULL)
+})
+
+test_that("from_svydesign() imports a BRR build with fay.rho as a Fay design", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  # survey relabels this object "Fay".
+  src <- survey::as.svrepdesign(tay, type = "BRR", fay.rho = 0.3)
+
+  d <- from_svydesign(src)
+  expect_identical(d@variables$type, "Fay")
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+})
+
+# X-18. §IV.6 first row and §VI property 2 together. X-5 shows the silent
+#       branch on the default type, and X-15 shows bootstrap parity through
+#       the FPC drop. Neither covers the pair: a design of an accepted type
+#       that records no FPC converts without raising anything, and the design
+#       it returns reports surveycore's own numbers.
+test_that("as_svydesign() converts a bootstrap design with no FPC and matches it [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "bootstrap", seed = 431L)
+  expect_null(d@variables$fpc)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-19. §IV.2 step 6 and §VI property 2. A replicate column of zeros is
+#       legal: "JK1" and "JKn" delete a whole PSU per replicate, so a deleted
+#       row genuinely carries weight 0 in that replicate. The route gives the
+#       columns no special handling and passes them through, so the design
+#       converts with no condition of its own and reports surveycore's own
+#       numbers.
+test_that("as_svydesign() passes a zeroed replicate column through [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 432L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  df[[repwt_cols[[1L]]]] <- 0
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "JK1"
+  )
+  expect_true(all(d@data[[repwt_cols[[1L]]]] == 0))
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The zeros reached the exported design unchanged.
+  expect_equal(sum(sv$repweights[, 1L]), 0, tolerance = 1e-10)
+
+  # survey::svymean() reports its own simpleWarning here — '1 replicates
+  # gave NA results and were discarded'. That is survey's variance code
+  # reacting to the zeros, not the conversion. surveycore discards the same
+  # replicate, which is why the two standard errors still agree.
+  sm <- suppressWarnings(survey::svymean(~y1, sv), classes = "simpleWarning")
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Export route — as_svydesign() on a survey_nonprob (§B, §C, §D, §E)
+#
+#   B-1.  The replicate shape returns a svyrep.design and raises nothing
+#   B-2.  The replicate shape keeps all eight replicate columns
+#   B-3.  The plain shape returns a survey.design2 and warns
+#   B-4.  The plain-shape warning message [snapshot]
+#   B-5.  Export parity on the replicate shape [numerical]
+#   B-6.  Export parity on the plain shape [numerical]
+#   B-7.  Neither shape raises the replicate FPC drop warning
+#   B-9.  Default confint() parity on the replicate shape [numerical]
+#   B-10. Default confint() parity on the plain shape [numerical]
+#   B-11. A plain shape carrying one zero-weight row converts and matches
+#   C-1.  as_tbl_svy() converts the replicate shape
+#   C-2.  as_tbl_svy() converts the plain shape and propagates the warning
+#   D-1.  The round trip returns a probability design, not a nonprob one
+#   D-2.  The rebuilt design stops raising the SRS fallback warning
+#   E-4.  The replicate shape raises no not-survey-object refusal
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Fixture 1. A 40-row non-probability design, in either shape. The frame comes
+# from make_survey_data(); its weight column is renamed cal_wt so it reads as a
+# calibration weight, and the design variables psu, strata and fpc are dropped,
+# because as_survey_nonprob() names none of them and a nonprob design records
+# ids, strata and fpc as NULL in both shapes.
+#
+# Eight replicate columns is the count the roxygen's degrees-of-freedom section
+# states: survey::degf() answers 7 on the replicate shape, against 39 on the
+# plain shape of the same 40 rows.
+make_nonprob <- function(shape = c("replicate", "plain"), seed = 601L) {
+  shape <- match.arg(shape)
+  df <- make_survey_data(
+    n = 40L,
+    n_psu = 8L,
+    n_strata = 2L,
+    design = "taylor",
+    seed = seed
+  )
+  df$cal_wt <- df$wt
+  df <- df[, c("cal_wt", "y1", "y2", "y3")]
+
+  if (identical(shape, "plain")) {
+    return(as_survey_nonprob(df, weights = cal_wt))
+  }
+
+  # Independent perturbations, so the replicate matrix has full column rank
+  # and survey::degf() answers R - 1 rather than less.
+  set.seed(seed)
+  for (i in seq_len(8L)) {
+    df[[paste0("bw_", i)]] <- df$cal_wt * stats::runif(nrow(df), 0.85, 1.15)
+  }
+  as_survey_nonprob(
+    df,
+    weights = cal_wt,
+    repweights = tidyselect::all_of(paste0("bw_", seq_len(8L))),
+    type = "bootstrap"
+  )
+}
+
+
+# B-1. The replicate shape routes to .as_svydesign_replicate(). Before this
+#      change the call raised surveycore_error_not_survey_object, which is
+#      issue #237's defect. This is the file's only as_survey_nonprob()
+#      invariant call, per the once-per-constructor-per-file rule.
+test_that("as_svydesign() converts a replicate-shaped survey_nonprob", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  test_invariants(d)
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+})
+
+
+# B-3. The plain shape routes to .as_svydesign_taylor(), and the route warns
+#      first. The result comes off the return value of the warned call, so the
+#      block asserts the conversion succeeded as well as that it warned.
+test_that("as_svydesign() converts a plain-shaped survey_nonprob and warns", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(sv, "survey.design2"))
+})
+
+
+# B-2. The replicate columns have to survive the conversion, or the converted
+#      design would compute a different variance. survey stores the analysis
+#      weights as an n-by-R matrix, and the column names reach the returned
+#      design's own data frame.
+test_that("as_svydesign() keeps every replicate column of a nonprob design", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  sv <- as_svydesign(d)
+
+  expect_identical(ncol(stats::weights(sv, "analysis")), 8L)
+  expect_true(all(paste0("bw_", seq_len(8L)) %in% names(sv$variables)))
+})
+
+
+# B-4. The golden copy of the plain-shape message. C-1 and C-2 raise the same
+#      warning through as_tbl_svy() and write no second snapshot of it.
+test_that("as_svydesign() reports the plain-shape nonprob conversion", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  expect_snapshot(sv <- as_svydesign(d))
+})
+
+
+# B-7. A nonprob design records fpc as NULL in both shapes, so branch 4a
+#      reaches .as_svydesign_replicate() without triggering that helper's FPC
+#      drop warning. The plain shape raises the SRS conversion warning, which
+#      the outer expectation captures; the inner one asserts the absence.
+test_that("neither nonprob shape raises the replicate FPC drop warning", {
+  skip_if_not_installed("survey")
+  d_rep <- make_nonprob("replicate")
+  expect_no_warning(
+    sv_rep <- as_svydesign(d_rep),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  expect_true(inherits(sv_rep, "svyrep.design"))
+
+  d_plain <- make_nonprob("plain")
+  expect_warning(
+    expect_no_warning(
+      sv_plain <- as_svydesign(d_plain),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    ),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(sv_plain, "survey.design2"))
+})
+
+
+# B-5. The point of routing on the shape: the converted design has to report
+#      the standard error surveycore reports. The expectation is computed in
+#      the block from the source design, never pasted as a literal — a printed
+#      figure carries fewer digits than the 1e-8 tolerance resolves.
+test_that("as_svydesign() reproduces a replicate nonprob's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  sc <- get_means(d, y1, variance = "se")
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# B-6. The same equality on the plain shape. Two warnings fire here for two
+#      different reasons: get_means() raises surveycore's own SRS fallback,
+#      which is existing behaviour and not this block's subject, and
+#      as_svydesign() raises the conversion warning.
+test_that("as_svydesign() reproduces a plain nonprob's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  expect_warning(
+    sc <- get_means(d, y1, variance = "se"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# B-9. The default confint() call on a svrepstat uses df = Inf, which is the
+#      degrees of freedom surveycore reports for a nonprob design, so the
+#      default intervals agree. The block builds its own fixture and converts
+#      it again rather than reading an object B-5 left behind.
+test_that("default confint() on a converted replicate nonprob matches [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  sc_ci <- get_means(d, y1, variance = "ci")
+
+  sv <- as_svydesign(d)
+  bounds <- as.numeric(confint(survey::svymean(~y1, sv)))
+  expect_equal(bounds[[1L]], sc_ci$ci_low[[1L]], tolerance = 1e-6)
+  expect_equal(bounds[[2L]], sc_ci$ci_high[[1L]], tolerance = 1e-6)
+})
+
+
+# B-10. The same on the plain shape, and the same two warnings as B-6.
+test_that("default confint() on a converted plain nonprob matches [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  expect_warning(
+    sc_ci <- get_means(d, y1, variance = "ci"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  bounds <- as.numeric(confint(survey::svymean(~y1, sv)))
+  expect_equal(bounds[[1L]], sc_ci$ci_low[[1L]], tolerance = 1e-6)
+  expect_equal(bounds[[2L]], sc_ci$ci_high[[1L]], tolerance = 1e-6)
+})
+
+
+# Fixture 2. The plain shape with one weight set to 0. The design cannot be
+# constructed this way: .validate_weights() rejects any non-positive weight
+# with surveycore_error_weights_nonpositive. So the fixture is built in two
+# steps — construct normally, then write the edited frame back into @data. The
+# survey_nonprob validator checks only that no weight is negative and that the
+# column holds at least one positive value, so a single zero passes it. The
+# survey_taylor and survey_replicate validators repeat the strict check, which
+# is why this fixture exists on this class alone. The two nonprob rules differ
+# on purpose: surveywts's adjust_nonresponse() writes zero weights this same
+# way. The reason is recorded in archive/nonprob-zero-weights/ and in
+# plans/error-messages.md rows 33 and 101 (confirmed in issue #248).
+make_nonprob_zero_wt <- function(seed = 601L) {
+  d <- make_nonprob("plain", seed = seed)
+  df <- survey_data(d)
+  df$cal_wt[[1L]] <- 0
+  d@data <- df
+  d
+}
+
+
+# B-11. A zero-weight row costs the bridge nothing: both sides still agree
+#       exactly. survey::degf() answers 38 rather than 39 on this design,
+#       because it counts only the rows whose weight is not zero; the roxygen
+#       carries that qualifier and no code guards the case.
+test_that("as_svydesign() converts a nonprob design carrying a zero weight [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob_zero_wt()
+  expect_warning(
+    sc <- get_means(d, y1, variance = "se"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(sv, "survey.design2"))
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# C-1. as_tbl_svy() needs no edit of its own. Its guard tests survey_base,
+#      which a survey_nonprob design already inherits, so the wrapper starts
+#      accepting both shapes the moment as_svydesign() does.
+test_that("as_tbl_svy() converts a replicate-shaped survey_nonprob", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_nonprob("replicate")
+  ts <- as_tbl_svy(d)
+  expect_true(inherits(ts, "tbl_svy"))
+})
+
+
+# C-2. The conversion warning propagates through the wrapper, because
+#      as_tbl_svy() calls as_svydesign() and raises no condition of its own.
+#      B-4 holds the golden copy of the message, so this block writes no
+#      second snapshot of it.
+test_that("as_tbl_svy() propagates the plain-shape nonprob warning", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_nonprob("plain")
+
+  expect_warning(
+    ts <- as_tbl_svy(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(ts, "tbl_svy"))
+})
+
+
+# D-1. The round trip loses the non-probability identity. A survey object
+#      records nothing that marks a sample as non-probability, so
+#      from_svydesign() rebuilds a probability design on data that has not
+#      changed.
+test_that("the nonprob round trip returns a probability design", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  rebuilt <- from_svydesign(as_svydesign(d))
+
+  expect_true(S7::S7_inherits(rebuilt, survey_replicate))
+  expect_false(S7::S7_inherits(rebuilt, survey_nonprob))
+})
+
+
+# D-2. The consequence a caller feels: the rebuilt design reports design-based
+#      standard errors and stops warning about the SRS approximation. The
+#      block rebuilds its own design rather than reading D-1's.
+test_that("the rebuilt design no longer warns about the SRS approximation", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  rebuilt <- from_svydesign(as_svydesign(d))
+
+  expect_no_warning(
+    result <- get_means(rebuilt, y1, variance = "se"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  expect_true(is.finite(result$se[[1L]]))
+})
+
+
+# E-4. The nonprob branch takes both shapes out of the else branch, so the
+#      refusal no longer reaches a design that inherits survey_base. The
+#      replicate shape is the shape that raises no other condition, so it is
+#      the one this absence can be asserted on cleanly.
+test_that("as_svydesign() raises no refusal for a replicate-shaped nonprob", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  expect_no_error(
+    sv <- as_svydesign(d),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_true(inherits(sv, "svyrep.design"))
+})
+
+
+# ── Domain restriction on the Taylor route ───────────────────────────────────
+#
+# Issue #245. A design that surveytidy's filter() has marked keeps every row
+# and records domain membership in the column SURVEYCORE_DOMAIN_COL names.
+# as_svydesign() used to pass that column through as ordinary data, so
+# survey::svymean() on the converted object answered for the full sample.
+# .as_svydesign_taylor() now indexes the object it builds by the marker, so
+# the converted object answers the domain estimate.
+#
+# This section covers the Taylor route and the survey_nonprob shape that names
+# no replicate weights, because as_svydesign() sends that shape into the same
+# helper after its SRS warning.
+
+# Fixture. A 50-row stratified cluster design with a domain marked by hand.
+# The mask splits on y1's median, so it keeps rows in both strata and thins no
+# stratum to one PSU.
+make_filtered_taylor <- function(seed = 42L) {
+  d <- make_taylor(seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+
+# The estimate a caller reads off the converted object is the domain estimate
+# and not the full-sample one. get_means() on the filtered design is the
+# reference, because that is the answer the same design already gives through
+# surveycore's own estimator.
+test_that("as_svydesign() converts a filtered Taylor design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_taylor()
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # domain holds 25 rows and the default threshold is 30; the estimate itself
+  # does not depend on the argument.
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The same agreement on a marker that surveytidy's filter() wrote, rather than
+# one written by hand. filter() is how a domain arrives in practice, and it
+# records the column this helper reads.
+test_that("as_svydesign() converts a filter()-marked Taylor design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::filter(make_taylor(), y1 > 50)
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The same agreement on a real design. nhanes_2017 has 9,254 rows in 15 strata,
+# so the domain leaves every stratum populated and the two estimators are
+# compared on a design no synthetic generator produced.
+test_that("as_svydesign() converts a filtered nhanes design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- as_survey(
+    nhanes_2017,
+    ids = sdmvpsu,
+    weights = wtint2yr,
+    strata = sdmvstra,
+    nest = TRUE
+  )
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$riagendr == 1
+  d@data <- df
+  sc <- get_means(d, ridageyr, variance = "se")
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~ridageyr, sv, na.rm = TRUE)
+
+  expect_identical(nrow(sv$variables), sum(df$riagendr == 1))
+  expect_equal(coef(sm)[["ridageyr"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The Taylor call site serves a second input shape. as_svydesign() sends a
+# survey_nonprob design that names no replicate weights into
+# .as_svydesign_taylor() after its SRS warning, so the restriction reaches
+# that shape with no branch of its own. The two conversion warnings are
+# pre-existing and the restriction changes neither.
+test_that("as_svydesign() converts a filtered plain-shaped nonprob to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  mask <- df[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_warning(
+    sc <- get_means(d, y1, variance = "se", min_cell_n = 1L),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+
+  sm <- survey::svymean(~y1, sv)
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+
+  # The standard error agrees too. It did not until PR #263:
+  # .calibrated_mean_cell() took its finite correction from the domain size,
+  # n_d / (n_d - 1), where survey::svymean() takes it from the full sample,
+  # n / (n - 1), because survey's `[` keeps each retained row's recorded
+  # stratum sample size. The two stood in exactly that ratio. #263 re-based
+  # the correction on the full sample, so this is now a plain parity check.
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+
+  # The same frame and the same domain, converted through as_survey() rather
+  # than as_survey_nonprob(), gives the same standard error. The calibrated
+  # fallback and the Taylor estimator agree on a domain, which is the
+  # property #263 established and this block keeps under guard.
+  sc_taylor <- get_means(
+    as_survey(df, weights = cal_wt),
+    y1,
+    variance = "se",
+    min_cell_n = 1L
+  )
+  expect_equal(
+    as.numeric(survey::SE(sm)),
+    sc_taylor$se[[1L]],
+    tolerance = 1e-8
+  )
+
+  # The marker column stays in the converted object's data, and every value
+  # left in it is TRUE.
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# An unfiltered design carries no marker column, so the helper returns the
+# object un-indexed and the conversion is what it was before this change.
+test_that("as_svydesign() converts an unfiltered Taylor design unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+
+  # No marker column means no indexing step, so nothing at all fires here.
+  # The filtered case has the same requirement and no pre-existing condition
+  # to tolerate either.
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# A marker that selects everything is indexed anyway. There is no all-TRUE
+# column to detect on an unfiltered design, so presence of the column is the
+# whole guard, and indexing by an all-TRUE mask has to cost nothing.
+test_that("as_svydesign() converts an all-TRUE marker to every row [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(TRUE, nrow(df))
+  d@data <- df
+  sc <- get_means(d, y1, variance = "se")
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), nrow(df))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The route restricts the object it built and never the design it was given,
+# so the same design converts the same way twice.
+test_that("as_svydesign() leaves the input design unchanged", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_taylor()
+  n_before <- nrow(survey_data(d))
+  mask_before <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  sv1 <- as_svydesign(d)
+
+  expect_identical(nrow(survey_data(d)), n_before)
+  expect_identical(
+    survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]],
+    mask_before
+  )
+
+  sv2 <- as_svydesign(d)
+  expect_identical(nrow(sv2$variables), nrow(sv1$variables))
+})
+
+
+# The round trip is the guard on the choice of `[` over subset(). survey's
+# subset() methods overwrite the stored call, and from_svydesign() reads the
+# design variables back out of that call inside a tryCatch that returns NULL
+# on failure — so a lost call reads as a design that names no ids and no
+# strata, with nothing raised.
+test_that("the round trip on a filtered Taylor design recovers the design variables", {
+  skip_if_not_installed("survey")
+  keys <- c("ids", "strata", "weights")
+  filtered <- from_svydesign(as_svydesign(make_filtered_taylor()))
+  unfiltered <- from_svydesign(as_svydesign(make_taylor()))
+
+  expect_identical(filtered@variables[keys], unfiltered@variables[keys])
+})
+
+
+# The comparison above is only worth something if the unfiltered round trip
+# names all three, so that block asserts it.
+test_that("the round trip on an unfiltered Taylor design names ids, strata and weights", {
+  skip_if_not_installed("survey")
+  rebuilt <- from_svydesign(as_svydesign(make_taylor()))
+
+  expect_identical(rebuilt@variables$ids, "psu")
+  expect_identical(rebuilt@variables$strata, "strata")
+  expect_identical(rebuilt@variables$weights, "wt")
+})
+
+
+# The mechanism behind the two blocks above: `[` never rewrites the stored
+# call, so the expression from_svydesign() parses is the same expression on a
+# filtered design as on an unfiltered one.
+test_that("the restriction leaves the converted object's stored call unchanged", {
+  skip_if_not_installed("survey")
+  filtered <- as_svydesign(make_filtered_taylor())
+  unfiltered <- as_svydesign(make_taylor())
+
+  expect_identical(deparse(filtered$call), deparse(unfiltered$call))
+})
+
+
+# The restriction raises nothing of its own on this route, for any domain.
+# The class validator is what makes the claim hold: a marker column that is
+# not logical aborts at the write and never reaches this route.
+test_that("as_svydesign() raises no condition on a filtered Taylor design", {
+  skip_if_not_installed("survey")
+  expect_no_condition(sv <- as_svydesign(make_filtered_taylor()))
+  expect_true(inherits(sv, "survey.design2"))
+})
+
+
+# The marker column reaches the conversion route as a logical vector only.
+# The survey_base validator rejects every other type at the write, so a
+# design that carries an integer, double, character or factor marker cannot
+# be built and never reaches as_svydesign().
+test_that("as_svydesign() converts a logical marker and the four other types abort at the write", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- df$y1 > stats::median(df$y1)
+
+  for (nm in c("logical", "integer", "double", "character", "factor")) {
+    if (nm == "logical") {
+      marked <- set_domain_marker(d, nm, mask = mask)
+      expect_no_condition(sv <- as_svydesign(marked))
+      expect_identical(nrow(sv$variables), sum(mask), info = nm)
+
+      # The row count alone passes on a corrupt object, so the probabilities
+      # are checked too. A numeric probability vector with a finite value for
+      # every retained row is the state a corrupt object cannot hold. The two
+      # tests are one expectation so that a list-valued vector fails here
+      # rather than erroring inside is.finite().
+      expect_true(
+        is.numeric(sv$prob) && all(is.finite(sv$prob)),
+        info = nm
+      )
+    } else {
+      expect_error(
+        set_domain_marker(d, nm, mask = mask),
+        class = "surveycore_error_domain_not_logical"
+      )
+    }
+  }
+})
+
+
+# A factor whose levels say nothing about domain membership is a programming
+# error in the code that wrote the column, not a domain to interpret. The
+# validator rejects it at the write and no conversion runs.
+test_that("a factor marker column aborts at the write", {
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[surveycore::SURVEYCORE_DOMAIN_COL] <- list(
+    factor(rep(c("yes", "no"), length.out = nrow(df)))
+  )
+
+  expect_error(
+    d@data <- df,
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+
+# A row whose marker is NA falls outside the domain. `!is.na(r)` does this.
+# The validator forbids a non-logical marker column; it does not forbid NA,
+# so the guard is still the only thing that keeps an NA out of the index.
+test_that("as_svydesign() treats an NA marker row as outside the domain", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- df$y1 > stats::median(df$y1)
+  mask[[which(mask)[[1L]]]] <- NA
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- mask
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), sum(mask, na.rm = TRUE))
+})
+
+
+# A filter that matches no row still converts, and the conversion raises no
+# condition. On the Taylor route the caller then reads 0 with a standard error
+# of 0 out of survey; the empty object is survey's to interpret, not this
+# helper's to refuse.
+test_that("as_svydesign() converts an all-FALSE marker to a zero-row object", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], 0, tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), 0, tolerance = 1e-8)
+})
+
+
+# A marker with exactly one TRUE gives a one-row object, and the conversion
+# raises nothing. survey's `[` is content with one row; what survey reports if
+# a caller then estimates on that object belongs to survey, so this block
+# asserts nothing about estimation.
+test_that("as_svydesign() converts a single-TRUE marker to a one-row object", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- rep(FALSE, nrow(df))
+  mask[[1L]] <- TRUE
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- mask
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 1L)
+})
+
+
+# A marker of nothing but NA is the all-FALSE case reached by the other half
+# of the mask: as.logical() leaves the NAs alone and `!is.na(r)` drops every
+# row. On the Taylor route the empty object then answers 0 with a standard
+# error of 0, as it does for an all-FALSE marker.
+test_that("as_svydesign() converts an all-NA marker to a zero-row object", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(NA, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], 0, tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), 0, tolerance = 1e-8)
+})
+
+
+# as_tbl_svy() inherits the restriction with no edit of its own. It calls
+# as_svydesign() and wraps the result, so the tbl_svy it hands to srvyr
+# carries one row per marked row.
+test_that("as_tbl_svy() inherits the restriction on a filtered Taylor design", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_filtered_taylor()
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  ts <- as_tbl_svy(d)
+
+  expect_true(inherits(ts, "tbl_svy"))
+  expect_identical(nrow(ts$variables), sum(mask))
+})
+
+
+# The round trip agrees with the converted object on the numbers, not only on
+# the design variables. The rebuilt design is a design over the domain rows
+# carrying an all-TRUE marker, so surveycore's own estimator answers what
+# survey answers on the object the rebuild read.
+test_that("the round trip on a filtered Taylor design agrees on the numbers [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_taylor()
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+  ci <- stats::confint(sm)
+
+  rebuilt <- from_svydesign(sv)
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # domain holds 25 rows and the default threshold is 30.
+  sc <- get_means(rebuilt, y1, variance = c("se", "ci"), min_cell_n = 1L)
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  expect_equal(sc$ci_low[[1L]], ci[[1L, 1L]], tolerance = 1e-6)
+  expect_equal(sc$ci_high[[1L]], ci[[1L, 2L]], tolerance = 1e-6)
+})
+
+
+# The all-TRUE marker column travels back into the rebuilt design, where the
+# print method reads it and reports a domain. The original N is unrecoverable
+# from a survey object, which records a subset and not a marker, so the
+# rebuilt design's row count is its new total and the line names the same
+# number twice.
+test_that("the round trip on a filtered Taylor design prints n of n rows", {
+  skip_if_not_installed("survey")
+  rebuilt <- from_svydesign(as_svydesign(make_filtered_taylor()))
+  df <- survey_data(rebuilt)
+  n <- nrow(df)
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(df))
+  expect_true(all(df[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+
+  # The inner capture takes the tibble on stdout, the outer one takes the cli
+  # text on the message stream, so the block prints nothing during a run.
+  out <- capture.output(
+    invisible(capture.output(print(rebuilt))),
+    type = "message"
+  )
+  expect_true(any(grepl(
+    paste0("Domain: ", n, " of ", n, " rows"),
+    out,
+    fixed = TRUE
+  )))
+})
+
+
+# ── Domain restriction on the replicate route and both nonprob shapes ────────
+#
+# Issue #245, the second call site. .as_svydesign_replicate() now indexes the
+# object it builds by the marker column, exactly as .as_svydesign_taylor()
+# does. One call site serves two input shapes: a survey_replicate design, and
+# a survey_nonprob design that names replicate weights, which as_svydesign()
+# already sends here on the shape of the weights. The section also covers the
+# survey_nonprob shape that names none, because that shape reaches the Taylor
+# call site and its SRS warning has to keep its class and its count.
+
+# Fixture. The file's 50-row BRR replicate design with a domain marked by
+# hand. The mask splits on y1's median, so it keeps rows in both strata.
+make_filtered_rep <- function(seed = 42L) {
+  d <- make_rep(seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+# Fixture. The file's 40-row non-probability design in either shape, with a
+# domain marked the same way.
+make_filtered_nonprob <- function(
+  shape = c("replicate", "plain"),
+  seed = 601L
+) {
+  d <- make_nonprob(match.arg(shape), seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+
+# The estimate a caller reads off the converted object is the domain estimate
+# and not the full-sample one. get_means() on the filtered design is the
+# reference, because that is the answer the same design already gives through
+# surveycore's own replicate estimator.
+test_that("as_svydesign() converts a filtered replicate design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_rep()
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # domain holds 25 rows against a default threshold of 30, and the argument
+  # does not touch the estimate.
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+
+  # The marker column stays in the converted object's data, and every value
+  # left in it is TRUE.
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# The same agreement on a marker that surveytidy's filter() wrote rather than
+# one written by hand. filter() is how a domain arrives in practice, and it
+# records the column this helper reads.
+test_that("as_svydesign() converts a filter()-marked replicate design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::filter(make_rep(), y1 > 50)
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The replicate call site serves a second input shape. as_svydesign() routes a
+# survey_nonprob design that names replicate weights into
+# .as_svydesign_replicate(), so the restriction reaches that shape with no
+# branch of its own and no ninth copy of the routing predicate.
+test_that("as_svydesign() converts a filtered replicate nonprob to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_nonprob("replicate")
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# An unfiltered replicate design carries no marker column, so the helper
+# returns the object un-indexed and the conversion is what it was before this
+# change. This fixture records no FPC, so nothing at all may fire.
+test_that("as_svydesign() converts an unfiltered replicate design unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_rep()
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# The same on the unfiltered replicate-shaped nonprob design, which reaches
+# the same call site.
+test_that("as_svydesign() converts an unfiltered replicate nonprob unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# The unfiltered plain-shaped nonprob design raises the one condition that
+# shape already raises, and no other. The SRS warning fires in as_svydesign()
+# itself, before dispatch, so the restriction can neither double it nor
+# suppress it.
+test_that("as_svydesign() converts an unfiltered plain nonprob unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_nonprob_srs_conversion"
+    )
+  )
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# A filter that matches no row still converts, and the conversion raises no
+# condition. What the caller then reads out of survey is survey's to decide:
+# on the replicate route survey refuses to estimate on an empty object, with
+# an untyped error of its own. The block asserts that error by message, with
+# no class and no snapshot, because the condition is not surveycore's.
+test_that("as_svydesign() converts an all-FALSE marker on the replicate route to zero rows", {
+  skip_if_not_installed("survey")
+  d <- make_rep()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+
+  expect_error(survey::svymean(~y1, sv), "All replicates contained NAs")
+})
+
+
+# The same empty domain on the replicate-shaped nonprob design: zero rows and
+# nothing raised by the conversion.
+test_that("as_svydesign() converts an all-FALSE marker on a replicate nonprob to zero rows", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+})
+
+
+# The same empty domain on the plain-shaped nonprob design: zero rows, and
+# the SRS warning alone.
+test_that("as_svydesign() converts an all-FALSE marker on a plain nonprob to zero rows", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_nonprob_srs_conversion"
+    )
+  )
+  expect_identical(nrow(sv$variables), 0L)
+})
+
+
+# as_tbl_svy() inherits the restriction on the nonprob shape that names no
+# replicate weights, with no edit of its own: it calls as_svydesign() and
+# wraps the result, so it propagates the SRS warning and the domain rows
+# together.
+test_that("as_tbl_svy() inherits the restriction on a filtered plain nonprob", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_filtered_nonprob("plain")
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_warning(
+    ts <- as_tbl_svy(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+
+  expect_true(inherits(ts, "tbl_svy"))
+  expect_identical(nrow(ts$variables), sum(mask))
+})
+
+
+# The restriction adds no condition of its own on either shape that reaches
+# the replicate call site, whatever the domain.
+test_that("as_svydesign() raises no condition on a filtered replicate design", {
+  skip_if_not_installed("survey")
+  expect_no_condition(as_svydesign(make_filtered_rep()))
+  expect_no_condition(as_svydesign(make_filtered_nonprob("replicate")))
+})
+
+
+# On the filtered plain-shaped nonprob design the SRS warning fires exactly
+# once and nothing else fires. The inner expectation consumes the typed
+# warning and re-raises anything it does not match; the outer one fails on a
+# second copy of the same warning, or on any other warning.
+test_that("as_svydesign() raises the SRS warning once on a filtered plain nonprob", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_nonprob("plain")
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_nonprob_srs_conversion"
+    )
+  )
+  expect_identical(nrow(sv$variables), sum(mask))
+})
+
+
+# The FPC warning fires inside the replicate route before the object is built,
+# so the restriction can neither double it nor suppress it. The result comes
+# off the return value of the warned call, and the domain row count is read
+# from that object.
+test_that("as_svydesign() warns once about a dropped FPC on a filtered replicate design", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  mask <- df[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    )
+  )
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# ── Domain restriction on the two-phase route ────────────────────────────────
+#
+# Issue #245, the third and last call site. The two-phase route differs from
+# the other four in two ways, and both are forced by the survey package.
+#
+# Which frame. A two-phase object keeps the marker column at
+# phase1$sample$variables, not at variables, because @data holds one row per
+# phase-1 row where the converted object's phase-1 sample holds only the
+# phase-2 rows. Indexing with the @data-side vector raises a bare
+# `logical subscript too long`. The helper reads the object's class and picks
+# the frame itself, so this call site passes nothing extra.
+#
+# How the domain applies. `[.twophase` removes no row. It keeps every row and
+# sets each excluded row's probability to Inf, so on this route "zero rows"
+# reads as "no finite probability" and the row count never changes.
+
+# Fixture. A 60-row two-phase design that names a phase-2 cluster identifier,
+# 29 of whose rows reach phase 2. The file's own make_twophase() names none.
+make_twophase_ids2 <- function(seed = 42L) {
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = seed
+  )
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  as_survey_twophase(phase1, ids2 = psu, subset = subset)
+}
+
+# The same design with a domain marked by hand. The mask splits on y1's
+# median over all 60 phase-1 rows, which leaves 14 of the 29 phase-2 rows
+# inside the domain and thins no stratum to one PSU.
+make_filtered_twophase <- function(seed = 42L) {
+  d <- make_twophase_ids2(seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+# Condition capture for this section. The two-phase route emits untyped
+# conditions of survey's own, so expect_no_condition() cannot state the claim
+# the blocks below need: that the restriction adds no condition of
+# surveycore's. A bare suppressWarnings() cannot state it either, because it
+# discards a surveycore warning as readily as survey's. So the collector runs
+# the call, records every condition it signals, and returns the surveycore
+# classes among them, which is character(0) when there are none. The
+# expression is evaluated in the calling block, so
+# collect_surveycore_classes(sv <- as_svydesign(d)) leaves `sv` behind exactly
+# as expect_warning() does.
+collect_surveycore_classes <- function(expr) {
+  seen <- list()
+  withCallingHandlers(
+    force(expr),
+    condition = function(cnd) {
+      seen[[length(seen) + 1L]] <<- cnd
+      if (inherits(cnd, "warning")) {
+        invokeRestart("muffleWarning")
+      }
+      if (inherits(cnd, "message")) {
+        invokeRestart("muffleMessage")
+      }
+    }
+  )
+  as.character(unlist(lapply(seen, function(cnd) {
+    grep("^surveycore_", class(cnd), value = TRUE)
+  })))
+}
+
+
+# The estimate a caller reads off the converted object is the domain estimate
+# and not the full-sample one. The reference is what a caller gets by
+# restricting the converted object by hand: a two-phase object built straight
+# from survey, indexed by the marker column read off its own phase-1 sample
+# variables. method = "full" takes no weights argument, so the phase-1 weights
+# go in as probabilities, as the conversion passes them (issue #329).
+test_that("as_svydesign() converts a filtered two-phase design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  test_invariants(d)
+  df <- survey_data(d)
+
+  oracle <- suppressWarnings(survey::twophase(
+    id = list(~psu, ~psu),
+    strata = list(~strata, NULL),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  ))
+  r <- as.logical(
+    oracle$phase1$sample$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  )
+  by_hand <- suppressWarnings(oracle[r & !is.na(r), ])
+  sm_hand <- suppressWarnings(survey::svymean(~y1, by_hand))
+
+  sv <- suppressWarnings(as_svydesign(d))
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+
+  expect_equal(coef(sm)[["y1"]], coef(sm_hand)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm)),
+    as.numeric(survey::SE(sm_hand)),
+    tolerance = 1e-8
+  )
+})
+
+
+# Issue #261: get_means() and survey::svymean() on the converted object once
+# answered different means on this design, because as_svydesign() handed
+# survey::twophase(method = "full") no phase-1 weights and survey took phase 1
+# as equal-probability. Both now weight by the combined two-phase probability,
+# and the two estimators agree on the estimate and the standard error.
+test_that("get_means() agrees with svymean() on a converted unfiltered two-phase design [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  sv <- suppressWarnings(as_svydesign(d))
+  frame <- sv$phase1$sample$variables
+
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # phase-2 sample holds 29 rows against a default threshold of 30, and the
+  # argument does not touch the estimate.
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+  by_combined_prob <- stats::weighted.mean(frame$y1, 1 / sv$prob)
+
+  expect_equal(sc$mean[[1L]], by_combined_prob, tolerance = 1e-10)
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+
+# A phase 1 with no weights, strata or fpc is an iid sample on both sides.
+# The conversion passes survey no probs and no fpc list for it: twophase2()
+# tests is.null(fpc)[[1]] on the whole list, so list(NULL, NULL) would turn
+# its phase1_is_iid branch off and the standard errors would part.
+test_that("get_means() agrees with svymean() on a converted two-phase design with an iid phase 1 [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 200L, design = "twophase", seed = 11L)
+  df$row_id <- seq_len(nrow(df))
+  expect_warning(
+    phase1 <- as_survey(df, ids = row_id),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  d <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
+  sv <- as_svydesign(d)
+
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_true(sv$phase1$full$phase1_is_iid)
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+
+# `[.twophase` removes no row, so the count that records the restriction is
+# the count of finite probabilities. Each excluded row keeps its place and
+# takes an infinite probability, which weights it out of every estimate. This
+# block asserts no row count on purpose.
+test_that("as_svydesign() leaves one finite probability per marked phase-2 row", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  df <- survey_data(d)
+  marked_phase2 <- sum(df[[surveycore::SURVEYCORE_DOMAIN_COL]] & df$subset)
+
+  sv <- suppressWarnings(as_svydesign(d))
+
+  expect_identical(sum(is.finite(sv$prob)), marked_phase2)
+})
+
+
+# The file's own two-phase builder names no phase-2 cluster identifier, so it
+# reaches survey::twophase() through a different formula list than the fixture
+# above. The restriction applies to it too, and the conversion does not stop.
+test_that("as_svydesign() converts a filtered two-phase design that names no phase-2 ids", {
+  skip_if_not_installed("survey")
+  d <- make_twophase()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  marked_phase2 <- sum(df[[surveycore::SURVEYCORE_DOMAIN_COL]] & df$subset)
+
+  expect_no_error(sv <- suppressWarnings(as_svydesign(d)))
+  expect_identical(sum(is.finite(sv$prob)), marked_phase2)
+})
+
+
+# An unfiltered two-phase design carries no marker column, so the helper
+# returns the object un-indexed and the conversion is what it was before this
+# change: the phase-1 full frame holds one row per design row, the phase-1
+# sample holds one row per phase-2 row, and every probability is finite. The
+# call raises nothing beyond survey's own untyped conditions: the no-marker
+# path returns before it builds a mask, so it has nothing to report.
+test_that("as_svydesign() converts an unfiltered two-phase design unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  df <- survey_data(d)
+
+  classes <- collect_surveycore_classes(sv <- as_svydesign(d))
+  expect_identical(classes, character(0L))
+
+  expect_identical(nrow(sv$phase1$full$variables), nrow(df))
+  expect_identical(nrow(sv$phase1$sample$variables), sum(df$subset))
+  expect_false(
+    surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$phase1$sample$variables)
+  )
+  expect_true(all(is.finite(sv$prob)))
+})
+
+
+# A filter that matches no row still converts, and it converts silently: an
+# empty domain is not an error and the helper raises nothing of its own for
+# it. On this route the object keeps every row and none of them keeps a finite
+# probability, so survey answers NaN rather than the zero the Taylor route
+# answers.
+test_that("as_svydesign() converts an all-FALSE two-phase marker to no finite probability", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+  n_phase2 <- sum(df$subset)
+
+  classes <- collect_surveycore_classes(sv <- as_svydesign(d))
+  expect_identical(classes, character(0L))
+
+  expect_identical(nrow(sv$phase1$sample$variables), n_phase2)
+  expect_false(any(is.finite(sv$prob)))
+
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+  expect_true(is.nan(coef(sm)[["y1"]]))
+})
+
+
+# A marker of nothing but NA is the all-FALSE case reached by the other half
+# of the mask: as.logical() leaves the NAs alone and `!is.na(r)` drops every
+# row from the domain. It is as silent as the all-FALSE case, and for the same
+# reason.
+test_that("as_svydesign() converts an all-NA two-phase marker to no finite probability", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(NA, nrow(df))
+  d@data <- df
+  n_phase2 <- sum(df$subset)
+
+  classes <- collect_surveycore_classes(sv <- as_svydesign(d))
+  expect_identical(classes, character(0L))
+
+  expect_identical(nrow(sv$phase1$sample$variables), n_phase2)
+  expect_false(any(is.finite(sv$prob)))
+
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+  expect_true(is.nan(coef(sm)[["y1"]]))
+})
+
+
+# The marker column stays in the converted object's data on every route, and
+# its values read differently on the two kinds of route. This block is the
+# cross-check on a route that removes rows: every value left in the column is
+# TRUE, because the rows marked FALSE are gone.
+test_that("the marker column survives a Taylor conversion with every value TRUE", {
+  skip_if_not_installed("survey")
+  sv <- as_svydesign(make_filtered_taylor())
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# On the two-phase route no row is removed, so the marker column arrives
+# unchanged and still marks the zero-weighted rows FALSE. Its values are the
+# design's own marker read over the phase-2 rows, mixed and not all TRUE.
+test_that("the marker column survives a two-phase conversion with its values unchanged", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  df <- survey_data(d)
+  expected <- df[[surveycore::SURVEYCORE_DOMAIN_COL]][df$subset]
+
+  sv <- suppressWarnings(as_svydesign(d))
+  frame <- sv$phase1$sample$variables
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(frame))
+  expect_identical(frame[[surveycore::SURVEYCORE_DOMAIN_COL]], expected)
+  expect_false(all(expected))
+  expect_true(any(expected))
+})
+
+
+# The two-phase round trip recovers the domain, because the restriction
+# removed nothing for it to lose. from_svydesign() reads the phase-1 full
+# frame, which the restriction never touched, so the rebuilt design carries
+# every phase-1 row and the original unrestricted marker.
+test_that("the round trip on a filtered two-phase design rebuilds the full phase-1 frame", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  df <- survey_data(d)
+
+  sv <- suppressWarnings(as_svydesign(d))
+  rebuilt <- suppressWarnings(from_svydesign(sv))
+  rebuilt_df <- survey_data(rebuilt)
+
+  expect_identical(nrow(rebuilt_df), nrow(df))
+  expect_identical(
+    rebuilt_df[[surveycore::SURVEYCORE_DOMAIN_COL]],
+    df[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  )
+})
+
+
+# The restriction adds no surveycore condition on this route for an ordinary
+# domain either, which is the case the three blocks above do not cover.
+# expect_no_condition() cannot say so here: survey's own `[.twophase` emits an
+# untyped warning when a domain thins a stratum to one PSU, and that
+# expectation would fail on it.
+test_that("as_svydesign() raises no surveycore condition on a filtered two-phase design", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+
+  expect_identical(
+    collect_surveycore_classes(as_svydesign(d)),
+    character(0L)
+  )
+})
+
+
+# ── The marker reaches the conversion routes uncoerced (#262) ─────────────────
+#
+# .restrict_to_domain() reads the marker column with no as.logical() around
+# it. The survey_base validator rejects every type but logical at the write,
+# so the coercion guarded against a state the package can no longer reach.
+# The five blocks below are regression rows: each one held before the
+# coercion came out and must still hold after.
+#
+# The `[` the helper calls behaves differently on the two-phase route. On the
+# Taylor, replicate and nonprob routes it removes the out-of-domain rows, so
+# the observable is the row count. On the two-phase route it removes no row
+# and writes Inf into an excluded row's probability, so the observable there
+# is the count of finite probabilities.
+
+# A logical marker selects exactly the rows it marks TRUE. rownames() is the
+# observable rather than the row count alone: the count passes on an object
+# that kept the wrong rows, where the rownames name the rows that survived.
+test_that("as_svydesign() keeps only the marked rows of a logical Taylor marker", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- df$y1 > stats::median(df$y1)
+  marked <- set_domain_marker(d, "logical", mask = mask)
+
+  sv <- as_svydesign(marked)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_identical(rownames(sv$variables), as.character(which(mask)))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# An NA marker row is outside the domain, and `!is.na(r)` is what puts it
+# there. Without that guard the NA would index a phantom row of NAs rather
+# than drop one. make_domain_pair() writes NA into three scattered rows, and
+# `mask` is the same marker with each NA resolved to FALSE, so sum(mask) is
+# the count the conversion must return.
+test_that("as_svydesign() drops an NA marker row on the Taylor route", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("taylor")
+  stored <- survey_data(pair$a)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  na_rows <- which(is.na(stored))
+
+  sv <- as_svydesign(pair$a)
+
+  expect_gt(length(na_rows), 0L)
+  expect_identical(nrow(sv$variables), sum(pair$mask))
+  expect_identical(rownames(sv$variables), as.character(which(pair$mask)))
+  expect_false(any(as.character(na_rows) %in% rownames(sv$variables)))
+  expect_false(any(is.na(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]])))
+})
+
+
+# The replicate route restricts the same way and drops the same rows. The
+# replicate weight matrix is subset alongside the frame, so its row count has
+# to follow the frame's.
+test_that("as_svydesign() drops an NA marker row on the replicate route", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("replicate")
+  stored <- survey_data(pair$a)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  na_rows <- which(is.na(stored))
+
+  sv <- as_svydesign(pair$a)
+
+  expect_gt(length(na_rows), 0L)
+  expect_identical(nrow(sv$variables), sum(pair$mask))
+  expect_identical(rownames(sv$variables), as.character(which(pair$mask)))
+  expect_false(any(as.character(na_rows) %in% rownames(sv$variables)))
+  expect_identical(nrow(sv$repweights), sum(pair$mask))
+})
+
+
+# The two-phase route removes no row. It writes Inf into the probability of
+# every row the domain excludes, and a row outside phase 2 already carries an
+# infinite probability. So the finite-probability count is the rows that are
+# BOTH in-domain AND in phase 2, and not the in-domain count. The expected
+# value is derived from the fixture rather than written down.
+#
+# The design is rebuilt from the pair's frame and marker with
+# method = "full", because make_domain_pair("twophase") ships
+# method = "approx" and this block states the "full" claim. The "approx"
+# claim is the block at the end of this file (issue #276).
+test_that("as_svydesign() voids rather than removes the excluded two-phase rows", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("twophase")
+  df <- survey_data(pair$a)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  d <- as_survey_twophase(phase1, subset = subset, method = "full")
+
+  in_phase2 <- sum(df$subset)
+  in_domain_and_phase2 <- sum(pair$mask & df$subset)
+
+  sv <- as_svydesign(d)
+
+  # The restriction removes no row: the phase-1 sample of the converted
+  # object still holds one row per phase-2 row.
+  expect_identical(nrow(sv$phase1$sample$variables), in_phase2)
+  expect_identical(length(sv$prob), in_phase2)
+
+  # The excluded rows are voided instead.
+  expect_identical(sum(is.finite(sv$prob)), in_domain_and_phase2)
+
+  # The fixture marks in-domain rows that phase 2 excludes, so the two counts
+  # the comment distinguishes are different numbers on this data.
+  expect_lt(in_domain_and_phase2, sum(pair$mask))
+})
+
+
+# A design that carries no marker column converts untouched. The helper
+# returns early on the name test, so every row survives and nothing is
+# signalled.
+test_that("as_svydesign() keeps every row of a design with no marker column", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(df))
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(df))
+  expect_identical(rownames(sv$variables), rownames(df))
+})
+
+
+# The same claim on the other two-phase class. survey::twophase() returns
+# class "twophase2" for method = "full" and class "twophase" for
+# method = "approx", and neither object carries $variables: both keep the
+# frame at phase1$sample$variables. .restrict_to_domain() tested only the
+# first class, so an "approx" object fell to the $variables branch, `frame`
+# became NULL, the name test failed, and the helper returned the full stored
+# sample with nothing signalled (issue #276).
+#
+# make_domain_pair("twophase") ships method = "approx", so the pair's own
+# design is the fixture and no rebuild is needed. The observable is the
+# finite-probability count, as in the block above: it is the rows that are
+# both in-domain and in phase 2, and it is derived from the fixture rather
+# than written down. On this class `[` also removes the excluded rows, where
+# `[` on a twophase2 object keeps them and writes Inf into their
+# probabilities, so the row count answers the same number here. Measured
+# before the fix: 74 finite probabilities over 74 rows, which is the
+# unrestricted phase-2 count. After: 52, which is the domain.
+test_that("as_svydesign() restricts an approx two-phase design to the domain", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("twophase")
+  df <- survey_data(pair$a)
+
+  in_phase2 <- sum(df$subset)
+  in_domain_and_phase2 <- sum(pair$mask & df$subset)
+
+  sv <- as_svydesign(pair$a)
+
+  expect_true(inherits(sv, "twophase"))
+  expect_false(inherits(sv, "twophase2"))
+
+  # The count the defect got wrong.
+  expect_identical(sum(is.finite(sv$prob)), in_domain_and_phase2)
+  expect_identical(length(sv$prob), in_domain_and_phase2)
+  expect_identical(
+    nrow(sv$phase1$sample$variables),
+    in_domain_and_phase2
+  )
+
+  # The fixture marks in-domain rows that phase 2 excludes, so the domain
+  # count and the phase-2 count are different numbers on this data and the
+  # block above cannot pass on an unrestricted object.
+  expect_lt(in_domain_and_phase2, in_phase2)
+})
+
+
+# ── from_svydesign(): the phase 2 design of a two-phase object (#335) ────────
+#
+# The two-phase route once kept the phase 1 design and wrote an empty phase 2
+# whatever the source held. A twophase2 (method = "full") object then raised
+# surveycore_error_full_requires_phase2 on every estimate, and a twophase
+# (method = "approx") object estimated without its phase 2 strata, so the
+# estimate and the SE both differed from survey's. Both classes keep the
+# phase 2 formulas in x$phase2$call, and the route now reads them there.
+#
+# Oracle blocks below compare the converted design against the survey object
+# it came from. Both sides are built from the same frame by survey itself;
+# surveycore hands survey no number.
+
+# Fixture. 400 rows, 167 of them in phase 2. ssu is a phase 2 cluster of
+# three consecutive rows, and w2 is the phase 2 weight 1 / phase2_prob.
+make_twophase_frame <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$ssu <- seq_len(nrow(df)) %/% 3L
+  df$w2 <- 1 / df$phase2_prob
+  df
+}
+
+# A survey two-phase object on the fixture, in one of the four shapes the
+# blocks below name. method = "full" refuses weights, so its phase 1 weights
+# go in as probabilities, as as_svydesign() passes them (issue #329).
+make_svy_twophase <- function(df, method, phase2) {
+  id <- if (phase2 == "ids2") list(~psu, ~ssu) else list(~psu, ~1)
+  strata <- if (phase2 == "ids2") {
+    list(~strata, NULL)
+  } else {
+    list(~strata, ~strata)
+  }
+  if (method == "full") {
+    survey::twophase(
+      id = id,
+      strata = strata,
+      probs = list(~ I(1 / wt), NULL),
+      fpc = list(~fpc, NULL),
+      data = df,
+      subset = ~subset,
+      method = "full"
+    )
+  } else {
+    survey::twophase(
+      id = id,
+      strata = strata,
+      weights = list(~wt, NULL),
+      data = df,
+      subset = ~subset,
+      method = "approx"
+    )
+  }
+}
+
+# The domain mask: y1 above its median over all 400 phase 1 rows, which keeps
+# 81 of the 167 phase 2 rows.
+twophase_mask <- function(df) df$y1 > stats::median(df$y1)
+
+# The oracle. Mean, total and a two-coefficient GLM on the surveycore side
+# against svymean(), svytotal() and svyglm() on the survey side, at the house
+# tolerances: estimate 1e-10, SE 1e-8, CI 1e-6.
+expect_twophase_oracle <- function(d, sv) {
+  m <- get_means(d, y1, variance = c("se", "ci"))
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(m$mean, coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(m$se, as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  ci <- confint(sm)
+  expect_equal(m$ci_low, ci[1L, 1L], tolerance = 1e-6)
+  expect_equal(m$ci_high, ci[1L, 2L], tolerance = 1e-6)
+
+  t <- get_totals(d, y1, variance = "se")
+  st <- survey::svytotal(~y1, sv)
+  expect_equal(t$total, coef(st)[["y1"]], tolerance = 1e-10)
+  expect_equal(t$se, as.numeric(survey::SE(st)), tolerance = 1e-8)
+
+  fit <- survey_glm(d, y1 ~ y2, quiet = TRUE)
+  sfit <- survey::svyglm(y1 ~ y2, sv)
+  expect_equal(coef(fit), coef(sfit), tolerance = 1e-10)
+  expect_equal(
+    sqrt(diag(vcov(fit))),
+    sqrt(diag(vcov(sfit))),
+    tolerance = 1e-8
+  )
+}
+
+# The domain oracle. survey's own domain is `[` on the phase 2 sample, whose
+# rows are the subset rows of the frame. On a twophase2 object `[` keeps the
+# excluded rows at zero weight, and survey's summary.glm() warns that they do
+# not enter the dispersion, once from svyglm() and once from its summary; on
+# a twophase object `[` removes them and nothing warns. The warning is
+# survey's own and untyped, so it is matched by text.
+# survey_glm() raises nothing on either class.
+expect_twophase_domain_oracle <- function(d, sv, mask) {
+  df <- survey_data(d)
+  df[[SURVEYCORE_DOMAIN_COL]] <- mask
+  d@data <- df
+  sv_dom <- sv[mask[sv$subset], ]
+
+  m <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv_dom)
+  expect_equal(m$mean, coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(m$se, as.numeric(survey::SE(sm)), tolerance = 1e-8)
+
+  t <- get_totals(d, y1, variance = "se")
+  st <- survey::svytotal(~y1, sv_dom)
+  expect_equal(t$total, coef(st)[["y1"]], tolerance = 1e-10)
+  expect_equal(t$se, as.numeric(survey::SE(st)), tolerance = 1e-8)
+
+  expect_no_warning(fit <- survey_glm(d, y1 ~ y2, quiet = TRUE))
+  if (inherits(sv, "twophase2")) {
+    expect_warning(
+      expect_warning(sfit <- survey::svyglm(y1 ~ y2, sv_dom), "zero weight"),
+      "zero weight"
+    )
+  } else {
+    expect_no_warning(sfit <- survey::svyglm(y1 ~ y2, sv_dom))
+  }
+  expect_equal(coef(fit), coef(sfit), tolerance = 1e-10)
+  expect_equal(
+    sqrt(diag(vcov(fit))),
+    sqrt(diag(vcov(sfit))),
+    tolerance = 1e-8
+  )
+}
+
+
+test_that("from_svydesign() recovers strata2 and the phase 1 weights of a twophase2 object", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+
+  d <- from_svydesign(make_svy_twophase(df, "full", "strata2"))
+  test_invariants(d)
+
+  expect_identical(d@variables$method, "full")
+  expect_identical(d@variables$subset, "subset")
+  expect_identical(d@variables$phase1$weights, "wt")
+  expect_identical(
+    d@variables$phase2,
+    list(ids = NULL, strata = "strata", probs = NULL, fpc = NULL)
+  )
+})
+
+test_that("from_svydesign() recovers ids2 of a twophase object", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+
+  d <- from_svydesign(make_svy_twophase(df, "approx", "ids2"))
+
   expect_identical(d@variables$method, "approx")
+  expect_identical(
+    d@variables$phase2,
+    list(ids = "ssu", strata = NULL, probs = NULL, fpc = NULL)
+  )
+})
+
+test_that("from_svydesign() recovers probs2 and fpc2 named in a twophase2 call", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$n2 <- df$phase2_prob * 0 + 400
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), ~phase2_prob),
+    fpc = list(~fpc, ~n2),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(
+    d@variables$phase2,
+    list(ids = NULL, strata = "strata", probs = "phase2_prob", fpc = "n2")
+  )
+})
+
+# A probs = ~I(1/w) formula names its weight column directly. Value matching
+# takes the first column holding equal values, which here is a copy that sits
+# ahead of wt in the frame.
+test_that("from_svydesign() reads the twophase2 phase 1 weight column from probs = ~I(1/w)", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df <- cbind(wt_copy = df$wt, df)
+
+  d <- from_svydesign(make_svy_twophase(df, "full", "strata2"))
+
+  expect_identical(d@variables$phase1$weights, "wt")
+})
+
+
+# survey::twophase() evaluates subset = ~v in the data and then in the
+# caller's frame, so ~v can name a vector that is no data column. The route
+# then falls back to matching the stored subset against the data columns.
+test_that("from_svydesign() matches the subset column by value when the subset formula names no data column", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  in_phase2 <- df$subset
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~in_phase2,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$subset, "subset")
+})
+
+
+# Any other probs expression names no weight column, so the route falls back
+# to matching 1 / prob against the data columns.
+test_that("from_svydesign() matches the weight column by value for a probs expression other than ~I(1/w)", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$wt2 <- 2 * df$wt
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / (2 * wt)), NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase1$weights, "wt2")
+})
+
+
+test_that("from_svydesign(twophase2 with strata2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  d <- from_svydesign(sv)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign(twophase2 with ids2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "ids2")
+  d <- from_svydesign(sv)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign(twophase with strata2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "strata2")
+  expect_twophase_oracle(from_svydesign(sv), sv)
+})
+
+test_that("from_svydesign(twophase with ids2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "ids2")
+  expect_twophase_oracle(from_svydesign(sv), sv)
+})
+
+
+test_that("a filtered from_svydesign(twophase2 with strata2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  d <- from_svydesign(sv)
+  expect_twophase_domain_oracle(d, sv, twophase_mask(df))
+})
+
+test_that("a filtered from_svydesign(twophase2 with ids2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "ids2")
+  d <- from_svydesign(sv)
+  expect_twophase_domain_oracle(d, sv, twophase_mask(df))
+})
+
+test_that("a filtered from_svydesign(twophase with strata2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "strata2")
+  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+})
+
+test_that("a filtered from_svydesign(twophase with ids2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "ids2")
+  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+})
+
+
+# A round trip: survey → surveycore → survey gives back the same estimate and
+# SE in all four shapes, and the same class.
+test_that("as_svydesign(from_svydesign(sv)) round-trips a two-phase object [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  for (method in c("full", "approx")) {
+    for (phase2 in c("strata2", "ids2")) {
+      sv <- make_svy_twophase(df, method, phase2)
+      back <- as_svydesign(from_svydesign(sv))
+      expect_identical(class(back), class(sv))
+      sm <- survey::svymean(~y1, sv)
+      sm_back <- survey::svymean(~y1, back)
+      expect_equal(coef(sm_back), coef(sm), tolerance = 1e-10)
+      expect_equal(
+        as.numeric(survey::SE(sm_back)),
+        as.numeric(survey::SE(sm)),
+        tolerance = 1e-8
+      )
+    }
+  }
+})
+
+
+# ── The phase 1 fpc warning (issue #340) ─────────────────────────────────────
+#
+# from_svydesign() builds a survey_twophase without calling
+# as_survey_twophase(), so it raises the warning itself, under the same rule:
+# a twophase2 object whose phase 1 has weights other than 1 and no fpc.
+
+test_that("from_svydesign() warns for a twophase2 phase 1 with weights and no fpc", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_identical(d@variables$method, "full")
+})
+
+test_that("from_svydesign() does not warn for a twophase2 phase 1 with an fpc", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_no_warning(d <- from_svydesign(sv))
+  expect_identical(d@variables$phase1$fpc, "fpc")
+})
+
+test_that("from_svydesign() does not warn for a twophase2 phase 1 with no probs", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~1, ~1),
+    strata = list(NULL, ~strata),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_no_warning(from_svydesign(sv))
+})
+
+
+# ── Phase 2 variables no formula names directly ──────────────────────────────
+#
+# A phase 2 formula that is an expression, a phase 2 weights formula, and a
+# phase 2 design with no stored call each go into a generated column, with
+# no condition. strata2 and ids2 are evaluated on every phase 1 row, because
+# the variance counts the phase 2 population over all of them.
+
+test_that("from_svydesign() stores an expression probs2 in ..surveycore_probs2.. [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  # Phase 2 is a stratified draw, so its probability is the realised
+  # fraction in each stratum. The fixture's flat 0.4 contradicts that, and
+  # against a without-replacement phase 1 the variance comes out negative.
+  df$w2 <- 1 / stats::ave(as.numeric(df$subset), df$strata, FUN = mean)
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), ~ I(1 / w2)),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  expect_no_warning(d <- from_svydesign(sv))
+
+  expect_identical(d@variables$phase2$probs, "..surveycore_probs2..")
+  expect_equal(d@data[["..surveycore_probs2.."]], 1 / df$w2)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() stores an expression strata2 evaluated on every phase 1 row [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~ as.character(strata)),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase2$strata, "..surveycore_strata2..")
+  expect_identical(d@data[["..surveycore_strata2.."]], df$strata)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() stores an expression ids2 in ..surveycore_ids2.. [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~ I(ssu + 0L)),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase2$ids, "..surveycore_ids2..")
+  expect_equal(d@data[["..surveycore_ids2.."]], df$ssu)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() stores approx phase 2 weights as probs2 [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    weights = list(~wt, ~w2),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+
+  expect_no_warning(d <- from_svydesign(sv))
+
+  expect_identical(d@variables$phase2$probs, "..surveycore_probs2..")
+  expect_equal(d@data[["..surveycore_probs2.."]], df$phase2_prob)
+  expect_twophase_oracle(d, sv)
+})
+
+# With no call to read, the route rebuilds phase 2 from the values survey
+# evaluated on the phase 2 rows, and leaves the other rows NA.
+test_that("from_svydesign() rebuilds a twophase2 phase 2 with no stored call [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  sv$phase2$call <- NULL
+
+  expect_no_warning(d <- from_svydesign(sv))
+
+  expect_identical(
+    d@variables$phase2,
+    list(
+      ids = "..surveycore_ids2..",
+      strata = "..surveycore_strata2..",
+      probs = "..surveycore_probs2..",
+      fpc = "..surveycore_fpc2.."
+    )
+  )
+  expect_true(all(is.na(d@data[["..surveycore_probs2.."]][!df$subset])))
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() rebuilds a twophase phase 2 with no stored call [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "ids2")
+  sv$phase2$call <- NULL
+
+  d <- from_svydesign(sv)
+
+  expect_null(d@variables$phase2$strata)
+  expect_twophase_oracle(d, sv)
+})
+
+# ── Multi-stage phase 2 is refused (issue #338) ──────────────────────────────
+#
+# The two-phase variance reads one phase 2 stage, so a survey object whose
+# phase 2 id, strata or fpc has more than one stage used to convert with the
+# later stages dropped and a standard error about 5.6% too small. survey 4.5
+# refuses a multi-stage phase 2 strata or fpc unless the phase 2 id has more
+# than one stage too ("need at least as many id as fpc stages"), so every
+# reachable case below has a two-stage id. Each refusal fires before phase 1
+# is converted, so surveycore_warning_twophase_full_no_fpc never fires here.
+
+# Issue #338's reproduction: two-stage phase 2 id and strata, method = "full".
+make_svy_multistage <- function(method = "full", strata2 = ~ strata + half) {
+  df <- make_twophase_frame()
+  df$rowid <- seq_len(nrow(df))
+  df$half <- ifelse(df$rowid %% 2L == 0L, "a", "b")
+  survey::twophase(
+    id = list(~psu, ~ psu + rowid),
+    strata = list(~strata, strata2),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~subset,
+    method = method
+  )
+}
+
+test_that("from_svydesign() refuses a twophase2 object with a two-stage phase 2 id and strata", {
+  skip_if_not_installed("survey")
+  sv <- make_svy_multistage()
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+test_that("from_svydesign() refuses a twophase object with a two-stage phase 2 id and strata", {
+  skip_if_not_installed("survey")
+  expect_error(
+    from_svydesign(make_svy_multistage("approx")),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("from_svydesign() refuses a two-stage phase 2 id with single-stage strata", {
+  skip_if_not_installed("survey")
+  sv <- make_svy_multistage(strata2 = ~strata)
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+test_that("from_svydesign() refuses a two-stage phase 2 strata expression", {
+  skip_if_not_installed("survey")
+  expect_error(
+    from_svydesign(make_svy_multistage(strata2 = ~ strata + I(half))),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("from_svydesign() refuses a two-stage phase 2 id and fpc", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$rowid <- seq_len(nrow(df))
+  df$n_stage1 <- 1000
+  df$n_stage2 <- 100
+  sv <- survey::twophase(
+    id = list(~psu, ~ psu + rowid),
+    strata = list(~strata, NULL),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, ~ n_stage1 + n_stage2),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# A multi-stage ids2 expression used to generate one column per stage,
+# ..surveycore_ids2_1.. and so on. This block asserted that numbering; it now
+# asserts the refusal, and the numbering code is gone.
+test_that("from_svydesign() refuses a two-stage phase 2 id expression", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$row <- seq_len(nrow(df))
+  sv <- survey::twophase(
+    id = list(~psu, ~ I(ssu + 0L) + I(row + 0L)),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+# With no call, the stage counts come from the evaluated slots survey stores.
+test_that("from_svydesign() refuses a two-stage phase 2 with no stored call", {
+  skip_if_not_installed("survey")
+  sv <- make_svy_multistage()
+  sv$phase2$call <- NULL
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+
+test_that("from_svydesign() refuses a generated phase 2 name that names a data column", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df[["..surveycore_probs2.."]] <- 0
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), ~ I(1 / w2)),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_phase2_name_collision"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
 })

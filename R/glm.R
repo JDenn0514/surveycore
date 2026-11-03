@@ -14,88 +14,6 @@
 # Spec: plans/spec-phase-2.md §II–IV, §VIII
 # Error classes: plans/error-messages.md rows 65–87
 
-#' GLM Standards
-#'
-#' @srrstats {RE1.0} survey_glm() requires a formula interface: the first
-#'   argument is a standard R formula (e.g. y ~ x1 + x2), and no alternative
-#'   matrix interface is provided.
-#'
-#' @srrstats {RE1.1} survey_glm() documents how formula interfaces are
-#'   converted to model matrices in its @details section: formula is passed to
-#'   stats::model.matrix() via stats::glm(), producing an n x p model matrix
-#'   with treatment contrasts for factors.
-#'
-#' @srrstats {RE1.2} survey_glm() documents expected predictor types in its
-#'   @details section: numeric, integer, logical, factor, and character are
-#'   all accepted; character is coerced to factor by stats::model.matrix().
-#'
-#' @srrstats {RE1.3} The coefficient vector (fit@coefficients) and vcov matrix
-#'   (fit@vcov) carry names produced by stats::model.matrix(). The model frame
-#'   preserves row names from the rows used in fitting. Documented in
-#'   survey_glm() @details ("Row and column names").
-#'
-#' @srrstats {RE1.3a} Rows excluded by na.action (na.omit) do not appear in
-#'   the model frame; documented in survey_glm() @details ("Row and column
-#'   names"). No other input metadata is silently dropped.
-#'
-#' @srrstats {RE1.4} Input assumptions for survey_glm() are documented in
-#'   @details ("Input assumptions"): one row per sampled unit, positive finite
-#'   weights, formula variables must be columns of design@data, no automatic
-#'   centering or scaling applied.
-#'
-#' @srrstats {RE2.0} survey_glm() documents data transformations in @details
-#'   ("Data transformations"): no automatic transformation is applied; factor
-#'   encoding is handled by stats::model.matrix(); link function
-#'   transformations are applied by the family object.
-#'
-#' @srrstats {RE2.1} survey_glm() accepts an na.action argument (forwarded to
-#'   stats::glm()) controlling how missing values in predictor and response
-#'   data are handled; default is na.omit.
-#'
-#' @srrstats {RE2.2} survey_glm() provides na.action to control
-#'   missing-value handling in model frame variables. Two options are
-#'   documented: na.omit (default) and na.fail. See @param na.action and
-#'   @details ("Missing values").
-#'
-#' @srrstats {RE2.4} survey_glm() detects perfect collinearity in the model
-#'   matrix pre-fitting: stats::glm() produces NA coefficients for aliased
-#'   columns; surveycore checks for any NA in coef(fit) immediately after
-#'   fitting and throws surveycore_error_singular_model_matrix.
-#'
-#' @srrstats {RE2.4a} Perfect collinearity among predictor variables (e.g.,
-#'   x2 = 2 * x1) produces NA in stats::coef(fit), which is detected and
-#'   thrown as surveycore_error_singular_model_matrix.
-#'
-#' @srrstats {RE2.4b} Perfect collinearity between the response and a
-#'   predictor (e.g., y ~ y) causes numerical rank deficiency detected via
-#'   the NA coefficient check, thrown as surveycore_error_singular_model_matrix.
-#'
-#' @srrstats {RE3.0} Convergence warnings from the underlying stats::glm()
-#'   fit are propagated unchanged to the user; surveycore does not suppress
-#'   them.
-#'
-#' @srrstats {RE3.1} survey_glm() accepts quiet = FALSE (default) or
-#'   quiet = TRUE to suppress convergence warnings. The convergence status is
-#'   always stored in fit@converged regardless of quiet.
-#'
-#' @srrstats {RE3.2} Convergence thresholds inherit stats::glm.control()
-#'   defaults (epsilon = 1e-8, maxit = 25), which are well-established and
-#'   documented in ?glm.control.
-#'
-#' @srrstats {RE3.3} Users may supply a control argument to survey_glm()
-#'   (forwarded to stats::glm()), allowing explicit setting of epsilon and
-#'   maxit via glm.control().
-#'
-#' @srrstats {RE4.0} survey_glm() returns a survey_glm_fit S7 object that
-#'   stores coefficients, vcov, formula, design, and the underlying glm fit.
-#'
-#' @srrstats {RE5.0} Scaling relationships are documented in survey_glm()
-#'   @details ("Performance"): O(n*p^2) for score matrix computation, O(p^3)
-#'   for bread matrix. Dominant cost is typically stats::glm() IRLS.
-#'
-#' @noRd
-NULL
-
 
 # ===========================================================================
 # Section 1: survey_glm_fit S7 class
@@ -116,9 +34,11 @@ NULL
 #' @param design The original [survey_base] survey design object.
 #' @param degf Raw design degrees of freedom (positive scalar). For
 #'   `survey_taylor` designs (including SRS, which is absorbed into Taylor):
-#'   number of PSUs minus number of strata. For `survey_replicate` designs:
-#'   number of replicates minus one. For `survey_twophase`: Phase 1 PSUs
-#'   minus Phase 1 strata. For `survey_nonprob`: `Inf` (no design-based
+#'   number of PSUs minus number of strata, counting only those holding a row
+#'   used in the fit. For `survey_replicate` designs: number of replicates
+#'   minus one. For `survey_twophase`: phase-2 clusters minus phase-2
+#'   strata over the rows used in the fit, as `survey::degf()` counts it
+#'   (each phase-2 row is a cluster when `ids2` is not set). For `survey_nonprob`: `Inf` (no design-based
 #'   df). This is *not* the residual degrees of freedom used for
 #'   t-statistics and confidence intervals; those are computed as
 #'   `degf - (p - 1)` where `p` is the number of model coefficients.
@@ -581,10 +501,14 @@ survey_glm_fit <- S7::new_class(
 #
 # @param design     Survey design object.
 # @param n_coef     Total coefficients p (including intercept).
-# @return Numeric(1): max(1, .degf(design) - (p - 1)).
+# @param rows       Logical, full length: the rows used in the fit. The df
+#                   counts only their PSUs and strata, as survey::svyglm()
+#                   takes degf() of the subset, complete-case design (#326).
+# @return Numeric(1): max(1, .degf(design, rows)); the residual df
+#   .degf(design, rows) - (p - 1) is clamped in .glm_confint().
 #' @noRd
-.glm_degrees_of_freedom <- function(design, n_coef) {
-  degf_raw <- .degf(design)
+.glm_degrees_of_freedom <- function(design, n_coef, rows) {
+  degf_raw <- .degf(design, rows = rows)
   df_resid <- degf_raw - (n_coef - 1L)
   if (df_resid <= 0) {
     cli::cli_warn(
@@ -670,7 +594,10 @@ survey_glm_fit <- S7::new_class(
 #'
 #' **Domain estimation:** Use `surveytidy::filter()` before calling
 #' `survey_glm()`. The GLM is fit on in-domain rows only; variance
-#' estimation uses the full design for correct design-based SEs.
+#' estimation uses the full design for correct design-based SEs. The design
+#' degrees of freedom count only the PSUs and strata holding a row used in
+#' the fit (in the domain and not dropped by `na.action`), matching
+#' `survey::svyglm()` on a `subset()` design.
 #'
 #' **Multinomial response:** `cbind()` on the LHS of `formula` is not
 #' supported. Multinomial logistic regression is deferred to a later phase.
@@ -1181,7 +1108,11 @@ survey_glm <- function(
   dimnames(vcov_mat) <- list(coef_names, coef_names)
 
   # ── Step 6: Check degf and assemble survey_glm_fit ────────────────────────
-  degf_val <- .glm_degrees_of_freedom(design, n_coef = length(coef_names))
+  degf_val <- .glm_degrees_of_freedom(
+    design,
+    n_coef = length(coef_names),
+    rows = domain_for_score
+  )
 
   survey_glm_fit(
     coefficients = stats::coef(fit),

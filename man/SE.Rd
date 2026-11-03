@@ -29,21 +29,21 @@ Exception: \code{SE.default} is NOT equivalent to \code{survey::SE.svyby} when
 \code{survey::SE()}.
 }
 \seealso{
-Other analysis: 
-\code{\link{clean}()},
-\code{\link{get_anova}()},
-\code{\link{get_corr}()},
-\code{\link{get_covariance}()},
-\code{\link{get_diffs}()},
-\code{\link{get_effective_n}()},
-\code{\link{get_freqs}()},
-\code{\link{get_means}()},
-\code{\link{get_pairwise}()},
-\code{\link{get_quantiles}()},
-\code{\link{get_ratios}()},
-\code{\link{get_t_test}()},
-\code{\link{get_totals}()},
-\code{\link{get_variance}()},
-\code{\link{meta}()}
+Other analysis:
+\code{\link[=clean]{clean()}},
+\code{\link[=get_anova]{get_anova()}},
+\code{\link[=get_corr]{get_corr()}},
+\code{\link[=get_covariance]{get_covariance()}},
+\code{\link[=get_diffs]{get_diffs()}},
+\code{\link[=get_effective_n]{get_effective_n()}},
+\code{\link[=get_freqs]{get_freqs()}},
+\code{\link[=get_means]{get_means()}},
+\code{\link[=get_pairwise]{get_pairwise()}},
+\code{\link[=get_quantiles]{get_quantiles()}},
+\code{\link[=get_ratios]{get_ratios()}},
+\code{\link[=get_t_test]{get_t_test()}},
+\code{\link[=get_totals]{get_totals()}},
+\code{\link[=get_variance]{get_variance()}},
+\code{\link[=meta]{meta()}}
 }
 \concept{analysis}

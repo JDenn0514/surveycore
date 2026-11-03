@@ -13,6 +13,9 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
+    # A stalled package-mirror download in setup-r otherwise holds the job
+    # for GitHub's 6-hour default. The longest healthy job took 22 minutes.
+    timeout-minutes: 45
     continue-on-error: ${{ matrix.config.allow_failure }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
@@ -40,6 +43,9 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          # surveytidy is in Suggests but not on CRAN; this r-universe serves it
+          # (it replaces the old Remotes: field, which CRAN rejects).
+          extra-repositories: https://jdenn0514.r-universe.dev
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

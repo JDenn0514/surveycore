@@ -99,6 +99,11 @@
 #' Use `meta(result)` to access design type, variable labels, value labels,
 #' and other metadata.
 #'
+#' On a Taylor or replicate design (including a `survey_nonprob` design with
+#' replicate weights), the result also stores the joint covariance matrix of
+#' its estimates, covering every pair of rows. Read it with `vcov(result)`; see
+#' [vcov.survey_result()].
+#'
 #' @examples
 #' # NHANES exam weights are 0 for non-examined participants; filter first
 #' nhanes_sub <- nhanes_2017[nhanes_2017$wtmec2yr > 0, ]
@@ -266,17 +271,14 @@ get_freqs <- function(
   acc_n <- integer(0)
   acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L) # list of single-row data.frames
+  acc_joint <- list() # per-cell joint-covariance inputs
 
   small_cell_ns <- integer(0) # for small-cell warning
 
   for (vn in var_names) {
     x_col <- design@data[[vn]]
     vl <- x_meta_list[[vn]]$value_labels # named vector or NULL
-    vl_map <- if (!is.null(vl)) {
-      structure(names(vl), names = as.character(vl))
-    } else {
-      NULL
-    }
+    vl_map <- .value_label_map(vl, x_col)
 
     # domain-only x values for level detection
     x_domain <- x_col[domain_mask]
@@ -361,15 +363,7 @@ get_freqs <- function(
         }
 
         # ── Level display value ────────────────────────────────────────────
-        if (label_values && !is.null(vl_map) && !is.na(lvl)) {
-          key <- as.character(lvl)
-          # vl_map keys are numeric codes (as character strings) for
-          # haven-labelled columns. For factor columns, lvl is already the
-          # label string and may not be a key in vl_map — fall back to lvl.
-          lvl_display <- if (key %in% names(vl_map)) vl_map[[key]] else key
-        } else {
-          lvl_display <- if (is.na(lvl)) NA_character_ else as.character(lvl)
-        }
+        lvl_display <- .level_display(lvl, vl_map, label_values)
 
         # ── Accumulate ────────────────────────────────────────────────────
         if (is_multi) {
@@ -384,6 +378,7 @@ get_freqs <- function(
         acc_sesrs <- c(acc_sesrs, cell$se_srs)
         acc_n <- c(acc_n, cell$n)
         acc_nw <- c(acc_nw, cell$n_weighted)
+        acc_joint <- c(acc_joint, list(cell$joint))
 
         if (length(group_vars) > 0L) {
           acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -449,11 +444,11 @@ get_freqs <- function(
     }
 
     # Convert to factor when label_values=TRUE and value labels exist
-    vl_single <- x_meta_list[[var_names[[1L]]]]$value_labels
-    if (label_values && !is.null(vl_single)) {
-      focal_out <- factor(focal_out, levels = names(vl_single))
-    }
-    col_vecs[[var_names[[1L]]]] <- focal_out
+    col_vecs[[var_names[[1L]]]] <- .focal_level_column(
+      focal_out,
+      x_meta_list[[var_names[[1L]]]]$value_labels,
+      label_values
+    )
   }
 
   col_vecs$pct <- acc_pct
@@ -500,17 +495,11 @@ get_freqs <- function(
     estimate_cols = c("pct"),
     statistic = "freq"
   )
+  result <- .attach_joint_vcov(result, design, acc_joint)
 
-  # For Taylor/twophase designs, store finite design df in .survey_result.
-  # Replicate and nonprob designs use Inf (default from .make_result_tibble).
-  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
-    S7::S7_inherits(design, survey_twophase)
-  if (is_taylor_like) {
-    design_df <- .degf(design)
-    sr <- attr(result, ".survey_result")
-    sr$df <- rep(design_df, nrow(result))
-    attr(result, ".survey_result") <- sr
-  }
+  # The .survey_result df is left at its Inf default (from
+  # .make_result_tibble()), the same df the ci_low/ci_high columns use, so
+  # confint() returns the same interval.
 
   # ── Step 13: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {

@@ -1,9 +1,6 @@
 ---
 name: snapshot-reviewer
-description: Review testthat snapshot diffs for surveycore. Reads _snaps/ diff output,
-explains what changed in each CLI error message, identifies whether changes are
-intentional vs regressions, and recommends approve/reject per snapshot. Use when snapshot
-tests fail after changing error messages.
+description: Review testthat snapshot diffs for surveycore. Reads _snaps/ diff output, explains what changed in each CLI error message, identifies whether changes are intentional vs regressions, and recommends approve/reject per snapshot. Use when snapshot tests fail after changing error messages.
 ---
 
 You are a snapshot diff reviewer for the surveycore R package.

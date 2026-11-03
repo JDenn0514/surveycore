@@ -40,8 +40,12 @@ variable(s). Combined with any grouping set by \code{group_by()}. Default
 \item{variance}{\code{NULL} or a character vector from \code{"se"}, \code{"ci"}, \code{"var"},
 \code{"cv"}, \code{"moe"}, \code{"deff"}. Controls which uncertainty columns appear in
 the output. CIs use the Woodruff (1952) back-transformation method and
-are \strong{not} symmetric around the estimate. \code{"deff"} is always \code{NA} for
-quantiles (no closed-form SRS SE). Default \code{"ci"}.}
+are \strong{not} symmetric around the estimate. The t critical value takes
+its degrees of freedom from the rows each estimate uses: only PSUs and
+strata holding a row in the filtered domain, the group, and (with
+\code{na.rm = TRUE}) the non-missing values count, as \code{survey::degf()} does
+on the design \code{survey::svyquantile()} receives. \code{"deff"} is always \code{NA}
+for quantiles (no closed-form SRS SE). Default \code{"ci"}.}
 
 \item{conf_level}{Numeric scalar in (0, 1). Confidence level for Woodruff
 intervals. Default \code{0.95}.}
@@ -140,21 +144,21 @@ position measures. \emph{Journal of the American Statistical Association},
 \strong{47}(260), 635–646.
 }
 \seealso{
-Other analysis: 
-\code{\link{SE}()},
-\code{\link{clean}()},
-\code{\link{get_anova}()},
-\code{\link{get_corr}()},
-\code{\link{get_covariance}()},
-\code{\link{get_diffs}()},
-\code{\link{get_effective_n}()},
-\code{\link{get_freqs}()},
-\code{\link{get_means}()},
-\code{\link{get_pairwise}()},
-\code{\link{get_ratios}()},
-\code{\link{get_t_test}()},
-\code{\link{get_totals}()},
-\code{\link{get_variance}()},
-\code{\link{meta}()}
+Other analysis:
+\code{\link[=SE]{SE()}},
+\code{\link[=clean]{clean()}},
+\code{\link[=get_anova]{get_anova()}},
+\code{\link[=get_corr]{get_corr()}},
+\code{\link[=get_covariance]{get_covariance()}},
+\code{\link[=get_diffs]{get_diffs()}},
+\code{\link[=get_effective_n]{get_effective_n()}},
+\code{\link[=get_freqs]{get_freqs()}},
+\code{\link[=get_means]{get_means()}},
+\code{\link[=get_pairwise]{get_pairwise()}},
+\code{\link[=get_ratios]{get_ratios()}},
+\code{\link[=get_t_test]{get_t_test()}},
+\code{\link[=get_totals]{get_totals()}},
+\code{\link[=get_variance]{get_variance()}},
+\code{\link[=meta]{meta()}}
 }
 \concept{analysis}

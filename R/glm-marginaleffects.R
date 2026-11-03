@@ -73,12 +73,25 @@ get_vcov.survey_glm_fit <- function(model, ...) {
 # Requires model@fit_ to be non-NULL. If fit_ is NULL (e.g. after
 # deserialization), errors with surveycore_error_predict_no_fit — the same
 # error class as predict.survey_glm_fit().
+#
+# marginaleffects merges grouping columns back onto contrast rows by
+# matching `rowid` between this output and its own copy of newdata. When
+# newdata already carries a `rowid` column, that column is the row's real
+# identity (it can reset partway through a stacked hi/lo contrast block) and
+# must be preserved as-is. Only fabricate a sequential rowid when newdata has
+# none, matching the fallback marginaleffects' own default get_predict()
+# uses (see `add_rowid()` in the marginaleffects source).
 
 #' @noRd
 get_predict.survey_glm_fit <- function(model, newdata, ...) {
   pred <- stats::predict(model, new_data = newdata, type = "response")
+  rowid <- if ("rowid" %in% names(newdata)) {
+    newdata$rowid
+  } else {
+    seq_len(nrow(newdata))
+  }
   data.frame(
-    rowid = seq_len(nrow(newdata)),
+    rowid = rowid,
     estimate = as.numeric(pred)
   )
 }

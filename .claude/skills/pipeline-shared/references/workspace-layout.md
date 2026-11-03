@@ -20,6 +20,7 @@ Per-request runtime artifacts live under `.surveycore-workspace/`, a gitignored 
 │           ├── implementation-plan.md   PR map + acceptance
 │           ├── plan-review.md      plan review verdict
 │           ├── decisions.md        HOLD/STOP resolutions log
+│           ├── {measurement}.md    any measured evidence — see below
 │           └── prs/
 │               └── pr-{n}-{slug}/
 │                   ├── implementation.md   builder output
@@ -33,6 +34,18 @@ Per-request runtime artifacts live under `.surveycore-workspace/`, a gitignored 
     ├── implementation-plan-{slug}.md shipped plan
     └── decisions-{slug}.md           shipped decisions log
 ```
+
+## Measurement documents
+
+A document holding measured evidence goes in the run directory, beside
+`spec.md`. Name it for what it measures — `measurements.md`,
+`verification-d4.md`, `audit-empirical.md`.
+
+The archive step copies every `.md` in the run directory, so a measurement
+written here survives the feature. One written anywhere else does not, and a
+decision that cites it becomes an argument a reader cannot check. That is
+what happened to seven SETTLED decisions in `archive/haven-labelled/`
+(issue #217).
 
 ## Request ID
 
@@ -52,12 +65,16 @@ Add to `.gitignore` at repo root (one line):
 
 - **At request start**: orchestrating skill creates `runs/{id}/`, writes `request.md` + `impact.md` + `status.md` (with line `NEW`)
 - **During work**: agents write their outputs into the run directory. Status transitions appended to `status.md`.
-- **At DONE**: orchestrating skill copies durable artifacts (`spec.md`, `implementation-plan.md`, `decisions.md`) into `plans/` with `-{id}` suffix. Workspace entry is kept for forensics.
-- **Archiving**: after the change has been released (ships reach `main`), the run directory may be deleted or moved to an archive location. Committed artifacts in `plans/` are moved to `archive/{slug}/` per existing project convention (see CLAUDE.md reference docs).
+- **At each freeze**: the orchestrating skill copies the durable artifacts into `plans/` with `-{slug}` suffix, so each phase's output is saved even when the next phase runs in a fresh session:
+  - At SPEC_READY: `spec.md`, `test-spec.md`, `comprehension.md` (if present), `decisions.md`
+  - At PLAN_READY: `implementation-plan.md`, updated `decisions.md`
+  - At DONE: final `decisions.md`
+  A later copy overwrites the earlier one. The workspace entry is kept for forensics.
+- **Archiving**: after the final PR merges, `references/archive-plans.md` moves the `plans/` artifacts into `archive/{slug}/` and copies every `.md` in the run directory in beside them. Gate logs and `status.md` stay untracked. A citation check then holds closeout until every cited document resolves. The run directory may then be deleted or moved to an archive location.
 
 ## Per-PR subdirectories
 
-`prs/pr-{n}-{slug}/` groups builder + tester + reviewer outputs for a single PR. This is required when the implementation-plan.md has multiple PRs — each PR needs its own set of artifacts so parallel dispatch doesn't collide.
+`prs/pr-{n}-{slug}/` groups builder + tester + reviewer outputs for a single PR. This is required when the implementation-plan.md has multiple PRs — each PR needs its own set of artifacts so one PR's builder, tester and reviewer never overwrite another's.
 
 ## What NOT to put in workspace
 

@@ -37,9 +37,9 @@ if (
 \seealso{
 \code{\link[=as_tbl_svy]{as_tbl_svy()}} to convert in the other direction
 
-Other conversion: 
-\code{\link{as_svydesign}()},
-\code{\link{as_tbl_svy}()},
-\code{\link{from_svydesign}()}
+Other conversion:
+\code{\link[=as_svydesign]{as_svydesign()}},
+\code{\link[=as_tbl_svy]{as_tbl_svy()}},
+\code{\link[=from_svydesign]{from_svydesign()}}
 }
 \concept{conversion}

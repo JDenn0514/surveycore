@@ -31,3 +31,5 @@
 ^CRAN-SUBMISSION$
 ^implementation\.md$
 ^tools$
+^\.lintr$
+^\.editorconfig$

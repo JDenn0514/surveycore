@@ -21,10 +21,11 @@ object. Values are \code{sqrt(diag(vcov(object)))}, ensuring consistency between
 \code{SE()} and \code{vcov()}.
 }
 \note{
-\code{vcov.survey_result()} emits \code{surveycore_warning_vcov_diagonal_only}
-when \code{p > 1}. This warning is suppressed inside \code{SE.survey_result()} because
-the off-diagonal structure is irrelevant when only standard errors are
-requested. Call \code{vcov(result)} directly to observe this warning.
+\code{vcov.survey_result()} emits \code{surveycore_warning_vcov_incomplete}
+when it has no joint covariance for a result with \code{p > 1}. This warning is
+suppressed inside \code{SE.survey_result()} because the off-diagonal structure
+is irrelevant when only standard errors are requested. Call
+\code{vcov(result)} directly to observe this warning.
 }
 \examples{
 d <- as_survey(

@@ -47,7 +47,7 @@
         d$y, ordered = TRUE), weights = w, active_domain = dom, eps = 1.5, x_name = "xvar",
       y_name = "yvar")
     Condition
-      Error in `.corr_polychoric_mle()`:
+      Error in `.corr_polychoric_fit_core()`:
       x Numerical optimization did not converge for pair (xvar, yvar).
       i Optimizer message: "stats::optimize() returned a non-finite result".
       v Inspect the pair for extreme weight skew, sparse cells, or degenerate ordinal coding.

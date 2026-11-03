@@ -56,6 +56,16 @@
       Error in `as_survey()`:
       x `weights` must select exactly one column, not 2
 
+# as_survey() errors when a weight is non-positive [row 33]
+
+    Code
+      as_survey(df, weights = wt)
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column wt has 2 non-positive value(s).
+      i All non-NA weights must be strictly greater than 0.
+      v Remove or replace rows where wt is 0 or negative.
+
 # as_survey() errors when strata expression selects multiple columns [row 11]
 
     Code
@@ -90,6 +100,277 @@
       Error in `as_survey()`:
       x `nest = TRUE` requires `strata` to be specified
 
+# as_survey_replicate() refuses JKn with no rscales
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "JKn")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `type = "JKn"` requires `rscales`.
+      i JKn replicate weights are combined weights, so the stratum factor `(n_h - 1) / n_h` reaches the variance only through `rscales`. `survey::svrepdesign()` refuses the same input.
+      v Pass `rscales` with one entry per replicate column: `(n_h - 1) / n_h`, where `n_h` is the number of PSUs in the stratum the replicate drops a PSU from.
+
+# as_survey_replicate() refuses type = "Fay" with no rho
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `type = "Fay"` requires `rho`.
+      i `rho` is the Fay shrinkage factor the replicate weights were built with, and the Fay scale `1 / (R * (1 - rho)^2)` needs it.
+      v Pass the value the survey's technical documentation gives, for example `rho = 0.5`.
+
+# as_survey_replicate() refuses type = "Fay" with rho = 1.5
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = 1.5)
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <numeric>: 1.5.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+# as_survey_replicate() warning for rho with type = "BRR" shows the FR-3 text
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"),
+      type = "BRR", rho = 0.3)
+    Condition
+      Warning:
+      ! `rho` applies only to `type = "Fay"` and was ignored.
+      i The design has type "BRR" and stores no `rho`.
+      v Remove `rho`, or use `type = "Fay"` if the replicate weights are Fay weights.
+
+# as_survey_replicate() invalid-rho message names the class and at most five values
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = "0.5")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <character>: 0.5.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+---
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = numeric(0))
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <numeric>: a value of length 0.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+---
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <numeric>: 0.1, 0.2, 0.3, 0.4, 0.5.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+# as_survey_replicate() discard warning names scale alone
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", scale = 0.6)
+    Condition
+      Warning:
+      ! `scale` has no effect for this replicate type and was ignored.
+      i For type "BRR", the design stores the type's own value, as `survey::svrepdesign()` does.
+      v Remove `scale` from the call.
+
+# as_survey_replicate() discard warning names scale and rscales together
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "JK2", scale = 0.6, rscales = rep(0.5, 20))
+    Condition
+      Warning:
+      ! `scale` and `rscales` have no effect for this replicate type and were ignored.
+      i For type "JK2", the design stores the type's own values, as `survey::svrepdesign()` does.
+      v Remove `scale` and `rscales` from the call.
+
+# as_survey_replicate() discard warning names rscales alone
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "ACS", rscales = rep(0.5, 20))
+    Condition
+      Warning:
+      ! `rscales` has no effect for this replicate type and was ignored.
+      i For type "ACS", the design stores the type's own value, as `survey::svrepdesign()` does.
+      v Remove `rscales` from the call.
+
+# as_survey_replicate() raises the rho warning before the discard warning
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", rho = 0.3, scale = 0.6)
+    Condition
+      Warning:
+      ! `rho` applies only to `type = "Fay"` and was ignored.
+      i The design has type "BRR" and stores no `rho`.
+      v Remove `rho`, or use `type = "Fay"` if the replicate weights are Fay weights.
+      Warning:
+      ! `scale` has no effect for this replicate type and was ignored.
+      i For type "BRR", the design stores the type's own value, as `survey::svrepdesign()` does.
+      v Remove `scale` from the call.
+
+# as_survey_replicate() refuses an fpc column [RF-1]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = fpc, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` names the column fpc, and `as_survey_replicate()` does not accept an FPC column.
+      i No replicate variance formula reads a finite population correction column, so a column `fpc` never changed a standard error.
+      i A replicate FPC is one value per replicate: `survey::svrepdesign()` multiplies `rscales` by `1 - f`, where `f` is the sampling fraction.
+      i For a Taylor series design with an FPC, use `as_survey()`.
+      v Pass a number or one value per replicate column, for example `fpc = 0.05`, or write `.env$fpc` to use a variable of that name from the calling environment.
+
+# as_survey_replicate() reads a bare column name as the column when a variable shares it [RF-1]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = fpc, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` names the column fpc, and `as_survey_replicate()` does not accept an FPC column.
+      i No replicate variance formula reads a finite population correction column, so a column `fpc` never changed a standard error.
+      i A replicate FPC is one value per replicate: `survey::svrepdesign()` multiplies `rscales` by `1 - f`, where `f` is the sampling fraction.
+      i For a Taylor series design with an FPC, use `as_survey()`.
+      v Pass a number or one value per replicate column, for example `fpc = 0.05`, or write `.env$fpc` to use a variable of that name from the calling environment.
+
+# as_survey_replicate() refuses fpctype on its own [RF-1b]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
+      fpctype = "correction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpctype` was supplied without `fpc`.
+      i `fpctype` says how to read `fpc`: "fraction" for the sampling fraction `f`, "correction" for `1 - f`.
+      v Remove `fpctype`, or pass `fpc` with it.
+
+# as_survey_replicate() refuses a numeric fpc for every type survey refuses [RF-2]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
+      fpc = 0.1, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` applies to `type = "JK1"`, `"JKn"` and `"other"` only.
+      i The design has type "BRR", and `survey::svrepdesign()` refuses `fpc` for it too.
+      v Remove `fpc`.
+
+# as_survey_replicate() points a bootstrap fpc at the replicate weights [RF-2]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "bootstrap",
+      fpc = 0.1, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` applies to `type = "JK1"`, `"JKn"` and `"other"` only.
+      i A bootstrap FPC belongs in the replicate weights, built in when the weights are drawn. `survey::svrepdesign()` also refuses a separate one.
+      v Remove `fpc`.
+
+# as_survey_replicate() requires fpctype with a numeric fpc [RF-3a]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = 0.1)
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` needs `fpctype`.
+      i The same value reads as the sampling fraction `f` or as the correction `1 - f`, and the two give different standard errors.
+      v Pass `fpctype = "fraction"` or `fpctype = "correction"`.
+
+# as_survey_replicate() refuses an fpctype that is not exactly one of the two strings [RF-3b]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = 0.1, fpctype = "frac")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpctype` must be "fraction" or "correction".
+      i Got "frac".
+      v Pass `fpctype = "fraction"` or `fpctype = "correction"`.
+
+# as_survey_replicate() wraps an fpc that fails to evaluate [RF-3c]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = no_such_variable, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` could not be evaluated.
+      i Only a bare column name is read as a column. Any other `fpc` is evaluated in the calling environment.
+      v Pass a number or one value per replicate column.
+      Caused by error:
+      ! object 'no_such_variable' not found
+
+# as_survey_replicate() refuses a non-numeric fpc [RF-3d]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = "0.1", fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` must be a numeric vector.
+      i Got <character>.
+      v Pass a number or one value per replicate column.
+
+# as_survey_replicate() refuses an fpc of the wrong length [RF-3e]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = c(0.1, 0.2), fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` must have length 1 or 5, one value per replicate column.
+      i Got length 2.
+
+# as_survey_replicate() refuses an fpc holding NA or a non-finite value [RF-3f]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = c(0.1, NA, 0.1, Inf, 0.1), fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` contains 2 missing or non-finite values.
+      i Every replicate needs a finite correction.
+
+# as_survey_replicate() refuses an fpc outside its range [RF-3g]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = c(0.1, 1, 0.1, 1.5, 0.1), fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` has 2 values outside `[0, 1)`.
+      i With `fpctype = "fraction"` each value is a sampling fraction `f` in `[0, 1)`; with `fpctype = "correction"` it is `1 - f`, in `(0, 1]`.
+      v Check `fpctype`, or pass `n / N` for each replicate.
+
+---
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = 0, fpctype = "correction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` has 1 value outside `(0, 1]`.
+      i With `fpctype = "fraction"` each value is a sampling fraction `f` in `[0, 1)`; with `fpctype = "correction"` it is `1 - f`, in `(0, 1]`.
+      v Check `fpctype`, or pass `n / N` for each replicate.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code
@@ -106,6 +387,26 @@
     Condition
       Error in `as_survey_replicate()`:
       x `data` must have at least one row
+
+# as_survey_replicate() errors when all weights are zero [row 10]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+    Condition
+      Error in `.validate_weights()`:
+      x All values in weight column wt are zero or missing.
+      i No valid (non-NA, positive) weights found.
+      v Check wt for data issues or supply a different column.
+
+# as_survey_replicate() errors when a weight is non-positive [row 33]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column wt has 2 non-positive value(s).
+      i All non-NA weights must be strictly greater than 0.
+      v Remove or replace rows where wt is 0 or negative.
 
 # as_survey_replicate() errors when repweights matches no columns [row 16]
 
@@ -124,36 +425,15 @@
       Error in `.validate_rscales()`:
       x Length of `rscales` (2) must equal number of replicate weights (10).
 
-# as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 warning
+# as_survey_twophase() full-no-fpc warning message
 
     Code
-      as_survey_twophase(phase1, subset = subset, method = "simple")
+      invisible(as_survey_twophase(phase1, subset = subset, method = "full"))
     Condition
       Warning:
-      ! `method = "simple"` ignores the Phase 1 cluster design (PSUs: psu). This understates variance. Use `method = "full"` or `method = "approx"`.
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_twophase> (method: simple)
-      Phase 1 sample size: 200
-      Phase 2 sample size: 75
-      
-    Output
-      # A tibble: 200 x 11
-         psu   strata      fpc    wt    y1      y2    y3 group subset phase1_prob
-         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>        <dbl>
-       1 psu_1 stratum_1   416 12.2   48.4  0.0895     1 C     TRUE        0.0865
-       2 psu_1 stratum_1   416 10.8   42.3  0.231      0 A     FALSE       0.0865
-       3 psu_2 stratum_1   416 11.1   49.0 -0.0118     0 A     FALSE       0.0865
-       4 psu_2 stratum_1   416 14.7   50.4  0.885      0 A     TRUE        0.0865
-       5 psu_2 stratum_1   416 16.9   43.6  0.469      1 A     FALSE       0.0865
-       6 psu_2 stratum_1   416 11.7   44.3 -0.978      0 C     TRUE        0.0865
-       7 psu_2 stratum_1   416 16.4   40.0  0.631      0 A     FALSE       0.0865
-       8 psu_3 stratum_1   416 11.0   63.5 -0.509      0 B     FALSE       0.0865
-       9 psu_3 stratum_1   416 12.9   51.3  0.232      0 C     FALSE       0.0865
-      10 psu_4 stratum_1   416  9.48  45.8 -1.64       0 C     FALSE       0.0865
-      # i 190 more rows
-      # i 1 more variable: phase2_prob <dbl>
+      ! Phase 1 has no `fpc`, so `method = "full"` treats its sampling units as Poisson-sampled.
+      i Standard errors are then conservative, often several times too large for a total.
+      i With an `fpc` on the phase 1 design, the variance is that of a fixed-size sample.
 
 # as_survey_twophase() errors when phase1 is a data.frame [row 19]
 
@@ -162,7 +442,17 @@
     Condition
       Error in `as_survey_twophase()`:
       x `phase1` must be a survey design object (<survey_base>), not <data.frame>.
-      i Create it first with `as_survey()` or `as_survey_replicate()`.
+      i Create it first with `as_survey()`.
+
+# as_survey_twophase() refuses a survey_replicate phase-1
+
+    Code
+      as_survey_twophase(phase_rep, subset = in_phase2)
+    Condition
+      Error in `as_survey_twophase()`:
+      x `as_survey_twophase()` does not accept a <survey_replicate> phase 1.
+      i Phase 1 variance for a replicate design is not implemented, and survey has no two-phase design with a replicate phase 1.
+      v Build phase 1 with `as_survey()` from the design's cluster, strata and weight columns.
 
 # as_survey_twophase() errors when subset is not provided [row 20]
 
@@ -205,6 +495,17 @@
       x `subset` column phase2_na contains 1 NA value(s).
       i The phase 2 membership indicator must be fully observed for all phase 1 units.
       v Remove rows with missing `subset` values before calling `as_survey_twophase()`.
+
+# as_survey_twophase() refuses a multi-stage ids2
+
+    Code
+      as_survey_twophase(phase1, ids2 = c(psu, rowid), strata2 = strata, subset = subset,
+      method = "full")
+    Condition
+      Error in `as_survey_twophase()`:
+      x `as_survey_twophase()` does not support a multi-stage phase 2.
+      i `ids2` names more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.
+      v Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported.
 
 # as_survey_nonprob() rejects non-data-frame input
 
@@ -655,15 +956,6 @@
       x Stage-2 FPC column fpc2_bad is not constant within parent clusters.
       i FPC fractions must be the same for all units within each parent cluster.
 
-# as_survey_replicate() still rejects multi-column fpc
-
-    Code
-      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
-        repwt_cols), type = "BRR", fpc = c(fpc, fpc2))
-    Condition
-      Error in `as_survey_replicate()`:
-      x `fpc` must select exactly one column, not 2
-
 # as_survey_nonprob() rejects type = 'BRR' with surveycore_error_type_unsupported_for_nonprob
 
     Code
@@ -767,4 +1059,99 @@
       x `scale` must be >= 0. Got -0.5.
       i A negative scale factor produces negative variance, which is nonsensical.
       v Use `scale = 0` to exclude a replicate's contribution, or omit `scale` to use the type-specific default.
+
+# as_survey() warns and drops a wrong-typed canonical attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <numeric> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops a canonical attribute of length > 1
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <character> of length 2.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops an NA canonical attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <character> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops an unparseable date attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute field_start has an invalid value and was not promoted.
+      i Expected a Date scalar or an ISO 8601 date string (YYYY-MM-DD); got <character> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops a zero-length canonical attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has a zero-length value and was not promoted.
+      v Set a single non-NA value, or remove the attribute.
+
+# as_survey() warns once and drops both dates when the pair is reversed
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attributes field_start and field_end are reversed (2026-03-04 is after 2026-02-10); neither was promoted.
+      v Correct the dates on the data frame, or set them later with `set_field_dates()`.
+
+# as_survey() warns with the legacy variant for a wrong-typed dates attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Legacy dataset attribute dates has an invalid value and was not promoted to "field_period".
+      v Set the period with `set_field_period()`.
+
+# as_survey() warns with the legacy variant for a zero-length dates attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Legacy dataset attribute dates has an invalid value and was not promoted to "field_period".
+      v Set the period with `set_field_period()`.
+
+# as_survey() warns with the legacy variant for a dates attribute of length > 1
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Legacy dataset attribute dates has an invalid value and was not promoted to "field_period".
+      v Set the period with `set_field_period()`.
+
+# as_survey() warns once for an invalid field_period and never falls back to dates
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute field_period has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <numeric> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
 

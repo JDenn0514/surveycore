@@ -3,48 +3,11 @@
 # Internal helpers for get_freqs().
 #
 # Functions:
-#   .get_levels()            — ordered unique levels for a variable
 #   .taylor_freq_cell()      — ratio linearization (survey_taylor)
 #   .replicate_freq_cell()   — replicate-weight proportion variance
 #   .twophase_freq_cell()    — two-phase proportion via .twophasevar()
 #   .calibrated_freq_cell()  — HT proportion variance (survey_nonprob)
 #   .freq_cell()             — dispatcher
-
-# ── .get_levels() ─────────────────────────────────────────────────────────────
-#
-# Return unique levels for a variable column, preserving factor level order
-# (or ascending sort for non-factors). When na.rm = FALSE, NA is appended last
-# regardless of factor ordering. When na.rm = TRUE, only non-NA values are
-# returned, and factor levels absent from the data are dropped.
-#
-# @param x_col  Atomic vector (factor or plain vector).
-# @param na.rm  Logical. If FALSE, NA is appended as a level.
-# @return Atomic vector of levels (same type as x_col, except NA is always
-#   NA_character_ for factors since factor levels are character).
-.get_levels <- function(x_col, na.rm) {
-  has_na <- anyNA(x_col)
-
-  if (is.factor(x_col)) {
-    # Factor: use declared level order; drop levels not present in data
-    all_lvls <- levels(x_col)
-    present <- unique(as.character(x_col[!is.na(x_col)]))
-    kept_lvls <- all_lvls[all_lvls %in% present]
-    if (!na.rm && has_na) {
-      c(kept_lvls, NA_character_)
-    } else {
-      kept_lvls
-    }
-  } else {
-    # Non-factor: sort unique non-NA values ascending
-    non_na <- sort(unique(x_col[!is.na(x_col)]))
-    if (!na.rm && has_na) {
-      c(non_na, NA)
-    } else {
-      non_na
-    }
-  }
-}
-
 
 # ── .taylor_freq_cell() ───────────────────────────────────────────────────────
 #
@@ -56,7 +19,8 @@
 #                (level AND domain/group).
 # @param denom   Numeric vector (0/1): rows in the group/domain (denominator).
 #
-# @return Named list: pct, se, se_srs, n (unweighted cell count), n_weighted.
+# @return Named list: pct, se, se_srs, n (unweighted cell count), n_weighted,
+#   joint (see .joint_vcov()).
 .taylor_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
@@ -72,7 +36,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -88,6 +53,7 @@
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- matrix(w * u / N_d, ncol = 1L, dimnames = list(NULL, "prop"))
+  infl_mat <- .maybe_apply_calibration(infl_mat, design)
   v <- .svy_recvar(
     infl_mat,
     mats$clusters_mat,
@@ -108,7 +74,8 @@
     se = se,
     se_srs = se_srs,
     n = n_cell,
-    n_weighted = Y
+    n_weighted = Y,
+    joint = .joint_infl(infl_mat)
   )
 }
 
@@ -121,7 +88,8 @@
 # @param num     Numeric vector (0/1): cell membership (level AND domain/group).
 # @param denom   Numeric vector (0/1): group/domain membership.
 #
-# @return Named list: pct, se, se_srs, n, n_weighted.
+# @return Named list: pct, se, se_srs, n, n_weighted, joint (see
+#   .joint_vcov()).
 .replicate_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
@@ -136,7 +104,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -163,7 +132,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = n_cell,
-      n_weighted = Y
+      n_weighted = Y,
+      joint = .joint_na()
     ))
   }
 
@@ -187,7 +157,8 @@
     se = se,
     se_srs = se_srs,
     n = n_cell,
-    n_weighted = Y
+    n_weighted = Y,
+    joint = .joint_rep(rep_p, p)
   )
 }
 

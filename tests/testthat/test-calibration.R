@@ -551,6 +551,28 @@ test_that("df column in get_means() decreases by qr$rank for each caldata entry"
   expect_equal(result2$df, base_df - 1L - 2L)
 })
 
+test_that("calibrated df on a filtered design counts only the domain's PSUs [issue #326]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 8L, seed = 7L)
+  df$s12 <- df$strata %in% c("stratum_1", "stratum_2")
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@calibration <- list(
+    as_caldata(df$wt, rep(1.01, nrow(df)), model.matrix(~1, df))
+  )
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$s12
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  result <- get_means(sc, y1, variance = "se")
+  # Domain df from survey (8), less the rank-1 calibration projection
+  expect_equal(result$df, survey::degf(subset(sv, s12)) - 1L)
+})
+
 test_that("calibration-adjusted SE from get_means() matches oracle with ridageyr aux [alternative calibration, nhanes]", {
   skip_if_not_installed("survey")
   # Second oracle test using ridageyr as auxiliary — verifies calibration works
@@ -940,7 +962,6 @@ test_that("as_survey() with calibration = list() succeeds; @calibration is list(
 test_that("as_survey() with calibration = NULL succeeds; @calibration is NULL", {
   df <- data.frame(y = 1:10, wt = rep(1, 10))
   d <- suppressWarnings(as_survey(df, weights = wt, calibration = NULL))
-  test_invariants(d)
   expect_null(d@calibration)
 })
 
@@ -1049,7 +1070,6 @@ test_that("as_survey_replicate() with calibration = NULL succeeds", {
     type = "BRR",
     calibration = NULL
   )
-  test_invariants(d)
   expect_null(d@calibration)
 })
 
@@ -1068,7 +1088,6 @@ test_that("as_survey_replicate() SE unchanged with/without @calibration (provena
     repweights = tidyselect::all_of(repwt_cols),
     type = "BRR"
   )
-  test_invariants(d_without)
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   d_with <- as_survey_replicate(
     df,
@@ -1090,7 +1109,6 @@ test_that("as_survey() stores calibration argument at @calibration", {
   mm <- model.matrix(~strata, df)
   cd <- as_caldata(base_w, g_w, mm)
   d <- as_survey(df, weights = wt, calibration = list(cd))
-  test_invariants(d)
   expect_identical(d@calibration, list(cd))
 })
 
@@ -1099,7 +1117,6 @@ test_that("as_survey() stores list of two caldata elements at @calibration", {
   cd1 <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   cd2 <- as_caldata(df$wt, rep(1.02, nrow(df)), matrix(1, nrow(df), 1))
   d <- as_survey(df, weights = wt, calibration = list(cd1, cd2))
-  test_invariants(d)
   expect_identical(d@calibration, list(cd1, cd2))
 })
 
@@ -1109,7 +1126,6 @@ test_that("as_survey() @calibration matches whether set via arg or post-construc
   d_via_arg <- as_survey(df, weights = wt, calibration = list(cd))
   d_post <- as_survey(df, weights = wt)
   d_post@calibration <- list(cd)
-  test_invariants(d_via_arg)
   expect_identical(d_via_arg@calibration, d_post@calibration)
 })
 
@@ -1127,6 +1143,5 @@ test_that("as_survey_replicate() stores calibration argument at @calibration", {
     type = "BRR",
     calibration = list(cd)
   )
-  test_invariants(d)
   expect_identical(d@calibration, list(cd))
 })

@@ -26,21 +26,196 @@
 }
 
 
+# Restrict a converted survey-package design object to the active domain.
+#
+# surveytidy's filter() keeps every row of @data and marks domain membership
+# in the column SURVEYCORE_DOMAIN_COL names. A conversion route calls this
+# helper on the object it has just built, immediately before returning it, so
+# the converted object answers for the domain and not for the full stored
+# sample (issue #245). The input design is never restricted.
+#
+# The frame comes off the converted object rather than from a second argument.
+# The correct frame is a function of the object's class, and a caller that
+# passes it can pass the wrong one: the @data-side vector is one row per
+# phase-1 row, where a two-phase object's phase-1 sample holds only the
+# phase-2 rows, and indexing with it raises an unclassed
+# `logical subscript too long`. The helper serves four classes.
+# survey.design2 and svyrep.design keep the frame at converted$variables.
+# Both two-phase classes keep it at converted$phase1$sample$variables and
+# carry no converted$variables at all: survey::twophase() returns class
+# twophase2 for method = "full" and class twophase for method = "approx". The
+# class test named only twophase2 until issue #276, so an "approx" object
+# reached the converted$variables branch, read a NULL frame, failed the name
+# test and returned unrestricted with nothing signalled. The else branch is
+# now unreachable for a two-phase object and still carries the Taylor and
+# replicate routes.
+#
+# The two two-phase classes differ in what `[` does, and the observable
+# differs with them. A twophase2 object keeps every row and sets each
+# excluded row's probability to Inf, which weights that row out of every
+# estimate, so there the observable is the count of finite probabilities and
+# not the row count. A twophase object removes the excluded rows outright,
+# so there the observable is the row count and every surviving probability
+# is finite. Measured on a 312-row phase-1 sample with half the rows marked:
+# twophase2 returns 312 rows and 156 finite probabilities; twophase returns
+# 156 rows and 156 finite probabilities.
+#
+# `[` and never subset(). All three of survey's subset() methods end with
+# `x$call <- sys.call(-1)`, which overwrites the call the route stored.
+# .as_svydesign_taylor() builds that call with bquote() so the formulas are
+# inlined, and from_svydesign() reads ids, strata, weights, fpc and nest back
+# out of it, each read wrapped in a tryCatch that returns NULL on failure. A
+# round trip through subset() therefore loses ids and strata with nothing
+# raised. `[` leaves the stored call alone.
+#
+# No coercion before the mask. The survey_base validator rejects a marker
+# column of any type but logical, on construction and on every later write to
+# @data, so a design that reaches a conversion route carries a logical column
+# and can carry nothing else (issue #262). An earlier revision called
+# as.logical() here. That turned a wrong column type into a silently wrong
+# row set where the validator now raises
+# `surveycore_error_domain_not_logical` at the write.
+#
+# `!is.na(r)` stays, and is still load-bearing. The validator forbids a
+# non-logical column; it does not forbid NA. A logical marker can hold NA,
+# and an NA in an index vector selects a phantom row of NAs. The guard reads
+# an NA marker as outside the domain, which is the reading .apply_domain()
+# gives it on the analysis side.
+#' @noRd
+.restrict_to_domain <- function(converted) {
+  frame <- if (
+    inherits(converted, "twophase2") || inherits(converted, "twophase")
+  ) {
+    converted$phase1$sample$variables
+  } else {
+    converted$variables
+  }
+
+  if (!SURVEYCORE_DOMAIN_COL %in% names(frame)) {
+    return(converted)
+  }
+
+  r <- frame[[SURVEYCORE_DOMAIN_COL]]
+  converted[r & !is.na(r), ]
+}
+
+
 # ── as_svydesign ──────────────────────────────────────────────────────────────
 
 #' Convert a surveycore Design Object to a survey Package Design
 #'
-#' Converts a `survey_taylor`, `survey_replicate`, or `survey_twophase` object
-#' to the corresponding `survey` package object: `svydesign`, `svrepdesign`,
-#' or `twophase`. Useful for accessing `survey` package estimation functions
-#' or for round-trip testing.
+#' Converts a `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#' `survey_nonprob` object to the corresponding `survey` package object:
+#' `svydesign`, `svrepdesign`, or `twophase`. Useful for accessing `survey`
+#' package estimation functions or for round-trip testing.
 #'
 #' Metadata (variable labels, value labels) is NOT carried over — the `survey`
 #' package has no metadata system.
 #'
-#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#' @param x A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#'   `survey_nonprob` object.
 #' @return A `survey::svydesign`, `survey::svrepdesign`, or `survey::twophase`
-#'   object.
+#'   object. The returned class follows the input class, and for a
+#'   `survey_nonprob` design it follows the design's shape: a design that names
+#'   replicate weights returns a `svrepdesign`, and a design that names none
+#'   returns a `svydesign`. A filtered input returns an object restricted to
+#'   the active domain; the `A filtered design's domain` section below states
+#'   what that means on each route. Value labels are not carried into the
+#'   returned object — the `survey` package has no metadata system. To read
+#'   the data back with `haven`-style classes rebuilt, use
+#'   `survey_data(x, haven_class = TRUE)` on the surveycore design instead.
+#'
+#' @section A non-probability design:
+#' A `survey_nonprob` design converts on the shape of its weights. A design
+#' that names replicate weights becomes a `svrepdesign` and keeps every
+#' replicate column, so the converted object computes the replicate variance
+#' surveycore computes. A design that names none becomes a `svydesign` with
+#' `ids = ~1`, and the call warns: the standard errors then use a simple random
+#' sample approximation that charges nothing for calibration uncertainty, and
+#' the returned object records nothing about it. See [as_survey_nonprob()] for
+#' the two variance modes.
+#'
+#' The conversion drops the design's calibration provenance and its reference
+#' sample, and the round trip does not return a non-probability design.
+#' `from_svydesign()` on a converted design returns a `survey_taylor` or a
+#' `survey_replicate` object, because a `survey` object records nothing that
+#' marks a sample as non-probability. The rebuilt design reports design-based
+#' standard errors and no longer warns, on data that has not changed. Keep the
+#' original object when you need any of that.
+#'
+#' @section Degrees of freedom on a converted design:
+#' surveycore reports `Inf` degrees of freedom for a `survey_nonprob` design,
+#' and the `survey` package computes a finite number from the converted object.
+#' A 40-row design with no replicate weights converts to 39, and the same
+#' design with 8 replicate weight columns converts to 7. Both counts carry a
+#' qualifier. Without replicate weights the `survey` package counts the rows
+#' whose weight is not zero and subtracts 1, so the same design with one
+#' zero-weight row converts to 38. With replicate weights it takes the
+#' numerical rank of the matrix of replicate weights and subtracts 1, so the
+#' figure is `R - 1` at full column rank and lower otherwise.
+#'
+#' The difference reaches a result only when the caller asks for it. A default
+#' `confint()` call on a `svystat` or a `svrepstat` uses `df = Inf`, so the
+#' default interval from `survey::svymean()` matches surveycore's. The gap
+#' appears when the caller passes `degf(design)`, or calls a `survey` function
+#' that reads `degf()` itself, such as `svyglm()` or `svyttest()`. See
+#' `vignette("surveycore-vs-survey")` for the two counting rules in the source.
+#'
+#' @section A filtered design's domain:
+#' The converted object represents the active domain and not the full stored
+#' sample. `survey::svymean()` on it answers the domain estimate.
+#'
+#' A domain arrives from `filter()` in surveytidy. That verb keeps every row
+#' and marks domain membership in a logical column named by
+#' `SURVEYCORE_DOMAIN_COL`, which holds `"..surveycore_domain.."`. The
+#' restriction applies whenever that column is present. A design that was
+#' never filtered carries no such column and converts with no restriction.
+#'
+#' The marker column stays in the converted object's data. It is an internal
+#' marker and not survey data. On the routes that remove rows, every value
+#' left in it is `TRUE`. On the two-phase route, which removes no row, the
+#' column arrives unchanged and still marks the zero-weighted rows `FALSE`. A
+#' row whose marker is `NA` counts as outside the domain.
+#'
+#' A filter that matches no row still converts, and the conversion raises no
+#' surveycore condition on any route. What `survey` reports afterwards
+#' depends on the route:
+#'
+#' * Taylor, and a non-probability design that names no replicate weights:
+#'   an estimate of 0 with a standard error of 0.
+#' * Replicate, and a non-probability design that names replicate weights:
+#'   an error from `survey` at estimation time.
+#' * Two-phase: `NaN`.
+#'
+#' The two-phase route applies the domain by weighting the excluded rows out
+#' rather than by removing them. Each excluded row takes an infinite
+#' probability, so the converted object's row count does not change while its
+#' estimates answer for the domain.
+#'
+#' A two-phase design with `method = "full"` converts to a `twophase2` object.
+#' `survey::twophase()` refuses a `weights` argument for that method, so the
+#' phase-1 weights are passed as inclusion probabilities, `probs = ~I(1 / w)`.
+#' A phase 1 with no weights, strata or `fpc` passes none, and `survey` then
+#' treats it as an iid sample, as surveycore does.
+#'
+#' A round trip through `from_svydesign()` recovers the restricted rows and
+#' not the original sample. On the four routes that remove rows, the rebuilt
+#' design's row count is its new total. The original row count is
+#' unrecoverable from the object, because a `survey` object records a subset
+#' and not a marker. The all-`TRUE` marker column travels back, so the
+#' rebuilt design prints `Domain: n of n rows`, which looks identical to a
+#' design that was never filtered. Printing a filtered design shows the
+#' domain count and the stored count; after a round trip the two counts are
+#' the same number twice. Keep the original design when you need the original
+#' row count. The two-phase route is the exception: it removes no row, so its
+#' round trip recovers the marker at both levels and the rebuilt design prints
+#' two different counts.
+#'
+#' `as_tbl_svy()` hands a `tbl_svy` that is already restricted to `srvyr`.
+#' `srvyr`'s own `filter()` removes rows where surveycore's `filter()` marks a
+#' domain. The two verbs share a name and differ in semantics, so a caller who
+#' chains surveycore's `filter()` into `srvyr::filter()` filters an object
+#' that is already restricted.
 #'
 #' @examples
 #' d <- as_survey(
@@ -76,6 +251,41 @@ as_svydesign <- function(x) {
     .as_svydesign_replicate(x)
   } else if (S7::S7_inherits(x, survey_twophase)) {
     .as_svydesign_twophase(x)
+  } else if (S7::S7_inherits(x, survey_nonprob)) {
+    # Route on the shape of the weights, not on the class. This is the key
+    # .mean_cell() uses in R/analysis-means-helpers.R to pick the estimator
+    # for a survey_nonprob design, so the converted object carries the
+    # estimator surveycore itself uses. Sending the replicate shape down the
+    # Taylor route answers a standard error 28 times too large on a measured
+    # design.
+    #
+    # The predicate and the first bullet below are each written out in full
+    # here, and each is the eighth in-place copy in R/. Issue #246 carries the
+    # consolidation of all eight; extracting a helper for one site while seven
+    # keep the inline form would read as consolidation without being it.
+    if (!is.null(x@variables$repweights)) {
+      .as_svydesign_replicate(x)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "The returned {.pkg survey} object records nothing about the ",
+            "approximation, so no later call warns again."
+          ),
+          "v" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this design, ",
+            "then convert the design it returns."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_conversion"
+      )
+      .as_svydesign_taylor(x)
+    }
   } else {
     cli::cli_abort(
       c(
@@ -102,14 +312,26 @@ as_svydesign <- function(x) {
     ~1
   }
 
-  survey::svydesign(
-    ids = ids_formula,
-    strata = .to_formula(strata_var),
-    weights = .to_formula(weights_var),
-    fpc = .to_formula(fpc_var),
+  # Inline the formulas into the call rather than passing the variables that
+  # hold them. survey::svydesign() stores its own call, and R records the
+  # unevaluated argument expressions there. Passing `ids = ids_formula` records
+  # the symbol `ids_formula`, and passing `strata = .to_formula(strata_var)`
+  # records that call. from_svydesign() reads those back with all.vars(), which
+  # then yields "ids_formula" and "strata_var" instead of the column names, and
+  # the design fails to rebuild. bquote() substitutes the formula objects
+  # themselves, so the stored call names real columns and the round trip works.
+  # `data` is left as an expression on purpose: it is not read back, and
+  # inlining a whole data frame into a stored call is wasteful.
+  converted <- eval(bquote(survey::svydesign(
+    ids = .(ids_formula),
+    strata = .(.to_formula(strata_var)),
+    weights = .(.to_formula(weights_var)),
+    fpc = .(.to_formula(fpc_var)),
     data = x@data,
-    nest = isTRUE(x@variables$nest)
-  )
+    nest = .(isTRUE(x@variables$nest))
+  )))
+
+  .restrict_to_domain(converted)
 }
 
 
@@ -119,31 +341,161 @@ as_svydesign <- function(x) {
   wts_var <- x@variables$weights
   rep_vars <- x@variables$repweights
   fpc_var <- x@variables$fpc
-  fpctype <- if (!is.null(x@variables$fpctype)) {
-    x@variables$fpctype
-  } else {
-    "fraction"
+
+  # Refuse a design that names no replicate column, before any other work.
+  # survey::svrepdesign() with a zero-column replicate matrix fails with
+  # 'missing value where TRUE/FALSE needed' from inside its own
+  # combined.weights heuristic — a bare error with no class. The state is
+  # reachable: .validate_data_frame() runs only in as_survey_replicate(), and
+  # the exported survey_replicate() constructor takes an untyped variables
+  # list. An empty replicate design supports no estimate and no variance, so
+  # the route refuses it here.
+  if (length(rep_vars) == 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "The design names no replicate weight column.",
+        "i" = paste0(
+          "{.fn survey::svrepdesign} needs at least one replicate weight ",
+          "column, and fails with an untyped error without one."
+        ),
+        "v" = paste0(
+          "Rebuild the design with {.fn as_survey_replicate} and name its ",
+          "replicate weight columns."
+        )
+      ),
+      class = "surveycore_error_repweights_empty"
+    )
   }
 
-  # BRR and Fay do not use a separate scale factor — survey::svrepdesign()
-  # warns if scale is passed for those types.
-  scale_arg <- if (isTRUE(x@variables$type %in% c("BRR", "Fay"))) {
+  # survey::svrepdesign() computes its own scale for BRR, Fay, JK2, ACS and
+  # successive-difference, and its own rscales, rep(1, R), for JK2, ACS and
+  # successive-difference. Passing the stored value changes no number survey
+  # computes. For BRR it raises survey's 'does not use scale=' warning, and
+  # for ACS and successive-difference it raises survey's 'scale= and rscales=
+  # are not needed' warning, so the route passes NULL for these types (issue
+  # #255). survey warns on every JK2 call regardless, whatever the call
+  # passes; decision D8 of plans/issue-cleanup.md records the divergence:
+  # as_survey_replicate() warns only when the caller supplies scale or
+  # rscales. The two predicates are the sets as_survey_replicate() reads,
+  # and isTRUE() turns a NULL stored type into FALSE.
+  scale_arg <- if (isTRUE(.replicate_ignores_scale(x@variables$type))) {
     NULL
   } else {
     x@variables$scale
   }
+  rscales_arg <- if (isTRUE(.replicate_ignores_rscales(x@variables$type))) {
+    NULL
+  } else {
+    x@variables$rscales
+  }
 
-  survey::svrepdesign(
+  # Carry Fay's shrinkage factor across from @variables$rho. survey needs it:
+  # svrepdesign.default() holds
+  #   if (type == "Fay" && is.null(rho))
+  #     stop("With type='Fay' you must supply the correct rho")
+  # so without rho the export route fails outright for a Fay design.
+  #
+  # The scale argument above stays NULL for "Fay". survey computes the scale
+  # as 1 / (n_rep * (1 - rho)^2) from this rho, which is the formula
+  # as_survey_replicate() uses, so the exported standard errors match.
+  #
+  # A Fay design can carry no usable rho: survey_replicate() takes an untyped
+  # variables list, a design built before surveycore stored rho has no key,
+  # and from_svydesign() copies a survey object's rho unchanged. A missing
+  # key reads as NULL. Every other type passes rho = NULL, whatever is
+  # stored.
+  rho_arg <- NULL
+  if (isTRUE(x@variables$type == "Fay")) {
+    rho_arg <- x@variables[["rho"]]
+    if (!.is_valid_rho(rho_arg)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.fn as_svydesign} cannot export this {.val Fay} design: it ",
+            "records no usable {.arg rho}."
+          ),
+          "i" = paste0(
+            "{.fn survey::svrepdesign} requires {.arg rho} for ",
+            "{.code type = \"Fay\"}."
+          ),
+          "i" = paste0(
+            "A {.val Fay} design built before surveycore stored {.arg rho} ",
+            "records none."
+          ),
+          "v" = paste0(
+            "Rebuild the design with ",
+            "{.code as_survey_replicate(type = \"Fay\", rho = )}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_unrecoverable"
+      )
+    }
+  }
+
+  # Drop the finite population correction, and say so. surveycore records the
+  # FPC as a column of @data, one value per row; survey::svrepdesign() reads
+  # it as one multiplier per replicate and checks length(fpc) against
+  # length(rscales), which is R. The two lengths agree only when n equals R,
+  # so passing the column fails with survey's own 'fpc is wrong length' for
+  # every other design, and as_svydesign(x) takes only x, so the caller has
+  # no way around it. Reshaping the column to length R would give the right
+  # shape and the wrong quantity.
+  #
+  # surveycore's replicate variance never reads the FPC — R/variance-
+  # replicate.R holds no reference to it — so the drop changes no surveycore
+  # number, while a translated FPC would scale every replicate scale and
+  # return standard errors surveycore itself does not produce. survey's own
+  # as.svrepdesign() warns and drops for the same reason.
+  #
+  # The FPC stays on x: @variables$fpc, @variables$fpctype and the column in
+  # @data are all untouched, and a second call warns again.
+  #
+  # The warning fires only when the design does not record whether the FPC
+  # was applied: a column in @variables$fpc and no @variables$fpc_applied
+  # (issue #320). For "rscales" and "repweights" the correction is already
+  # in what is exported, and for "none" nothing was applied, so in those
+  # states nothing is dropped. No state passes an fpc to svrepdesign(): it
+  # would multiply rscales a second time. [[ ]] reads a missing key as NULL.
+  if (!is.null(fpc_var) && is.null(x@variables[["fpc_applied"]])) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.fn as_svydesign} dropped the finite population correction ",
+          "column {.field {fpc_var}}."
+        ),
+        "i" = paste0(
+          "The design does not record whether the correction is already ",
+          "inside the replicate scales or weights."
+        ),
+        "i" = paste0(
+          "{.fn survey::svrepdesign} takes one FPC value per replicate, and ",
+          "a {.cls survey_replicate} design records one value per row."
+        ),
+        "i" = paste0(
+          "surveycore's replicate variance does not read the FPC, so the ",
+          "returned design reproduces surveycore's own standard errors."
+        ),
+        "v" = paste0(
+          "Call {.fn survey::svrepdesign} directly with {.arg fpc} to apply ",
+          "a per-replicate correction."
+        )
+      ),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    )
+  }
+
+  converted <- survey::svrepdesign(
     weights = x@data[[wts_var]],
     repweights = x@data[, rep_vars, drop = FALSE],
     type = x@variables$type,
     scale = scale_arg,
-    rscales = x@variables$rscales,
+    rho = rho_arg,
+    rscales = rscales_arg,
     mse = isTRUE(x@variables$mse),
-    fpc = if (!is.null(fpc_var)) x@data[[fpc_var]] else NULL,
-    fpctype = fpctype,
     data = x@data
   )
+
+  .restrict_to_domain(converted)
 }
 
 
@@ -174,20 +526,44 @@ as_svydesign <- function(x) {
   p2_strata <- if (!is.null(p2)) .to_formula(p2$strata) else NULL
   p2_fpc <- if (!is.null(p2)) .to_formula(p2$fpc) else NULL
 
-  # method="full" derives phase 2 weights from the phase 1 design and rejects
-  # an explicit weights argument.  For "simple" and "approx" we pass phase 1
-  # weights so survey can compute the probability-weighted estimates.
-  weights_arg <- if (method == "full") NULL else list(p1_weights, NULL)
+  p2_probs <- if (!is.null(p2)) .to_formula(p2$probs) else NULL
 
-  survey::twophase(
+  # method = "full" rejects a weights argument, so the phase 1 weights go in
+  # as probabilities. Passing neither would make survey treat phase 1 as
+  # equal-probability (issue #261). A phase 1 with no design information at
+  # all passes no probs, so survey takes it as iid, as surveycore does.
+  if (method == "full") {
+    weights_arg <- NULL
+    p1_probs <- if (.twophase_phase1_is_iid(x)) {
+      NULL
+    } else {
+      rlang::new_formula(NULL, rlang::expr(I(1 / !!rlang::sym(p1$weights))))
+    }
+  } else {
+    weights_arg <- list(p1_weights, NULL)
+    p1_probs <- NULL
+  }
+
+  # twophase2() tests is.null(fpc)[[1]], i.e. the whole list, before taking
+  # phase 1 as iid, so an all-NULL fpc goes in as NULL and not as a list
+  fpc_arg <- if (is.null(p1_fpc) && is.null(p2_fpc)) {
+    NULL
+  } else {
+    list(p1_fpc, p2_fpc)
+  }
+
+  converted <- survey::twophase(
     id = list(p1_id, p2_id),
     strata = list(p1_strata, p2_strata),
+    probs = list(p1_probs, p2_probs),
     weights = weights_arg,
-    fpc = list(p1_fpc, p2_fpc),
+    fpc = fpc_arg,
     data = x@data,
     subset = .to_formula(subset_var),
     method = method
   )
+
+  .restrict_to_domain(converted)
 }
 
 
@@ -201,9 +577,12 @@ as_svydesign <- function(x) {
 #'
 #' Metadata (variable labels, value labels) is NOT carried over.
 #'
-#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
-#'   `survey_nonprob` is not supported and will error.
-#' @return A `srvyr::tbl_svy` object.
+#' @param x A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#'   `survey_nonprob` object.
+#' @return A `srvyr::tbl_svy` object. Value labels are not carried into the
+#'   returned object — the `survey` package has no metadata system. To read the
+#'   data back with `haven`-style classes rebuilt, use
+#'   `survey_data(x, haven_class = TRUE)` on the surveycore design instead.
 #'
 #' @examples
 #' d <- as_survey(
@@ -279,6 +658,31 @@ as_tbl_svy <- function(x) {
 }
 
 
+# The weight column a probs = ~I(1/w) formula names, or NULL for any other
+# probs formula.
+#' @noRd
+.weights_from_probs_formula <- function(f, data) {
+  if (!rlang::is_formula(f)) {
+    return(NULL)
+  }
+  rhs <- rlang::f_rhs(f)
+  if (!rlang::is_call(rhs, "I", n = 1L)) {
+    return(NULL)
+  }
+  inner <- rhs[[2L]]
+  if (
+    rlang::is_call(inner, "/", n = 2L) &&
+      identical(inner[[2L]], 1) &&
+      is.symbol(inner[[3L]]) &&
+      as.character(inner[[3L]]) %in% names(data)
+  ) {
+    as.character(inner[[3L]])
+  } else {
+    NULL
+  }
+}
+
+
 # Find the first column in data whose numeric values exactly match vals.
 # Returns the column name, or NULL if no matching column exists.
 # Used to recover weight/subset column names from stored vectors in survey
@@ -311,15 +715,67 @@ as_tbl_svy <- function(x) {
 #' Convert a survey Package Design to a surveycore Design Object
 #'
 #' Converts a `survey` package design object (`svydesign`, `svrepdesign`, or
-#' `twophase`) to the corresponding surveycore S7 object. The data, design
-#' variables, and replicate weights are preserved; metadata (variable labels,
-#' value labels) is not — the `survey` package has no metadata system.
+#' `twophase`) to the corresponding surveycore S7 object. The data and the
+#' design variables are preserved; metadata (variable labels, value labels) is
+#' not — the `survey` package has no metadata system.
 #'
 #' Weight column names are recovered from the design call when available. When
 #' the call does not contain a formula (e.g., weights were passed as a vector),
 #' the weight column is identified by matching the stored weight values against
 #' columns in the data. If no match is found, a `..surveycore_wt..` column is
 #' added.
+#'
+#' @section Replicate weights:
+#'
+#' A `svrepdesign` object stores either finished replicate weights or
+#' replication factors, and reports which through its `combined.weights`
+#' field. On a design that reports replication factors the conversion
+#' transforms the replicate weights rather than preserving them: it multiplies
+#' each replicate column by the base weight, so the returned design always
+#' carries finished weights.
+#'
+#' When the source design does not name its replicate columns — the case for
+#' every design that [survey::as.svrepdesign()] builds — the conversion writes
+#' a generated block into the data, one column per replicate, named on the
+#' same `..surveycore_wt..` pattern as the manufactured weight column above:
+#' `..surveycore_repwt_1..`, `..surveycore_repwt_2..`, and so on, with the
+#' index zero-padded to the width of the replicate count. When the source does
+#' name its replicate columns, those names pass through unchanged.
+#'
+#' Either way, the `repweights` design variable of the returned object names
+#' those columns, in replicate order.
+#'
+#' @section Two-phase designs:
+#'
+#' The variance method comes from the object's class: a `twophase2` object,
+#' which [survey::twophase()] returns for `method = "full"`, converts to
+#' `method = "full"`, and a `twophase` object converts to `method = "approx"`.
+#' `survey` builds `method = "simple"` as a `twophase` object too, and
+#' surveycore treats `"simple"` as `"approx"`.
+#' A `twophase2` object whose phase 1 has weights other than 1 and no `fpc`
+#' raises the warning `surveycore_warning_twophase_full_no_fpc`, as
+#' [as_survey_twophase()] does; see its section on the Phase 1 fpc.
+#'
+#' The phase 2 design, `ids2`, `strata2`, `probs2` and `fpc2`, is read from
+#' the formulas the `survey` object stores for it. A formula that names data
+#' columns directly, such as `~psu2` or `~strata`, keeps those names. Any other
+#' formula, such as `~I(1/w2)`, is evaluated on the phase 1 data as `survey`
+#' evaluates it, and the values go into a generated column named
+#' `..surveycore_ids2..`, `..surveycore_strata2..`, `..surveycore_probs2..`
+#' or `..surveycore_fpc2..`. A phase 2 `weights` formula,
+#' which `method = "approx"` accepts, goes in as `..surveycore_probs2..`,
+#' because surveycore records phase 2 probabilities and not weights. The
+#' phase 1 weights of a `twophase2` object, which `survey` stores as
+#' `probs = ~I(1/w)`, keep the column name `w`.
+#'
+#' Multi-stage phase 2 is not supported. A two-phase object whose phase 2
+#' `id`, `strata` or `fpc` has more than one stage, such as
+#' `id = list(~psu, ~psu + ssu)`, raises the error
+#' `surveycore_error_twophase_multistage_phase2`, because surveycore's
+#' two-phase variance uses one phase 2 stage and would otherwise drop the
+#' later ones from the standard error. `survey` itself refuses a multi-stage
+#' phase 2 `strata` or `fpc` unless the phase 2 `id` also has more than one
+#' stage.
 #'
 #' @param x A `survey::svydesign`, `survey::svrepdesign`, `survey::twophase`,
 #'   `survey::twophase2`, or `srvyr::tbl_svy` object. Both `"twophase"` and
@@ -379,7 +835,7 @@ from_svydesign <- function(x) {
 # svydesign / tbl_svy → survey_taylor
 #' @noRd
 .from_svydesign_taylor <- function(x) {
-  data <- as.data.frame(x$variables)
+  data <- .strip_labelled_columns(as.data.frame(x$variables))
 
   # tbl_svy stores its call as srvyr's quoteless_text (not a language object).
   # Use tryCatch so atomic / non-language calls degrade to NULL gracefully.
@@ -393,8 +849,16 @@ from_svydesign <- function(x) {
   fpc_var <- if (!is.null(fpc_raw)) fpc_raw[[1L]] else NULL
   nest <- tryCatch(isTRUE(x$call$nest), error = function(e) FALSE)
 
-  # Weight column: try the call formula first, then value-matching.
+  # Weight column: try the call formula first, then value-matching. A
+  # probs = ~I(1/w) formula names the weight column w; as_svydesign() writes
+  # that form for a two-phase method = "full" design (issue #329).
   weights_var <- .call_vars("weights")
+  if (is.null(weights_var)) {
+    weights_var <- tryCatch(
+      .weights_from_probs_formula(x$call[["probs"]], data),
+      error = function(e) NULL
+    )
+  }
   if (is.null(weights_var)) {
     weights_var <- .find_col_by_value(data, 1 / x$prob)
   }
@@ -416,22 +880,241 @@ from_svydesign <- function(x) {
   survey_taylor(
     data = data,
     variables = variables,
-    metadata = survey_metadata()
+    metadata = .extract_haven_metadata(data)
   )
+}
+
+
+# Build the generated names for a block of replicate weight columns.
+# Zero-pads the index to the width of n_rep so the names sort in replicate
+# order. Follows the ..surveycore_wt.. convention: a manufactured column must
+# not collide with a user column.
+#   .repwt_col_names(3L)  → "..surveycore_repwt_1..", ..., "..surveycore_repwt_3.."
+#   .repwt_col_names(20L) → "..surveycore_repwt_01..", ..., "..surveycore_repwt_20.."
+#' @noRd
+.repwt_col_names <- function(n_rep) {
+  idx <- formatC(
+    seq_len(n_rep),
+    width = nchar(as.character(n_rep)),
+    flag = "0"
+  )
+  paste0("..surveycore_repwt_", idx, "..")
 }
 
 
 # svyrep.design → survey_replicate
 #' @noRd
 .from_svydesign_replicate <- function(x) {
-  data <- as.data.frame(x$variables)
-  rep_cols <- colnames(x$repweights)
+  # Check the replicate type first, before any column work. There is no
+  # point expanding a matrix for a design the route refuses.
+  # survey::as.svrepdesign() accepts "subbootstrap" and "mrbbootstrap" and
+  # stores the literal string, and the survey_replicate validator does not
+  # check type, so without this step the route stores such a value and the
+  # export route then fails with survey's own bare
+  # 'arg' should be one of "BRR", "Fay", ... .
+  accepted <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "Fay",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  rep_type <- x$type
+  if (!isTRUE(rep_type %in% accepted)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "The {.pkg survey} design records replicate type {.val {rep_type}}, ",
+          "which surveycore does not accept."
+        ),
+        "i" = "surveycore accepts {.val {accepted}}.",
+        "v" = paste0(
+          "Rebuild the design with {.fn survey::as.svrepdesign} and an ",
+          "accepted type, then convert it again."
+        )
+      ),
+      class = "surveycore_error_replicate_type_unsupported"
+    )
+  }
 
-  # Weight column: find by matching pweights to data columns.
+  data <- .strip_labelled_columns(as.data.frame(x$variables))
+
+  # A zero-row svyrep.design is reachable: a zero-row survey.design through
+  # survey::as.svrepdesign(type = "JK1") builds and reports nrow(variables)
+  # 0, a 0 x 0 replicate matrix and length(pweights) 0. The row-count check
+  # in .validate_data_frame() runs only in as_survey_replicate(), and this
+  # route does not call it. An empty replicate design supports no estimate
+  # and no variance, so the route refuses it here. The survey_replicate
+  # validator would also refuse it (issue #248); this check runs first so
+  # the message speaks of the survey design, not of an argument named data.
+  if (nrow(data) == 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "The {.pkg survey} design has no rows.",
+        "i" = paste0(
+          "{.fn from_svydesign} needs at least one row to build a ",
+          "{.cls survey_replicate} design."
+        ),
+        "v" = "Convert a design built on data with at least one row."
+      ),
+      class = "surveycore_error_empty_data"
+    )
+  }
+
+  # Expand the replicate weights to a full n x R matrix. as.matrix() handles
+  # both storage forms: a plain matrix, and the repweights_compressed list
+  # that survey's default compress = TRUE produces. No survey:: prefix — the
+  # method is unexported, and the requireNamespace() guard in
+  # from_svydesign() loads survey's namespace, which registers it for
+  # dispatch.
+  #
+  # The unclass() is load-bearing, not decoration. survey::svrepdesign() puts
+  # the class "repweights" on the object it stores and as.matrix() keeps it.
+  # With that class in place, as.data.frame() collapses the whole matrix into
+  # one column, and arithmetic propagates the class.
+  rep_mat <- unclass(as.matrix(x$repweights))
+  n_rep <- ncol(rep_mat)
+
+  # Resolve the replicate column names. survey::as.svrepdesign() names no
+  # column of the matrix it builds, for any replicate type and either
+  # compress value, so generate a block on that branch. Otherwise survey's
+  # own names pass through unchanged.
+  rep_cols <- colnames(x$repweights)
+  names_generated <- length(rep_cols) == 0L
+  if (names_generated) {
+    rep_cols <- .repwt_col_names(n_rep)
+  }
+
+  # Check the names. A usable name set has exactly n_rep entries, and every
+  # entry is non-NA, non-empty and distinct. Exactly two states reach this
+  # check: a partly named matrix, where colnames() holds one or more empty
+  # strings, and a matrix with a repeated name, which would collapse two
+  # replicates into one column. A zero-length colnames() does not reach it —
+  # the branch above generates n_rep distinct non-empty names.
+  usable <- rep_cols[!is.na(rep_cols) & nzchar(rep_cols)]
+  n_names <- length(unique(usable))
+  if (n_names != n_rep) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "The {.pkg survey} design has {n_rep} replicate weight column{?s} ",
+          "but {n_names} usable column name{?s}."
+        ),
+        "i" = paste0(
+          "{.fn from_svydesign} needs one name per replicate column to store ",
+          "the weights in the design data."
+        ),
+        "v" = paste0(
+          "Rebuild the design with {.fn survey::svrepdesign} and pass ",
+          "{.arg repweights} as a data frame with one named column per ",
+          "replicate."
+        )
+      ),
+      class = "surveycore_error_repweights_names_lost"
+    )
+  }
+
+  # Check for a collision, on the generated branch only. Survey's own names
+  # are meant to name existing columns, and step 11 overwrites them. A
+  # generated name that already names a column is different: the route would
+  # overwrite a user column whose values it never reads.
+  if (names_generated) {
+    collisions <- rep_cols[rep_cols %in% names(data)]
+    n_collisions <- length(collisions)
+    if (n_collisions > 0L) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.fn from_svydesign} cannot store the replicate weights under ",
+            "generated names."
+          ),
+          "i" = paste0(
+            "The design data already {cli::qty(n_collisions)}",
+            "{?has a column/has columns} named {.field {collisions}}."
+          ),
+          "i" = paste0(
+            "A generated name reaches the data when an earlier conversion ",
+            "left its replicate columns there."
+          ),
+          "v" = paste0(
+            "Rename the conflicting {cli::qty(n_collisions)} column{?s} in the ",
+            "design data, then convert again."
+          )
+        ),
+        class = "surveycore_error_repwt_name_collision"
+      )
+    }
+  }
+
+  # Fold the base weight in. When the source declares combined.weights FALSE
+  # the matrix holds replication factors, not finished weights: every type
+  # defines a replicate weight as p[i] * R[i, r] on that branch, and survey
+  # performs the same multiplication itself, on demand, in the analysis
+  # branch of weights.svyrep.design. Doing it once here is correct for all
+  # nine replicate types, because combined.weights is a design-level flag
+  # and not a per-type one.
+  #
+  # The product is row-wise: x$pweights has length n and recycles down each
+  # column, so element [i, r] becomes R[i, r] * p[i]. Zeros, negatives and
+  # NA all pass through it untouched.
+  #
+  # scale, rscales, mse and type need no compensating change. They are
+  # structural constants of the variance formula and depend on the replicate
+  # count and the design type, not on the units of the weight column.
+  #
+  # Neither branch raises a condition. Both weight forms describe the same
+  # design and the product is exact, so nothing is lost and the caller has
+  # nothing to act on. survey::as.svrepdesign() reports the factor form for
+  # every replicate type, so a condition here would fire on nearly every
+  # real conversion.
+  if (!isTRUE(x$combined.weights)) {
+    rep_mat <- rep_mat * x$pweights
+  }
+
+  # Weight column: find by matching pweights to data columns. This search
+  # runs before the replicate block is written. It takes the first numeric
+  # column whose values equal x$pweights, and a replicate that deletes
+  # nothing and scales nothing holds exactly those values.
   weights_var <- .find_col_by_value(data, x$pweights)
   if (is.null(weights_var)) {
     weights_var <- "..surveycore_wt.."
     data[[weights_var]] <- x$pweights
+  }
+
+  # Write one column per replicate, on every conversion, with no branch.
+  # survey::svrepdesign() cross-checks `variables` against `repweights` for
+  # neither name nor value, so a name in colnames(x$repweights) can also name
+  # a column of x$variables that holds unrelated numbers. The replicate
+  # matrix is the source of truth, and the write is what makes
+  # @variables$repweights true.
+  for (j in seq_len(n_rep)) {
+    data[[rep_cols[j]]] <- as.numeric(rep_mat[, j])
+  }
+
+  # Store rho for a Fay source only, copied unchanged. survey keeps a rho on
+  # objects of other types too: as.svrepdesign(type = "BRR") stores 0, and
+  # svrepdesign(type = "BRR", rho = 0.3) stores 0.3 after a warning. Neither
+  # value means anything for those types, so they import as NULL. The key is
+  # present for every type. The scale stays x$scale, so the imported
+  # standard errors do not move. A Fay rho that is NULL or out of range
+  # imports without a condition; the export route refuses it.
+  rho <- if (identical(x$type, "Fay")) x$rho else NULL
+
+  # survey keeps no fpc field on a replicate design: svrepdesign.default()
+  # multiplies rscales by the correction (lines 132-147) and leaves the
+  # argument only in the stored call. A call that names fpc therefore means
+  # the correction is inside x$rscales (issue #320). The expression is not
+  # evaluated, so fpc and fpc_fraction stay NULL. as.svrepdesign() keeps no
+  # trace of the source design's FPC, so its objects import NULL, the
+  # "nothing recorded" state.
+  fpc_applied <- if (is.call(x$call) && !is.null(x$call[["fpc"]])) {
+    "rscales"
+  } else {
+    NULL
   }
 
   variables <- list(
@@ -441,8 +1124,11 @@ from_svydesign <- function(x) {
     scale = x$scale,
     rscales = x$rscales,
     mse = isTRUE(x$mse),
+    rho = rho,
     fpc = NULL,
     fpctype = "fraction",
+    fpc_applied = fpc_applied,
+    fpc_fraction = NULL,
     probs_provided = FALSE,
     visible_vars = NULL
   )
@@ -450,7 +1136,7 @@ from_svydesign <- function(x) {
   survey_replicate(
     data = data,
     variables = variables,
-    metadata = survey_metadata()
+    metadata = .extract_haven_metadata(data)
   )
 }
 
@@ -458,52 +1144,231 @@ from_svydesign <- function(x) {
 # twophase / twophase2 → survey_twophase
 #' @noRd
 .from_svydesign_twophase <- function(x) {
+  # Refuse a multi-stage phase 2 before anything is converted (issue #338).
+  .abort_twophase_multistage_phase2(
+    .twophase_phase2_stages(x$phase2),
+    fn = "from_svydesign",
+    call = rlang::caller_env()
+  )
+
   # Convert the phase 1 full design to survey_taylor.
   phase1_sc <- .from_svydesign_taylor(x$phase1$full)
   phase1_data <- phase1_sc@data
+  in_phase2 <- as.logical(x$subset)
 
-  # Locate the subset column by matching x$subset to logical columns in data.
-  subset_var <- .find_col_by_value(phase1_data, as.numeric(x$subset))
+  # Subset column: read the formula in the stored call, then fall back to
+  # matching x$subset against the data columns.
+  subset_f <- if (is.call(x$call)) x$call$subset else NULL
+  subset_var <- .formula_cols(subset_f, phase1_data)
+  if (
+    length(subset_var) != 1L ||
+      !identical(phase1_data[[subset_var]], in_phase2)
+  ) {
+    subset_var <- .find_col_by_value(phase1_data, as.numeric(x$subset))
+  }
   if (is.null(subset_var)) {
     subset_var <- "..surveycore_subset.."
     phase1_data[[subset_var]] <- x$subset
   }
 
-  # Derive method: check x$method first, fall back to class-based inference.
-  # survey::twophase() never stores x$method — the branch below is defensive
-  # for survey-compatible packages that may set it explicitly. # nocov start
-  method <- if (
-    !is.null(x$method) && x$method %in% c("full", "approx", "simple")
-  ) {
-    x$method # nocov end
-  } else if (inherits(x, "twophase2")) {
-    "full"
-  } else {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "Could not determine two-phase variance method ",
-          "from the survey object."
-        ),
-        "i" = 'Defaulting to {.val "approx"}.'
-      ),
-      class = "surveycore_warning_twophase_method_unknown"
-    )
-    "approx"
-  }
+  # survey::twophase() stores no method. It returns a twophase2 object for
+  # method = "full" and a twophase object for "approx" and "simple", and
+  # surveycore treats "simple" as "approx" (issue #330), so the class decides.
+  method <- if (inherits(x, "twophase2")) "full" else "approx"
+
+  phase2 <- .from_svydesign_phase2(x, phase1_data)
 
   variables <- list(
     phase1 = phase1_sc@variables,
-    phase2 = list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
+    phase2 = phase2$vars,
     subset = subset_var,
-    method = method
+    method = method,
+    visible_vars = NULL
   )
 
-  survey_twophase(
-    data = phase1_data,
+  design <- survey_twophase(
+    data = phase2$data,
     variables = variables,
-    metadata = survey_metadata()
+    metadata = phase1_sc@metadata
   )
+
+  .warn_twophase_full_no_fpc(phase1_sc@variables, phase2$data, method)
+
+  design
+}
+
+
+# The number of sampling stages in each of the phase 2 id, strata and fpc of
+# a survey twophase or twophase2 object, named as survey::twophase() names
+# the arguments. Read from the formulas in x$phase2$call when there is one,
+# as .from_svydesign_phase2() reads them: an ids slot of ~1 or ~0 and an fpc
+# slot of `*phase1*` count as no stage. With no call, the evaluated cluster,
+# strata and population-size columns survey stores give the counts.
+# survey 4.5 refuses more strata or fpc stages than id stages ("need at least
+# as many id as fpc stages"), so a multi-stage strata or fpc comes with a
+# multi-stage id.
+#' @noRd
+.twophase_phase2_stages <- function(d2) {
+  d2call <- d2$call
+  if (is.call(d2call)) {
+    n_terms <- function(f) {
+      if (!rlang::is_formula(f) || is.null(.vars_from_formula(f))) {
+        return(0L)
+      }
+      length(.plus_terms(rlang::f_rhs(f)))
+    }
+    c(
+      id = n_terms(d2call$ids),
+      strata = n_terms(d2call$strata),
+      fpc = n_terms(d2call$fpc)
+    )
+  } else {
+    c(
+      id = NCOL(d2$cluster),
+      strata = if (isTRUE(d2$has.strata)) NCOL(d2$strata) else 0L,
+      fpc = if (is.null(d2$fpc$popsize)) 0L else NCOL(d2$fpc$popsize)
+    )
+  }
+}
+
+
+# Recover the phase 2 design variables of a survey twophase or twophase2
+# object. Both classes keep the phase 2 formulas as written in
+# x$phase2$call: svydesign(ids =, strata =, probs =, [weights =,] fpc =),
+# with fpc = `*phase1*` when no phase 2 fpc was given. A formula that names
+# columns directly gives those names. Any other formula is evaluated on the
+# phase 1 data, as survey evaluates it, and the values go into a generated
+# column; so does a phase 2 weights formula, as probabilities, because
+# surveycore has no phase 2 weights. strata2 and ids2 must hold a value on
+# every phase 1 row, since the variance counts the phase 2 population over
+# all of them. Returns list(vars, data).
+#' @noRd
+.from_svydesign_phase2 <- function(x, data) {
+  d2 <- x$phase2
+  d2call <- d2$call
+  full <- x$phase1$full$variables
+  vars <- list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL)
+  generated <- list()
+
+  if (is.call(d2call)) {
+    # The stored ids slot is ~1 or ~0 when phase 2 has no clusters.
+    ids_f <- d2call$ids
+    if (!is.null(.vars_from_formula(ids_f))) {
+      ids_cols <- .formula_cols(ids_f, data)
+      if (is.null(ids_cols)) {
+        generated$ids <- .eval_design_formula(ids_f, full)
+      } else {
+        vars$ids <- ids_cols
+      }
+    }
+
+    for (nm in c("strata", "probs", "fpc")) {
+      f <- d2call[[nm]]
+      if (is.null(f) || identical(f, as.name("*phase1*"))) {
+        next
+      }
+      col <- .formula_cols(f, data)
+      if (length(col) >= 1L) {
+        vars[[nm]] <- col[[1L]]
+      } else {
+        generated[[nm]] <- .eval_design_formula(f, full)[1L]
+      }
+    }
+
+    if (!is.null(d2call$weights) && is.null(vars$probs)) {
+      w2 <- .eval_design_formula(d2call$weights, full)[[1L]]
+      generated$probs <- list(1 / w2)
+    }
+  } else {
+    # No call to read. Rebuild from the evaluated values survey stores on
+    # the phase 2 rows: the probabilities and the population sizes it drew
+    # from the phase 1 data carry what strata2 and ids2 would contribute
+    # over the rows outside phase 2.
+    in_phase2 <- as.logical(x$subset)
+    widen <- function(v) {
+      out <- v[rep(NA_integer_, length(in_phase2))]
+      out[in_phase2] <- v
+      out
+    }
+    if (isTRUE(d2$has.strata)) {
+      generated$strata <- list(widen(d2$strata[[1L]]))
+    }
+    generated$ids <- lapply(d2$cluster, widen)
+    generated$probs <- list(widen(d2$prob))
+    if (!is.null(d2$fpc$popsize)) {
+      generated$fpc <- list(widen(d2$fpc$popsize[, 1L]))
+    }
+  }
+
+  for (nm in names(generated)) {
+    # One value vector per key: .twophase_phase2_stages() has already
+    # refused a multi-stage phase 2, so ids2 holds one stage here.
+    vals <- generated[[nm]]
+    cols <- paste0("..surveycore_", nm, "2..")
+    collisions <- cols[cols %in% names(data)]
+    if (length(collisions) > 0L) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.fn from_svydesign} cannot store the phase 2 design under ",
+            "generated names."
+          ),
+          "i" = paste0(
+            "The design data already {cli::qty(length(collisions))}",
+            "{?has a column/has columns} named {.field {collisions}}."
+          ),
+          "v" = paste0(
+            "Rename the conflicting {cli::qty(length(collisions))}",
+            "column{?s} in the design data, then convert again."
+          )
+        ),
+        class = "surveycore_error_phase2_name_collision"
+      )
+    }
+    data[[cols]] <- unname(vals[[1L]])
+    vars[[nm]] <- cols
+  }
+
+  list(vars = vars, data = data)
+}
+
+
+# Column names a design formula names directly: ~a or ~a + b. Returns NULL
+# when f is not a formula, is ~1, holds any other expression (~I(1/w),
+# ~interaction(a, b)), or names a column that data does not have.
+#' @noRd
+.formula_cols <- function(f, data) {
+  if (!rlang::is_formula(f)) {
+    return(NULL)
+  }
+  terms <- .plus_terms(rlang::f_rhs(f))
+  if (!all(vapply(terms, is.symbol, logical(1L)))) {
+    return(NULL)
+  }
+  cols <- vapply(terms, as.character, character(1L))
+  if (!all(cols %in% names(data))) {
+    return(NULL)
+  }
+  cols
+}
+
+
+# Split a + b + c into its terms.
+#' @noRd
+.plus_terms <- function(e) {
+  if (rlang::is_call(e, "+", n = 2L)) {
+    c(.plus_terms(e[[2L]]), .plus_terms(e[[3L]]))
+  } else {
+    list(e)
+  }
+}
+
+
+# Evaluate a design formula on data the way survey::svydesign() does, one
+# list element per term.
+#' @noRd
+.eval_design_formula <- function(f, data) {
+  as.list(stats::model.frame(f, data = data, na.action = stats::na.pass))
 }
 
 

@@ -46,6 +46,116 @@
 }
 
 
+# ── haven labelled class strip ────────────────────────────────────────────────
+#
+# A survey design object stores base types. The haven labelled class puts
+# `vctrs_vctr` in the class vector, and vctrs then refuses arithmetic and
+# coercion on the column unless the haven namespace is loaded, which breaks
+# estimation on a freshly imported .sav file. These two helpers remove the
+# class and keep every other attribute, so the `label` string, the `labels`
+# value-label vector and the SPSS `na_values` and `na_range` vectors all stay
+# on the column. They serve the survey_data() contract, which is why they live
+# beside it.
+
+# Remove the haven labelled class from one vector, keeping every other
+# attribute. Returns x unchanged when x does not carry the class.
+#' @noRd
+.strip_labelled_class <- function(x) {
+  if (inherits(x, "haven_labelled")) {
+    attr(x, "class") <- NULL
+  }
+  x
+}
+
+# Remove the haven labelled class from every column of a data frame.
+# Returns data unchanged, with no copy, when no column carries the class.
+#
+# The early return and the single inherits() call per column are both load
+# bearing: this runs on every write to the `data` property, so the cost of the
+# common case — nothing matches — is one attribute read per column and nothing
+# else. Do not replace inherits() with class() or with a %in% test; those
+# allocate.
+#' @noRd
+.strip_labelled_columns <- function(data) {
+  hit <- which(vapply(data, inherits, logical(1L), "haven_labelled"))
+  if (length(hit) == 0L) {
+    return(data)
+  }
+  for (j in hit) {
+    data[[j]] <- .strip_labelled_class(data[[j]])
+  }
+  data
+}
+
+# Rebuild the haven labelled class on one vector. `labels` and `label` are
+# the design's metadata entries for the column, either one NULL when the
+# metadata holds none. Each one is written onto the vector, and the column's
+# own attribute is the fallback. Returns x unchanged when neither store holds
+# value labels, and returns it with the two attributes but no new class when it
+# carries a class of its own. Restores the SPSS variant when either SPSS
+# missing-value attribute is present.
+#
+# The metadata comes first because it is the store a design writes. On a
+# design, set_val_labels() writes @metadata@value_labels and set_var_label()
+# writes @metadata@variable_labels; neither touches the column. Reading the
+# attribute alone returned the labels the import set, so a corrected label
+# came back stale and a label created on the design never appeared at all
+# (issue #205). .extract_var_meta() resolves the same two stores the same way.
+#
+# Value labels, from either store, are the whole class test. There is no
+# record of which columns the strip took the class from, so a column that
+# never carried the class gets it here — an sjlabelled column, or one
+# labelled by set_val_labels(). Issue #207 decided this on purpose: the
+# attribute is what the helper can see, and provenance would cost new state on
+# every write to the `data` property. The documented contract matches, so do
+# not add a provenance test without reopening that decision.
+#
+# One limit follows from the same decision: set_val_labels(d, v = NULL) clears
+# the metadata entry and leaves the column's attribute in place, so the
+# fallback rebuilds the class from that attribute. Telling a cleared entry
+# from one that was never set needs the provenance state #207 refused.
+#
+# The class chain is written with base R, so this needs no haven at runtime.
+# A haven_labelled vector is attributes plus a class vector, and typeof(x)
+# supplies the base-type marker, so double-, integer- and character-backed
+# columns need no special case. Do not replace this with a call to
+# haven::labelled(): haven is in Suggests, and survey_data(haven_class = TRUE)
+# must work on a machine that does not have it.
+#' @noRd
+.restore_haven_class <- function(x, labels = NULL, label = NULL) {
+  if (!is.null(label)) {
+    attr(x, "label") <- label
+  }
+  if (is.null(labels)) {
+    labels <- attr(x, "labels", exact = TRUE)
+    if (is.null(labels)) {
+      return(x)
+    }
+  } else {
+    attr(x, "labels") <- labels
+  }
+  # A column that carries a class of its own has nothing to rebuild, and the
+  # write below would destroy what it has: `attr(x, "class") <- ...` replaces
+  # the whole class vector, so a factor came back as its level codes and a
+  # Date as its day count (issue #206). The strip only ever removes
+  # `haven_labelled`, so a classed column reaching here never carried it. The
+  # label and the value labels above still follow the metadata, the way X-24
+  # already has them follow it for a column that gets no class.
+  if (is.object(x)) {
+    return(x)
+  }
+
+  spss <- !is.null(attr(x, "na_values", exact = TRUE)) ||
+    !is.null(attr(x, "na_range", exact = TRUE))
+  attr(x, "class") <- if (spss) {
+    c("haven_labelled_spss", "haven_labelled", "vctrs_vctr", typeof(x))
+  } else {
+    c("haven_labelled", "vctrs_vctr", typeof(x))
+  }
+  x
+}
+
+
 # ── Exported accessor ─────────────────────────────────────────────────────────
 
 #' Access the Data Component of a Survey Design Object
@@ -54,8 +164,73 @@
 #' This is a thin accessor for `x@data` that provides a stable public name
 #' independent of the S7 property structure.
 #'
-#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
-#' @return A `data.frame` with all variables, including design variables.
+#' @details
+#' `nrow()` and `dim()` report the stored row count, not the in-domain
+#' count. A domain filter keeps every row of the design and marks
+#' membership in a flag column, so the two counts differ after a filter.
+#' Printing a filtered design shows both, on the `Domain: n of N rows`
+#' line.
+#'
+#' To get the in-domain count, call [get_effective_n()] and read its `n`
+#' column. That function honours the domain flag, takes a `group`
+#' argument, and accepts a `survey_collection`.
+#'
+#' `ncol()` counts the full stored width. The count includes the weight
+#' column, the cluster and stratum ids, `fpc`, the domain flag when
+#' present, and every replicate-weight column. It is not a count of
+#' analysis variables, and it is not comparable across design classes.
+#'
+#' `nrow()` is the unweighted count of sample rows. It is not a
+#' population estimate.
+#'
+#' @param x A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#'   `survey_nonprob` object.
+#' @param haven_class Rebuild the `haven_labelled` class on every column that
+#'   has value labels. The design's metadata is read first, and the column's
+#'   `labels` attribute is the fallback, so labels set by [set_val_labels()]
+#'   on the design reach the returned column. The variable label follows the
+#'   same order, so [set_var_label()] on the design reaches the returned
+#'   column's `label` attribute. Value labels are the whole class test, not a
+#'   record of which columns arrived as `haven_labelled`: a column that never
+#'   carried the class is promoted too, so a column labelled by `sjlabelled`
+#'   comes back with the class on it. A column that carries a class of its own
+#'   is left alone: a `factor` keeps its levels and a `Date` keeps its
+#'   calendar, whatever attributes they hold. `FALSE`, the default,
+#'   returns base types, which is
+#'   what every arithmetic and modelling operation needs. `TRUE` returns
+#'   columns that `haven` and `labelled` recognise, so that
+#'   `haven::as_factor()` and `labelled::to_factor()` give the label strings
+#'   instead of the codes, and so that `haven::write_sav()` writes the
+#'   labels the design holds. `haven` does not need to be installed for either
+#'   value. Two known limits: `haven::write_sav()` raises on a column holding
+#'   a tagged `NA` — that is a `.sav` format limit inside `haven`, and a
+#'   column built by `haven` itself fails the same way. And
+#'   `set_val_labels(x, v = NULL)` clears the metadata entry without touching
+#'   the column, so the fallback rebuilds the class from the column's own
+#'   attribute.
+#' @return A `data.frame` with all variables, including design variables. It is
+#'   a tibble when the design stores a tibble.
+#'
+#'   With `haven_class = FALSE`, the default, no column carries the
+#'   `haven_labelled` or `haven_labelled_spss` class. A survey design object
+#'   stores base types. Every attribute the import set — the `label` string,
+#'   the `labels` value-label vector, and the SPSS `na_values` and `na_range`
+#'   vectors — stays on the column, and the value labels are also available
+#'   through [extract_val_labels()]. In a printed tibble a previously labelled
+#'   column shows the type token for its own type — `<dbl>`, `<int>` or
+#'   `<chr>` — in place of the labelled token.
+#'
+#'   With `haven_class = TRUE`, every column that has value labels and no class
+#'   of its own is returned with its `haven_labelled` class rebuilt, and a
+#'   column that also carries `na_values` or `na_range` is returned as
+#'   `haven_labelled_spss`. A `factor`, a `Date`, and any other classed column
+#'   keep the class they have. The
+#'   `labels` and `label` attributes on the returned column hold what the
+#'   design's metadata holds, which is what [extract_val_labels()] and
+#'   [extract_var_label()] report. Values are unchanged, and the printed type
+#'   token reads as the labelled token again — `<dbl+lbl>` for a
+#'   double-backed column when the `haven` namespace is loaded, since `haven`
+#'   supplies the method that renders it.
 #' @examples
 #' d <- as_survey(
 #'   nhanes_2017,
@@ -65,9 +240,20 @@
 #'   nest = TRUE
 #' )
 #' head(survey_data(d))
+#'
+#' # Read the data back with the labelled class rebuilt. gss_2024 carries
+#' # value labels, so the class comes back on the columns that had one.
+#' g <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat)
+#' class(survey_data(g)$happy)
+#' class(survey_data(g, haven_class = TRUE)$happy)
+#'
+#' # Value labels set on the design reach the rebuilt column, so an export
+#' # carries the labels the analyst set rather than the labels the file had.
+#' g <- set_val_labels(g, happy = c(Happy = 1, `So-so` = 2, Unhappy = 3))
+#' attr(survey_data(g, haven_class = TRUE)$happy, "labels")
 #' @family accessors
 #' @export
-survey_data <- function(x) {
+survey_data <- function(x, haven_class = FALSE) {
   if (!S7::S7_inherits(x, survey_base)) {
     cli::cli_abort(
       c(
@@ -77,7 +263,37 @@ survey_data <- function(x) {
       class = "surveycore_error_not_survey_object"
     )
   }
-  x@data
+
+  if (
+    !is.logical(haven_class) ||
+      length(haven_class) != 1L ||
+      is.na(haven_class)
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg haven_class} must be {.code TRUE} or {.code FALSE}.",
+        "i" = "Got {.obj_type_friendly {haven_class}}."
+      ),
+      class = "surveycore_error_haven_class_not_logical"
+    )
+  }
+
+  data <- x@data
+  if (!haven_class) {
+    return(data)
+  }
+  val_labels <- x@metadata@value_labels
+  var_labels <- x@metadata@variable_labels
+  col_names <- names(data)
+  for (j in seq_along(data)) {
+    nm <- col_names[[j]]
+    data[[j]] <- .restore_haven_class(
+      data[[j]],
+      labels = val_labels[[nm]],
+      label = var_labels[[nm]]
+    )
+  }
+  data
 }
 
 
@@ -135,6 +351,103 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # weights internally. Using a named constant prevents typos and makes a
 # sentinel rename safe.
 .SURVEYCORE_WT_COL <- "..surveycore_wt.."
+
+
+# TRUE when a two-phase design's Phase 1 carries no design information: no
+# weights or probs (the SRS fallback weight), no strata, no fpc, and no
+# repeated first-stage cluster. survey::twophase2() then treats Phase 1 as an
+# iid sample (its phase1_is_iid) rather than as a census, so the method =
+# "full" variance and the as_svydesign() conversion both need to know.
+#' @noRd
+.twophase_phase1_is_iid <- function(design) {
+  ph1 <- design@variables$phase1
+  ids <- if (!is.null(ph1$ids)) design@data[[ph1$ids[[1L]]]] else NULL
+
+  identical(ph1$weights, .SURVEYCORE_WT_COL) &&
+    !isTRUE(ph1$probs_provided) &&
+    is.null(ph1$strata) &&
+    is.null(ph1$fpc) &&
+    !anyDuplicated(ids)
+}
+
+
+# Warn when a method = "full" two-phase design has a weighted Phase 1 with no
+# fpc (issue #340). Without a Phase 1 fpc, the full variance (survey's
+# twophase2var) puts 1 - p on each Phase 1 unit and nothing off the
+# diagonal: Poisson sampling of units. Each unit's expanded total is never
+# centred, so the variance of a total runs many times the true one, whether
+# Phase 1 is clustered, stratified, both or neither. A Phase 1 whose weights
+# are all 1 is the iid fallback or a census and gets no warning. Called once
+# at construction by as_survey_twophase() and from_svydesign().
+#' @noRd
+.warn_twophase_full_no_fpc <- function(phase1_vars, data, method) {
+  if (!identical(method, "full") || !is.null(phase1_vars$fpc)) {
+    return(invisible(FALSE))
+  }
+  if (isTRUE(all(data[[phase1_vars$weights]] == 1))) {
+    return(invisible(FALSE))
+  }
+  cli::cli_warn(
+    c(
+      "!" = paste0(
+        "Phase 1 has no {.arg fpc}, so {.code method = \"full\"} treats its ",
+        "sampling units as Poisson-sampled."
+      ),
+      "i" = paste0(
+        "Standard errors are then conservative, often several times too ",
+        "large for a total."
+      ),
+      "i" = paste0(
+        "With an {.arg fpc} on the phase 1 design, the variance is that of ",
+        "a fixed-size sample."
+      )
+    ),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  invisible(TRUE)
+}
+
+
+# ── .abort_twophase_multistage_phase2() ──────────────────────────────────────
+#
+# Refuses a two-phase design whose phase 2 has more than one sampling stage
+# (issue #338). The two-phase variance in R/variance-twophase.R reads one
+# phase 2 cluster column, one strata column and one fpc column, so every
+# later stage would drop out of the standard error with no condition.
+#
+# `stages` is a named integer vector of stage counts, named by the argument
+# the caller's user wrote: `ids2` for as_survey_twophase(), `id`, `strata`
+# and `fpc` for from_svydesign(), the @variables$phase2 keys for the
+# survey_twophase validator. Aborts when any count exceeds 1, naming those
+# arguments; returns invisible(TRUE) otherwise. Three call sites:
+# as_survey_twophase(), .from_svydesign_twophase() and the survey_twophase
+# validator.
+.abort_twophase_multistage_phase2 <- function(
+  stages,
+  fn,
+  call = rlang::caller_env()
+) {
+  multi <- names(stages)[stages > 1L]
+  if (length(multi) == 0L) {
+    return(invisible(TRUE))
+  }
+  cli::cli_abort(
+    c(
+      "x" = "{.fn {fn}} does not support a multi-stage phase 2.",
+      "i" = paste0(
+        "{.arg {multi}} {cli::qty(length(multi))}{?names/name} more than one ",
+        "phase 2 sampling stage, and the two-phase variance uses only the ",
+        "first, so the standard error would be wrong."
+      ),
+      "v" = paste0(
+        "Use a single-stage phase 2: one cluster, one strata and one fpc ",
+        "column. Multi-stage phase 2 is not supported."
+      )
+    ),
+    class = "surveycore_error_twophase_multistage_phase2",
+    call = call
+  )
+}
 
 
 # ── Internal tidy-select resolvers ───────────────────────────────────────────
@@ -336,7 +649,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
-# ── Internal: weighting history promotion ────────────────────────────────────
+# ── Internal: constructor attribute promotion ────────────────────────────────
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
 # Called by constructors that accept a raw data frame (as_survey,
@@ -354,6 +667,428 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     metadata@weighting_history <- history
   }
   metadata
+}
+
+
+# The two fixed "expected value" strings the DM-7a message reports. Date keys
+# accept a wider set of inputs than the four character keys, so the sentence
+# has to differ.
+#
+# @param key character(1). One of .dataset_metadata_keys.
+# @return character(1).
+#' @noRd
+.dataset_expected_text <- function(key) {
+  if (key %in% .dataset_date_keys) {
+    return("a Date scalar or an ISO 8601 date string (YYYY-MM-DD)")
+  }
+  "a single non-NA character string"
+}
+
+
+# Report ONE dropped dataset attribute as a warning. The four message variants
+# are rows DM-7a to DM-7d of plans/error-messages.md, and the variant is chosen
+# by .read_dataset_attributes(), not here:
+#
+#   "a" — a canonical attribute whose value is wrong-typed, NA, unparseable, or
+#         longer than 1. The message reports what was expected and what came.
+#   "b" — a canonical attribute with a zero-length value. Its own variant,
+#         because there is no class or length worth reporting back.
+#   "c" — the coerced date pair is reversed. ONE warning covers BOTH keys.
+#   "d" — the legacy `dates` attribute with any invalid value. It takes
+#         precedence over "a" and "b", so the remedy names set_field_period()
+#         rather than the rejected legacy name.
+#
+# @param entry One element of the `dropped` report of
+#   .read_dataset_attributes().
+# @return Invisibly, NULL. Called for the warning.
+#' @noRd
+.warn_dataset_metadata_dropped <- function(entry) {
+  key <- entry$key
+  value <- entry$value
+
+  bullets <- if (identical(entry$variant, "b")) {
+    c(
+      "!" = paste0(
+        "Dataset attribute {.field {key}} has a zero-length value and was ",
+        "not promoted."
+      ),
+      "v" = "Set a single non-NA value, or remove the attribute."
+    )
+  } else if (identical(entry$variant, "c")) {
+    start <- format(entry$start)
+    end <- format(entry$end)
+    c(
+      "!" = paste0(
+        "Dataset attributes {.field field_start} and {.field field_end} are ",
+        "reversed ({start} is after {end}); neither was promoted."
+      ),
+      "v" = paste0(
+        "Correct the dates on the data frame, or set them later with ",
+        "{.fn set_field_dates}."
+      )
+    )
+  } else if (identical(entry$variant, "d")) {
+    c(
+      "!" = paste0(
+        "Legacy dataset attribute {.field dates} has an invalid value and ",
+        "was not promoted to {.val field_period}."
+      ),
+      "v" = "Set the period with {.fn set_field_period}."
+    )
+  } else {
+    expected <- .dataset_expected_text(key)
+    c(
+      "!" = paste0(
+        "Dataset attribute {.field {key}} has an invalid value and was not ",
+        "promoted."
+      ),
+      "i" = paste0(
+        "Expected {expected}; got {.cls {class(value)[[1L]]}} of length ",
+        "{length(value)}."
+      ),
+      "v" = paste0(
+        "Fix the attribute on the data frame, or set the key later with ",
+        "{.fn set_dataset_metadata}."
+      )
+    )
+  }
+
+  cli::cli_warn(
+    bullets,
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  invisible(NULL)
+}
+
+
+# Promote the seven recognized whole-data-frame dataset attributes into
+# metadata@dataset_metadata. Called by every constructor that accepts a raw
+# data frame (as_survey, as_survey_replicate, as_survey_nonprob), at the same
+# stage as .promote_weighting_history() above.
+#
+# The attribute read, the value rules, and the drop classification all live in
+# .read_dataset_attributes() (further down this file). This function adds
+# exactly two things: it writes the surviving values, and it reports each
+# dropped key as one warning.
+#
+# Two hard contracts:
+#   - It NEVER errors. Construction must never fail because of a bad label, so
+#     every rejected value is skipped and reported as a warning instead. The
+#     property write below cannot raise the survey_metadata validator either:
+#     the reader returns only coerced values under canonical key names, with
+#     unique names and a non-reversed date pair, which is exactly what the
+#     validator accepts.
+#   - It NEVER modifies `data`. Promotion copies; the original attributes stay
+#     on the data frame the constructor stores in @data.
+#
+# @param data     A data.frame (may carry none, some, or all seven attributes).
+# @param metadata A survey_metadata object (already populated by
+#                 .extract_haven_metadata()).
+# @return The survey_metadata object, with @dataset_metadata set when at least
+#   one attribute survived. Returned unchanged when none did, so a data frame
+#   with no recognized attribute leaves the object byte-identical.
+#' @noRd
+.promote_dataset_metadata <- function(data, metadata) {
+  found <- .read_dataset_attributes(data)
+
+  for (entry in found$dropped) {
+    .warn_dataset_metadata_dropped(entry)
+  }
+
+  if (length(found$values) > 0L) {
+    metadata@dataset_metadata <- found$values
+  }
+
+  metadata
+}
+
+
+# ── Internal: dataset-level metadata ──────────────────────────────────────────
+#
+# The dataset metadata key vocabulary is CLOSED: exactly these six keys are
+# valid, and this vector is their canonical order. Read by the survey_metadata
+# validator (R/core-classes.R) and by the dataset metadata setters and
+# extractors (R/core-metadata.R), so it lives here per the 2+-files rule.
+.dataset_metadata_keys <- c(
+  "survey_name",
+  "data_name",
+  "vendor",
+  "field_start",
+  "field_end",
+  "field_period"
+)
+
+# The two date-typed keys. The other four keys are character(1).
+.dataset_date_keys <- c("field_start", "field_end")
+
+# The pre-1.2.0 attribute name for the prose field period. The attribute reader
+# recognizes exactly seven whole-data-frame names: the six canonical keys above,
+# then this one. surveycore claims no attribute name beyond those seven — every
+# other attribute is ignored entirely, never promoted and never warned about.
+.dataset_legacy_period_attr <- "dates"
+
+
+# Return metadata@dataset_metadata, or list() when the stored S7 class predates
+# the property. An object restored from a .rds/.rda file written by surveycore
+# <= 1.1.0 carries a frozen copy of the old class, so reading the property
+# directly would raise S7's "Can't find property" error. Every read path in the
+# package goes through here, so reads on such an object succeed and report no
+# dataset metadata.
+#
+# @param metadata A survey_metadata object.
+# @return The stored named list, or list() when the property is absent.
+#' @noRd
+.dataset_metadata_or_empty <- function(metadata) {
+  if (!"dataset_metadata" %in% S7::prop_names(metadata)) {
+    return(list())
+  }
+  metadata@dataset_metadata
+}
+
+
+# Coerce one candidate field-date value to a Date scalar.
+#
+# Accepts a non-NA Date of length 1, or a character(1) that is strict ISO 8601:
+# it must parse with format = "%Y-%m-%d" to a non-NA date AND round-trip
+# through format(). The round-trip is what rejects "2026-2-1", which as.Date()
+# would otherwise accept. "2026/02/10", timestamps, and the impossible
+# "2026-02-30" all fail on the parse.
+#
+# as.Date() is wrapped in tryCatch(), so no base condition ever surfaces to the
+# caller — a bad value is reported by this function's own callers, in the
+# surveycore register.
+#
+# @param value The candidate value.
+# @return A Date of length 1 on success, NULL on failure.
+#' @noRd
+.coerce_field_date <- function(value) {
+  if (inherits(value, "Date")) {
+    if (length(value) == 1L && !is.na(value)) {
+      return(value)
+    }
+    return(NULL)
+  }
+
+  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+    return(NULL)
+  }
+
+  parsed <- tryCatch(
+    as.Date(value, format = "%Y-%m-%d"),
+    error = function(cnd) NULL,
+    warning = function(cnd) NULL
+  )
+  if (is.null(parsed) || length(parsed) != 1L || is.na(parsed)) {
+    return(NULL)
+  }
+  if (!identical(format(parsed, "%Y-%m-%d"), value)) {
+    return(NULL)
+  }
+  parsed
+}
+
+
+# Classify why a dataset metadata value failed the canonical value table. The
+# three reasons drive the promotion-warning variant a caller reports:
+# "zero_length" is its own variant, and the other two share one.
+#
+# @param value The rejected value.
+# @return character(1): "zero_length", "wrong_length", or "wrong_type".
+#' @noRd
+.dataset_value_reason <- function(value) {
+  if (length(value) == 0L) {
+    return("zero_length")
+  }
+  if (length(value) > 1L) {
+    return("wrong_length")
+  }
+  "wrong_type"
+}
+
+
+# The single valid-key value checker for dataset metadata. Every path that
+# writes or resolves a dataset metadata value goes through here, so the per-key
+# type rules exist in exactly one place.
+#
+# @param key       character(1). One of .dataset_metadata_keys.
+# @param value     The candidate value (never NULL — callers screen NULL first,
+#                  because NULL means "delete", not "bad value").
+# @param mode      "error" raises the typed error for the key and returns the
+#                  coerced value on success. "skip" never raises: it returns
+#                  list(value = <coerced value>, reason = NULL) on success and
+#                  list(value = NULL, reason = <.dataset_value_reason()>) on
+#                  failure, for the warn-and-skip callers (promotion, which
+#                  warns on the reason, and the data-frame extract path, which
+#                  ignores it).
+# @param key_style How the error message names the offender. "val" renders the
+#                  key as a value ({.val {key}}); "arg" renders it as a
+#                  function argument ({.arg {key}}), which is what a wrapper
+#                  whose argument name IS the key needs. Ignored in "skip" mode,
+#                  which renders no message.
+# @param call      Passed to cli_abort() so the error reports the user-facing
+#                  caller rather than this helper.
+# @return In "error" mode, the coerced value, or an error. In "skip" mode, a
+#         two-element list; see @param mode.
+#
+# Date branch note: BOTH modes route through .coerce_field_date(), so a
+# strict-ISO character(1) is accepted everywhere and stored as a Date. The
+# survey_metadata validator narrows to Date on its own side, which is what
+# keeps the class layer rejecting a STORED ISO string.
+#' @noRd
+.check_dataset_key_value <- function(
+  key,
+  value,
+  mode = c("error", "skip"),
+  key_style = c("val", "arg"),
+  call = rlang::caller_env()
+) {
+  mode <- match.arg(mode)
+  key_style <- match.arg(key_style)
+  is_date_key <- key %in% .dataset_date_keys
+
+  coerced <- if (is_date_key) {
+    .coerce_field_date(value)
+  } else if (is.character(value) && length(value) == 1L && !is.na(value)) {
+    value
+  } else {
+    NULL
+  }
+
+  if (!is.null(coerced)) {
+    if (mode == "skip") {
+      return(list(value = coerced, reason = NULL))
+    }
+    return(coerced)
+  }
+
+  if (mode == "skip") {
+    return(list(value = NULL, reason = .dataset_value_reason(value)))
+  }
+
+  if (is_date_key) {
+    lead <- if (key_style == "arg") "{.arg {key}}" else "{.val {key}}"
+    bullets <- c(
+      "x" = paste0(
+        lead,
+        " must be a Date scalar or an ISO 8601 date string ",
+        "(YYYY-MM-DD), not {.cls {class(value)[[1L]]}} of length ",
+        "{length(value)}."
+      ),
+      "i" = "Got {.val {value}}."
+    )
+    if (length(value) == 1L && is.na(value)) {
+      bullets <- c(bullets, "i" = "The value is NA.")
+    }
+    cli::cli_abort(
+      bullets,
+      class = "surveycore_error_field_date_invalid",
+      call = call
+    )
+  }
+
+  cli::cli_abort(
+    c(
+      "x" = paste0(
+        "Dataset metadata key {.val {key}} must be a single non-NA ",
+        "character string, not {.cls {class(value)[[1L]]}} of length ",
+        "{length(value)}."
+      ),
+      "v" = paste0(
+        "Supply a single non-NA character value, or {.code NULL} to ",
+        "delete the key."
+      )
+    ),
+    class = "surveycore_error_dataset_metadata_bad_type",
+    call = call
+  )
+}
+
+
+# Read the seven recognized whole-data-frame attributes and apply the canonical
+# value table in warn-and-skip mode. Never errors, never warns, never modifies
+# `data`. Promotion reports the `dropped` entries as warnings; the data-frame
+# extract path ignores them, because extractors never warn.
+#
+# Read order is the canonical key order for the six canonical names, then the
+# legacy "dates" name, which lands in field_period ONLY when the field_period
+# attribute is absent. A present-but-invalid field_period stops the fallback:
+# repairing from a legacy name would hide the invalid value.
+#
+# @param data A data.frame.
+# @return list(values = <coerced named list in canonical key order>,
+#              dropped = <named report, one entry per skipped key>).
+#         Each dropped entry carries `variant`, one of:
+#           "a" — a canonical attribute with a wrong-typed, NA, unparseable, or
+#                 length > 1 value
+#           "b" — a canonical attribute with a zero-length value
+#           "c" — the coerced date pair is reversed; BOTH dates were dropped
+#           "d" — the legacy "dates" attribute with ANY invalid value
+#         plus `key` (the name or names dropped), `reason`, and either the raw
+#         `value` or, for variant "c", the coerced `start` and `end`.
+#' @noRd
+.read_dataset_attributes <- function(data) {
+  values <- list()
+  dropped <- list()
+
+  # Steps 1-6: the six canonical attribute names, in canonical order.
+  for (key in .dataset_metadata_keys) {
+    raw <- attr(data, key, exact = TRUE)
+    if (is.null(raw)) {
+      next
+    }
+    checked <- .check_dataset_key_value(key, raw, mode = "skip")
+    if (is.null(checked$reason)) {
+      values[[key]] <- checked$value
+      next
+    }
+    dropped[[key]] <- list(
+      variant = if (identical(checked$reason, "zero_length")) "b" else "a",
+      key = key,
+      value = raw,
+      reason = checked$reason
+    )
+  }
+
+  # Step 7: the legacy "dates" attribute, only when the field_period attribute
+  # is absent — absent meaning attr(..., exact = TRUE) returns NULL.
+  if (is.null(attr(data, "field_period", exact = TRUE))) {
+    raw <- attr(data, .dataset_legacy_period_attr, exact = TRUE)
+    if (!is.null(raw)) {
+      checked <- .check_dataset_key_value("field_period", raw, mode = "skip")
+      if (is.null(checked$reason)) {
+        values[["field_period"]] <- checked$value
+      } else {
+        dropped[[.dataset_legacy_period_attr]] <- list(
+          variant = "d",
+          key = .dataset_legacy_period_attr,
+          value = raw,
+          reason = checked$reason
+        )
+      }
+    }
+  }
+
+  # The pair rule runs on the COERCED values, so "2026-03-04" and "2026-02-10"
+  # are compared as dates. A reversed pair drops both keys, because the
+  # validator would reject the pair and promotion must never write it.
+  start <- values[["field_start"]]
+  end <- values[["field_end"]]
+  if (!is.null(start) && !is.null(end) && start > end) {
+    dropped[["field_dates"]] <- list(
+      variant = "c",
+      key = .dataset_date_keys,
+      start = start,
+      end = end,
+      reason = "reversed"
+    )
+    values[["field_start"]] <- NULL
+    values[["field_end"]] <- NULL
+  }
+
+  list(
+    values = values[intersect(.dataset_metadata_keys, names(values))],
+    dropped = dropped
+  )
 }
 
 
@@ -544,4 +1279,37 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 #' @noRd
 .compute_nonprob_scale <- function(type, R) {
   switch(type, bootstrap = 1 / R, JK1 = (R - 1) / R, JK2 = 1, JKn = 1)
+}
+
+# ── .is_valid_rho() ───────────────────────────────────────────────────────────
+
+# Used by R/core-constructors.R and R/methods-conversion.R (issue #243).
+# TRUE when rho is one finite number in [0, 1) with no dim attribute;
+# FALSE otherwise. Never errors. The dim() test refuses a 1 x 1 matrix and a
+# 1 x 1 x 1 array, which pass every other test.
+.is_valid_rho <- function(rho) {
+  is.numeric(rho) &&
+    is.null(dim(rho)) &&
+    length(rho) == 1L &&
+    is.finite(rho) &&
+    rho >= 0 &&
+    rho < 1
+}
+
+# ── .replicate_ignores_scale() ───────────────────────────────────────────────
+#
+# Returns TRUE for the replicate types whose scale survey::svrepdesign()
+# computes itself and does not take from the caller. Call sites:
+# as_survey_replicate() and .as_svydesign_replicate().
+.replicate_ignores_scale <- function(type) {
+  type %in% c("BRR", "Fay", "JK2", "ACS", "successive-difference")
+}
+
+# ── .replicate_ignores_rscales() ─────────────────────────────────────────────
+#
+# Returns TRUE for the replicate types whose rscales survey::svrepdesign()
+# sets to rep(1, R) and does not take from the caller. Call sites:
+# as_survey_replicate() and .as_svydesign_replicate().
+.replicate_ignores_rscales <- function(type) {
+  type %in% c("JK2", "ACS", "successive-difference")
 }

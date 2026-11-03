@@ -184,7 +184,7 @@ or spec decisions. List them so Stage 1 (drafting) knows where to be careful:
 
 ## Output: `comprehension.md`
 
-Write to `.pipeline-workspace/runs/{YYYY-MM-DD-id}/comprehension.md`. If the
+Write to `.surveycore-workspace/runs/{YYYY-MM-DD-slug}/comprehension.md`. If the
 workspace does not yet exist, pipeline-spec creates it — write to the run
 directory.
 

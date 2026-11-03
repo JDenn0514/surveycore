@@ -58,6 +58,18 @@ test_that("get_freqs() respects factor level order", {
   expect_identical(levels(r$group_f), c("C", "B", "A"))
 })
 
+test_that("get_freqs() labels each row of a numeric-looking factor with its own level", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 12L)
+  # Level "6" is the fifth level: a code lookup would relabel it "7"
+  codes <- c(1, 2, 3, 4, 6, 7)
+  df$coded_f <- factor(codes[(seq_len(nrow(df)) %% 6L) + 1L])
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  r <- get_freqs(d, coded_f)
+  expect_identical(as.character(r$coded_f), c("1", "2", "3", "4", "6", "7"))
+  expect_identical(r$n, as.integer(table(df$coded_f)))
+})
+
 test_that("get_freqs() sorts non-factor levels ascending", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 13L)
   d <- as_survey(
@@ -1061,6 +1073,74 @@ test_that("get_freqs() replicate (BRR) pct matches survey::svymean [numerical]",
     as.numeric(survey::SE(sv_B)),
     tolerance = 1e-8
   )
+})
+
+# Calibrated Taylor fixture shared by the two oracle blocks below: a GREG
+# calibration on x = y2 built with survey::calibrate(), mirrored in surveycore
+# by as_caldata() + as_survey(calibration =).
+make_freqs_cal_fixture <- function() {
+  df <- make_survey_data(seed = 42)
+  set.seed(1)
+  df$f <- factor(sample(c("a", "b", "c"), nrow(df), replace = TRUE))
+  df$g <- factor(sample(c("G1", "G2"), nrow(df), replace = TRUE))
+  df$x <- df$y2
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  pop <- c(
+    "(Intercept)" = sum(df$wt) * 1.05,
+    x = sum(df$wt * df$x) * 1.08
+  )
+  sv_cal <- survey::calibrate(sv, ~x, pop)
+  cd <- as_caldata(df$wt, weights(sv_cal) / df$wt, model.matrix(~x, df))
+  df$cal_wt <- weights(sv_cal)
+  sc_cal <- as_survey(
+    df,
+    ids = psu,
+    strata = strata,
+    weights = cal_wt,
+    nest = TRUE,
+    calibration = list(cd)
+  )
+  list(sv_cal = sv_cal, sc_cal = sc_cal)
+}
+
+test_that("get_freqs() SE on a calibrated Taylor design matches survey::svymean() [oracle]", {
+  skip_if_not_installed("survey")
+  fx <- make_freqs_cal_fixture()
+
+  r_sc <- get_freqs(fx$sc_cal, f, variance = "se")
+  sv_est <- survey::svymean(~f, fx$sv_cal)
+
+  expect_equal(r_sc$pct, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(r_sc$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that("get_freqs() grouped SE on a calibrated Taylor design matches survey::svyby() [oracle]", {
+  skip_if_not_installed("survey")
+  fx <- make_freqs_cal_fixture()
+
+  r_sc <- get_freqs(fx$sc_cal, f, group = g, variance = "se")
+  sv_by <- survey::svyby(~f, ~g, fx$sv_cal, survey::svymean)
+
+  for (gv in c("G1", "G2")) {
+    sc_g <- r_sc[r_sc$g == gv, ]
+    sv_g <- sv_by[sv_by$g == gv, ]
+    expect_equal(
+      sc_g$pct,
+      as.numeric(sv_g[, c("fa", "fb", "fc")]),
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_g$se,
+      as.numeric(sv_g[, c("se.fa", "se.fb", "se.fc")]),
+      tolerance = 1e-8
+    )
+  }
 })
 
 test_that("get_freqs() pct sums to 1 for all design types [oracle sanity]", {
@@ -2198,14 +2278,12 @@ test_that("get_freqs() attaches .survey_result attribute with statistic = 'freq'
   expect_identical(sr$statistic, "freq")
 })
 
-test_that("get_freqs() .survey_result$df is finite for non-calibrated Taylor design", {
+test_that("get_freqs() .survey_result$df is Inf for non-calibrated Taylor design", {
   df <- make_survey_data(n = 200, seed = 3)
   df$cat <- factor(sample(c("A", "B"), 200, replace = TRUE))
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_freqs(d, cat)
   sr <- attr(result, ".survey_result")
-  # Non-calibrated Taylor designs now store finite design df (not Inf).
-  expect_true(all(is.finite(sr$df)))
-  expect_true(all(sr$df >= 1))
-  expect_equal(length(sr$df), nrow(result))
+  # Inf is the df behind the ci_low/ci_high columns (issue #271).
+  expect_identical(sr$df, rep(Inf, nrow(result)))
 })

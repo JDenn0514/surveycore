@@ -4,11 +4,340 @@
 # file runs. Provides:
 #   - make_survey_data()  — synthetic survey data generator
 #   - test_invariants()   — formal invariant checker for survey objects
+#   - make_labelled(), make_labelled_spss(), make_tagged_na() — haven-shaped
+#     column fixtures, built with base R so they need no haven at runtime
 #
 # Dependency note: test_invariants() references S7 class objects
 # (survey_replicate, survey_metadata) and .get_design_vars_flat() from
 # R/07-utils.R. Both are available after the package is loaded by
 # devtools::test() / devtools::load_all().
+
+# ------------------------------------------------------------------------------
+# full_keys - dataset-level metadata fixture
+# ------------------------------------------------------------------------------
+
+# The six valid @dataset_metadata keys, in canonical order, each holding a
+# valid value. This is the single definition of the fixture; every test that
+# needs a complete dataset-metadata list uses it, and names(full_keys) is the
+# canonical key order.
+full_keys <- list(
+  survey_name = "Antisemitic Attitudes in America 2026",
+  data_name = "AAA Ipsos (February-March 2026)",
+  vendor = "Ipsos KnowledgePanel Omnibus",
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04"),
+  field_period = "February-March 2026"
+)
+
+# ------------------------------------------------------------------------------
+# make_dataset_df()
+# ------------------------------------------------------------------------------
+
+#' Build a plain data frame carrying whole-frame dataset-metadata attributes
+#'
+#' Returns a synthetic survey data frame with one whole-object attribute per
+#' element of `keys`. This is the read-path fixture for the data-frame mode of
+#' the dataset-metadata extractors: it attaches raw attributes with bare
+#' `attr()<-`, so a test can inject any value — valid, invalid, zero-length,
+#' or the legacy `dates` name — without going through a setter.
+#'
+#' Attributes are attached AFTER the frame is built, because base subsetting
+#' and `as_tibble()` drop whole-object attributes.
+#'
+#' @param keys A named list. One attribute per element, named by the attribute
+#'   name. Defaults to `full_keys` (the six canonical keys, canonical order).
+#'   A `NULL` element attaches nothing, so omitting a key and giving it `NULL`
+#'   are the same thing.
+#' @param n    Rows in the frame. Default 20.
+#' @param seed Random seed passed to `make_survey_data()`. Default 42.
+#' @return A plain `data.frame` with the requested attributes attached.
+#' @keywords internal
+make_dataset_df <- function(keys = full_keys, n = 20L, seed = 42L) {
+  df <- make_survey_data(n = n, n_psu = 6L, n_strata = 2L, seed = seed)
+  for (nm in names(keys)) {
+    attr(df, nm) <- keys[[nm]]
+  }
+  df
+}
+
+# ------------------------------------------------------------------------------
+# make_stale_metadata_design()
+# ------------------------------------------------------------------------------
+
+#' Build a survey design whose metadata object predates @dataset_metadata
+#'
+#' Simulates an object restored from a `.rds`/`.rda` file written by
+#' surveycore <= 1.1.0. Such an object carries a frozen copy of the old S7
+#' class, so `x@metadata@dataset_metadata` raises S7's "Can't find property"
+#' error rather than returning a value.
+#'
+#' The simulation removes `dataset_metadata` from the frozen class copy stored
+#' in the metadata object's `S7_class` attribute, and removes the matching
+#' property attribute. It then re-attaches the stripped metadata object with
+#' `attr()<-` rather than `@<-`, because `@<-` would re-validate and restore
+#' the current class.
+#'
+#' @param design One of "taylor", "replicate", "twophase", or "nonprob". All
+#'   four are supported so every print, summary, and extractor path can be
+#'   exercised against a stale object of its own class.
+#' @param seed   Random seed. Default 42.
+#' @return A survey design object of the requested class whose `@metadata`
+#'   lacks the `dataset_metadata` property.
+#' @keywords internal
+make_stale_metadata_design <- function(
+  design = c("taylor", "replicate", "twophase", "nonprob"),
+  seed = 42L
+) {
+  design <- match.arg(design)
+
+  d <- switch(
+    design,
+    "taylor" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "taylor",
+        seed = seed
+      )
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      )
+    },
+    "replicate" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "replicate",
+        type = "brr",
+        seed = seed
+      )
+      repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "BRR"
+      )
+    },
+    "twophase" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "twophase",
+        seed = seed
+      )
+      phase1 <- as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      )
+      as_survey_twophase(phase1, subset = subset, method = "approx")
+    },
+    "nonprob" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "taylor",
+        seed = seed
+      )
+      as_survey_nonprob(df, weights = wt)
+    }
+  )
+
+  md <- d@metadata
+  old_class <- attr(md, "S7_class")
+  old_props <- attr(old_class, "properties")
+  old_props$dataset_metadata <- NULL
+  attr(old_class, "properties") <- old_props
+  attr(md, "dataset_metadata") <- NULL
+  attr(md, "S7_class") <- old_class
+  attr(d, "metadata") <- md
+
+  d
+}
+
+# ------------------------------------------------------------------------------
+# make_dataset_design()
+# ------------------------------------------------------------------------------
+
+#' Build a survey design carrying dataset-level metadata
+#'
+#' Returns a survey design object of the requested class whose
+#' `@dataset_metadata` holds the requested state. State is applied with
+#' `set_dataset_metadata()` on the CONSTRUCTED design, never with whole-frame
+#' attributes on the input data: attribute promotion is a separate contract, and
+#' a fixture that seeded state through attributes would silently test it.
+#'
+#' `state` values. The two single-key states are drawn from `full_keys` the
+#' same way, and they are independent of each other: `data_name` and
+#' `survey_name` are separate keys, so neither state implies the other.
+#' \describe{
+#'   \item{`"none"`}{Nothing set. `@dataset_metadata` is `list()`.}
+#'   \item{`"data_name"`}{`data_name` alone — a one-key case with no
+#'     `survey_name`.}
+#'   \item{`"survey_name"`}{`survey_name` alone — a one-key case with no
+#'     `data_name`.}
+#'   \item{`"full"`}{All six canonical keys, from `full_keys`.}
+#'   \item{`"partial"`}{`data_name`, `vendor`, `field_start`, and
+#'     `field_period` — no `survey_name` and only one of the two dates.}
+#' }
+#'
+#' @param design One of "taylor", "replicate", "twophase", "nonprob", or
+#'   "nonprob_rep". All five are supported so every design class, including a
+#'   nonprob design with replicate weights, can be exercised.
+#' @param state  One of "none", "data_name", "survey_name", "full", or
+#'   "partial".
+#' @param seed   Random seed. Default 42.
+#' @return A survey design object of the requested class.
+#' @keywords internal
+make_dataset_design <- function(
+  design = c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep"),
+  state = c("none", "data_name", "survey_name", "full", "partial"),
+  seed = 42L
+) {
+  design <- match.arg(design)
+  state <- match.arg(state)
+
+  df_design <- switch(
+    design,
+    "replicate" = "replicate",
+    "twophase" = "twophase",
+    "taylor"
+  )
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = df_design,
+    type = "brr",
+    seed = seed
+  )
+
+  d <- switch(
+    design,
+    "taylor" = as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    ),
+    "replicate" = as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(grep("^repwt_", names(df), value = TRUE)),
+      type = "BRR"
+    ),
+    "twophase" = as_survey_twophase(
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      ),
+      subset = subset,
+      method = "approx"
+    ),
+    "nonprob" = as_survey_nonprob(df, weights = wt),
+    "nonprob_rep" = {
+      df$rw1 <- df$wt * 1.02
+      df$rw2 <- df$wt * 0.98
+      df$rw3 <- df$wt * 1.01
+      as_survey_nonprob(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(c("rw1", "rw2", "rw3")),
+        type = "bootstrap"
+      )
+    }
+  )
+
+  keys <- switch(
+    state,
+    "none" = NULL,
+    "data_name" = full_keys["data_name"],
+    "survey_name" = full_keys["survey_name"],
+    "full" = full_keys,
+    "partial" = full_keys[c(
+      "data_name",
+      "vendor",
+      "field_start",
+      "field_period"
+    )]
+  )
+  if (!is.null(keys)) {
+    d <- set_dataset_metadata(d, !!!keys)
+  }
+
+  d
+}
+
+# ------------------------------------------------------------------------------
+# expect_dataset_roundtrip()
+# ------------------------------------------------------------------------------
+
+#' Assert that dataset metadata survives the setter-to-constructor round trip
+#'
+#' Applies `keys` to a plain data frame with `set_dataset_metadata()`, builds a
+#' taylor design from that frame, and asserts that
+#' `extract_dataset_metadata()` returns `expected` — the same keys and values,
+#' in canonical order.
+#'
+#' This is the one assertion for the whole documented round trip
+#' `set_dataset_metadata(df, ...)` -> `as_survey(df, ...)` ->
+#' `extract_dataset_metadata(d)`. State is applied through the SETTER, never
+#' with a bare `attr()<-` write, so the frame carries exactly the attributes
+#' the public write path produces.
+#'
+#' `expected` defaults to `keys` and differs only when the setter coerces on
+#' the way in — an ISO 8601 date string is stored as a `Date`, so a caller that
+#' passes a string must pass the `Date` it expects back.
+#'
+#' @param keys     A named list of dataset metadata keys and values.
+#' @param expected The list `extract_dataset_metadata()` must return. Defaults
+#'   to `keys`.
+#' @param n        Rows in the frame. Default 20.
+#' @param seed     Random seed passed to `make_survey_data()`. Default 42.
+#' @return The constructed design, invisibly, so a caller can make further
+#'   assertions about it.
+#' @keywords internal
+expect_dataset_roundtrip <- function(
+  keys,
+  expected = keys,
+  n = 20L,
+  seed = 42L
+) {
+  df <- make_survey_data(n = n, n_psu = 6L, n_strata = 2L, seed = seed)
+  df <- set_dataset_metadata(df, !!!keys)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(d)
+  testthat::expect_identical(extract_dataset_metadata(d), expected)
+
+  invisible(d)
+}
 
 # ------------------------------------------------------------------------------
 # make_survey_data()
@@ -226,6 +555,114 @@ make_survey_data <- function(
 }
 
 # ------------------------------------------------------------------------------
+# make_labelled(), make_labelled_spss(), make_tagged_na()
+# ------------------------------------------------------------------------------
+
+# The three column-level fixture builders for haven-shaped data. A
+# `haven_labelled` vector is attributes plus a class vector, so base R builds
+# one; `haven` is in Suggests and is not needed to construct a fixture.
+#
+# `make_survey_data(with_labels = TRUE)` cannot serve here. It attaches the
+# `label` and `labels` attributes but never sets a class, so nothing dispatches
+# on the column and the defect under test never fires.
+#
+# `tests/testthat/test-labelled-fixtures.R` pins all three against real `haven`
+# output. Change a builder only together with that file.
+
+#' Build a `haven_labelled` vector with base R
+#'
+#' Returns `x` carrying the value labels, the variable label, and the
+#' three-entry `haven_labelled` class vector. `typeof(x)` supplies the
+#' base-type marker, so double-, integer-, and character-backed columns need no
+#' special case.
+#'
+#' Attributes are attached in `haven`'s own order — `labels`, `label`, `class` —
+#' so the result is `identical()` to `haven::labelled()` output. A `NULL`
+#' argument attaches nothing, matching `haven`, which omits `label` entirely
+#' when no variable label is given.
+#'
+#' @param x      A double, integer, or character vector.
+#' @param labels A named vector of value labels, of the same type as `x`. The
+#'   names are the labels; the values are the codes. `NULL` attaches none.
+#' @param label  A length-1 character variable label, or `NULL` for none.
+#' @return `x` with class `c("haven_labelled", "vctrs_vctr", typeof(x))`.
+#' @keywords internal
+make_labelled <- function(x, labels = NULL, label = NULL) {
+  attr(x, "labels") <- labels
+  attr(x, "label") <- label
+  attr(x, "class") <- c("haven_labelled", "vctrs_vctr", typeof(x))
+  x
+}
+
+#' Build a `haven_labelled_spss` vector with base R
+#'
+#' The SPSS variant of `make_labelled()`. Adds the two SPSS missing-value
+#' attributes and puts `haven_labelled_spss` on the front of the class vector,
+#' which is why one `inherits(x, "haven_labelled")` call catches both shapes.
+#'
+#' Attributes are attached in `haven`'s own order — `labels`, `label`,
+#' `na_values`, `na_range`, `class` — so the result is `identical()` to
+#' `haven::labelled_spss()` output. Either missing-value argument may be `NULL`,
+#' and `NULL` attaches nothing.
+#'
+#' @param x         A double, integer, or character vector.
+#' @param labels    A named vector of value labels, of the same type as `x`.
+#'   `NULL` attaches none.
+#' @param na_values A vector of discrete user-missing codes, of the same type as
+#'   `x`, or `NULL` for none.
+#' @param na_range  A length-2 vector giving an inclusive user-missing range, of
+#'   the same type as `x`, or `NULL` for none.
+#' @param label     A length-1 character variable label, or `NULL` for none.
+#' @return `x` with class `c("haven_labelled_spss", "haven_labelled",
+#'   "vctrs_vctr", typeof(x))`.
+#' @keywords internal
+make_labelled_spss <- function(
+  x,
+  labels = NULL,
+  na_values = NULL,
+  na_range = NULL,
+  label = NULL
+) {
+  attr(x, "labels") <- labels
+  attr(x, "label") <- label
+  attr(x, "na_values") <- na_values
+  attr(x, "na_range") <- na_range
+  attr(x, "class") <- c(
+    "haven_labelled_spss",
+    "haven_labelled",
+    "vctrs_vctr",
+    typeof(x)
+  )
+  x
+}
+
+#' Build a `haven` tagged `NA` with base R
+#'
+#' A tagged `NA` is `NA_real_` with one character written into the unused part
+#' of the `NaN` payload. `haven` stores the tag in byte 5 of the eight-byte
+#' little-endian representation; `NA_real_` itself leaves bytes 5 and 6 zero, so
+#' the write disturbs nothing. The result stays `NA` to base R and reads its tag
+#' back through `haven::na_tag()`.
+#'
+#' `writeBin()` and `readBin()` take an explicit `endian` argument, so the
+#' builder produces the same double on a big-endian platform.
+#'
+#' @param tag A length-1 character string of exactly one character.
+#' @return A length-1 double that is `NA` and carries `tag`.
+#' @keywords internal
+make_tagged_na <- function(tag) {
+  stopifnot(
+    is.character(tag),
+    length(tag) == 1L,
+    !is.na(tag),
+    nchar(tag) == 1L
+  )
+  bytes <- writeBin(NA_real_, raw(), endian = "little")
+  bytes[5L] <- charToRaw(tag)
+  readBin(bytes, "double", n = 1L, endian = "little")
+}
+
+# ------------------------------------------------------------------------------
 # test_invariants()
 # ------------------------------------------------------------------------------
 
@@ -379,6 +816,14 @@ test_invariants <- function(design) {
       testthat::expect_true(
         is.numeric(design@data[[rw]]),
         label = paste0("replicate weight column '", rw, "' is numeric")
+      )
+    }
+    # The FPC record keys (issue #320) are present on every replicate design
+    # as_survey_replicate() and from_svydesign() build; values may be NULL.
+    for (key in c("fpc", "fpctype", "fpc_applied", "fpc_fraction")) {
+      testthat::expect_true(
+        key %in% names(design@variables),
+        label = paste0("@variables has '", key, "' key")
       )
     }
   }
@@ -646,6 +1091,157 @@ make_all_designs <- function(seed = 42L) {
 }
 
 # ------------------------------------------------------------------------------
+# set_domain_marker()
+# ------------------------------------------------------------------------------
+
+#' Write a domain marker column of a named storage type onto a design
+#'
+#' Writes the column named by `SURVEYCORE_DOMAIN_COL` into `design@data` and
+#' returns the design. The `survey_base` validator runs on the write, so a
+#' call with a non-logical `type` aborts with
+#' `surveycore_error_domain_not_logical`. Wrap such a call in `expect_error()`.
+#'
+#' The write goes through `new_data[SURVEYCORE_DOMAIN_COL] <- list(value)`.
+#' Single-bracket assignment of a one-element list takes an atomic vector and
+#' a list alike, so one line covers all six types.
+#'
+#' @param design A survey design object of any concrete class.
+#' @param type   One of "logical", "integer", "double", "character", "factor",
+#'   "list". The storage type the marker column is written as.
+#' @param mask   Logical vector of length nrow(design@data) that the marker is
+#'   built from, or NULL (default) for an alternating mask that starts TRUE.
+#' @return The design, with the marker column written.
+#' @keywords internal
+set_domain_marker <- function(design, type, mask = NULL) {
+  type <- match.arg(
+    type,
+    c("logical", "integer", "double", "character", "factor", "list")
+  )
+
+  if (is.null(mask)) {
+    mask <- rep(c(TRUE, FALSE), length.out = nrow(design@data))
+  }
+
+  value <- switch(
+    type,
+    logical = mask,
+    integer = as.integer(mask),
+    double = as.numeric(mask),
+    character = as.character(mask),
+    factor = factor(mask, levels = c(FALSE, TRUE)),
+    list = as.list(mask)
+  )
+
+  new_data <- design@data
+  new_data[SURVEYCORE_DOMAIN_COL] <- list(value)
+  design@data <- new_data
+  design
+}
+
+# ------------------------------------------------------------------------------
+# make_domain_pair()
+# ------------------------------------------------------------------------------
+
+#' Build a pair of designs that differ only in how the marker records NA
+#'
+#' Returns two designs built from one data frame and one marker vector:
+#'
+#' - `a` carries a marker column holding at least one `NA`;
+#' - `b` carries the same marker with every `NA` written as `FALSE`;
+#' - `mask` is the resolved logical vector `b` carries, with no `NA`.
+#'
+#' The pair exists so a test can assert that `a` and `b` give identical
+#' numbers. `.apply_domain()` resolves an `NA` marker to `FALSE`, so the two
+#' designs name the same in-domain rows and every analysis function must agree
+#' on them.
+#'
+#' The `"twophase"` variant places at least one `TRUE` marker row outside
+#' phase 2, so a test can tell a domain restriction apart from the phase-2
+#' subset.
+#'
+#' @param class One of "taylor", "replicate", "twophase", "nonprob". The
+#'   concrete class both designs carry.
+#' @param seed  Random seed passed to `make_survey_data()`. Default 42.
+#' @return A list of three: `a`, `b` and `mask`.
+#' @keywords internal
+make_domain_pair <- function(
+  class = c("taylor", "replicate", "twophase", "nonprob"),
+  seed = 42L
+) {
+  class <- match.arg(class)
+
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = switch(
+      class,
+      taylor = "taylor",
+      nonprob = "taylor",
+      replicate = "replicate",
+      twophase = "twophase"
+    ),
+    type = "brr",
+    seed = seed
+  )
+
+  design <- switch(
+    class,
+    taylor = as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    ),
+    replicate = as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(grep("^repwt_", names(df), value = TRUE)),
+      type = "BRR"
+    ),
+    twophase = as_survey_twophase(
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      ),
+      subset = subset,
+      method = "approx"
+    ),
+    nonprob = as_survey_nonprob(df, weights = wt)
+  )
+
+  n <- nrow(design@data)
+
+  # Every fourth row is out of domain; three scattered rows hold NA.
+  stored <- rep(TRUE, n)
+  stored[seq(2L, n, by = 4L)] <- FALSE
+  na_rows <- c(3L, 47L, 130L)
+  stored[na_rows] <- NA
+
+  # The two-phase fixture must mark at least one row that phase 2 excludes,
+  # so a test can tell the domain restriction apart from the subset.
+  if (class == "twophase") {
+    outside_phase2 <- setdiff(which(!design@data$subset), na_rows)
+    stored[outside_phase2[1L]] <- TRUE
+  }
+
+  resolved <- stored
+  resolved[is.na(resolved)] <- FALSE
+
+  list(
+    a = set_domain_marker(design, "logical", mask = stored),
+    b = set_domain_marker(design, "logical", mask = resolved),
+    mask = resolved
+  )
+}
+
+# ------------------------------------------------------------------------------
 # make_na_group_design()
 # ------------------------------------------------------------------------------
 
@@ -872,6 +1468,32 @@ test_glm_tidy_invariants <- function(result) {
   df[["..surveycore_domain.."]] <- value
   new_design <- S7::set_props(fit@design, data = df)
   S7::set_props(fit, design = new_design)
+}
+
+# ------------------------------------------------------------------------------
+# .testhelper_mark_domain()
+# ------------------------------------------------------------------------------
+
+#' Mark domain membership on a design without surveytidy
+#'
+#' Test-only helper. Writes the `..surveycore_domain..` column that
+#' `surveytidy::filter()` writes, so domain-estimation tests run where
+#' surveytidy is not installed (it is not on CRAN). Rows stay in `@data`;
+#' rows with `keep = FALSE` fall outside the active domain.
+#'
+#' @param design A survey design object with no existing domain column.
+#' @param keep Logical vector of length `nrow(design@data)` with no `NA` —
+#'   `TRUE` for rows inside the domain.
+#' @return `design` with `@data$..surveycore_domain..` set to `keep`.
+#' @keywords internal
+.testhelper_mark_domain <- function(design, keep) {
+  stopifnot(
+    is.logical(keep),
+    length(keep) == nrow(design@data),
+    !anyNA(keep)
+  )
+  design@data[["..surveycore_domain.."]] <- keep
+  design
 }
 
 # ------------------------------------------------------------------------------

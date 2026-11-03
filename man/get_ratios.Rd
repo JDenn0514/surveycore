@@ -108,6 +108,11 @@ are non-NA.
 Numerator and denominator variable names are stored in \code{meta(result)}, not
 as output columns. Use \code{meta(result)$numerator} and
 \code{meta(result)$denominator} to access them.
+
+On a Taylor or replicate design (including a \code{survey_nonprob} design with
+replicate weights), the result also stores the joint covariance matrix of
+its estimates, covering every pair of rows. Read it with \code{vcov(result)}; see
+\code{\link[=vcov.survey_result]{vcov.survey_result()}}.
 }
 \description{
 Estimate the ratio of two survey-weighted totals (numerator / denominator)
@@ -132,21 +137,21 @@ get_ratios(d, pray, attendper, group = gender)
 get_ratios(d, pray, attendper, variance = c("ci", "moe"), n_weighted = TRUE)
 }
 \seealso{
-Other analysis: 
-\code{\link{SE}()},
-\code{\link{clean}()},
-\code{\link{get_anova}()},
-\code{\link{get_corr}()},
-\code{\link{get_covariance}()},
-\code{\link{get_diffs}()},
-\code{\link{get_effective_n}()},
-\code{\link{get_freqs}()},
-\code{\link{get_means}()},
-\code{\link{get_pairwise}()},
-\code{\link{get_quantiles}()},
-\code{\link{get_t_test}()},
-\code{\link{get_totals}()},
-\code{\link{get_variance}()},
-\code{\link{meta}()}
+Other analysis:
+\code{\link[=SE]{SE()}},
+\code{\link[=clean]{clean()}},
+\code{\link[=get_anova]{get_anova()}},
+\code{\link[=get_corr]{get_corr()}},
+\code{\link[=get_covariance]{get_covariance()}},
+\code{\link[=get_diffs]{get_diffs()}},
+\code{\link[=get_effective_n]{get_effective_n()}},
+\code{\link[=get_freqs]{get_freqs()}},
+\code{\link[=get_means]{get_means()}},
+\code{\link[=get_pairwise]{get_pairwise()}},
+\code{\link[=get_quantiles]{get_quantiles()}},
+\code{\link[=get_t_test]{get_t_test()}},
+\code{\link[=get_totals]{get_totals()}},
+\code{\link[=get_variance]{get_variance()}},
+\code{\link[=meta]{meta()}}
 }
 \concept{analysis}

@@ -126,8 +126,11 @@ Required sections:
   `expect_snapshot(error = TRUE)` (dual pattern from `testing-surveycore.md §Layer 3`)
 - S7 validator errors (Layer 1) get `expect_error(class = ...)` ONLY — no snapshot
 - Every edge case in the spec gets a test row
-- `test_invariants(obj)` is the first assertion for every test that constructs
-  a `survey_taylor`, `survey_replicate`, or `survey_twophase` object
+- `test_invariants(obj)` runs once per constructor per test FILE — in the
+  first block that builds with `as_survey()`, `as_survey_rep()`,
+  `as_survey_twophase()` or `as_survey_nonprob()`, not in every such block
+- A row runs in both input modes only where the mode changes what it asserts
+  (`rules/testing-surveycore.md` §both-modes rule)
 - Every numerical oracle test cites the oracle function (e.g., `survey::svymean`)
   and states the tolerance
 - If `comprehension.md` exists: every gotcha listed there gets a test row or

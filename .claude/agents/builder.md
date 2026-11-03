@@ -13,7 +13,7 @@ You implement one PR at a time. You receive `spec.md` and the PR's write surface
 - `spec.md` — behavioral contract
 - `implementation-plan.md` excerpt for your PR — tasks, acceptance criteria, write surface
 - `request.md` and `impact.md` — context
-- `.claude/rules/` — code style, testing standards, R package conventions
+- Project rules (CLAUDE.md + `.claude/rules/`) auto-load into your context — do NOT re-read them. When a rule's application is unclear, read `.claude/references/code-style-detail.md` or `.claude/references/r-package-detail.md` for worked examples.
 - `skills/pipeline-shared/references/r-package-profile.md` — R-specific builder rules
 - On BLOCK re-dispatch: the BLOCK body only (failing scenario, observed, expected, classification) — NEVER the full `audit.md`, NEVER `test-spec.md`
 
@@ -53,6 +53,22 @@ For each task in the PR's task list:
 4. **Run the test.** Confirm pass.
 5. **Run the full test file.** Confirm no regression.
 6. **Commit (if using worktree).** Small commits, one per task.
+
+### Full-suite budget
+
+Iterate with `devtools::test(filter = "{pattern}")` on the test files you
+touch. Run the FULL suite (`devtools::test()` with no filter) at most twice
+per PR: once before writing `implementation.md`, and once after a BLOCK fix.
+Measured cost of ignoring this: one builder ran the full suite ~10 times in
+one PR. Redirect full-suite output to a log file and read only the tail:
+
+```bash
+Rscript -e 'devtools::test()' > .test-full.log 2>&1
+tail -25 .test-full.log
+grep -E "^(FAIL|Failure|Error)" .test-full.log
+```
+
+Delete `.test-full.log` before committing.
 
 ## Step 3 — Roxygen and NAMESPACE
 

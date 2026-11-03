@@ -45,7 +45,8 @@
 #                survey_nonprob without repweights).
 # @param y_col   Character: name of the numeric variable column.
 # @param domain  Numeric 0/1 vector (full length): 1 = in domain and non-NA.
-# @return Named list: mean, se, df (Taylor only), se_srs, n, n_weighted.
+# @return Named list: mean, se, df (Taylor only), se_srs, n, n_weighted,
+#   joint (see .joint_vcov()).
 .taylor_mean_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -62,7 +63,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -93,7 +95,8 @@
   se <- sqrt(max(0, v[1L, 1L]))
 
   # Calibration-adjusted degrees of freedom
-  df_design <- max(1L, .degf_taylor(data, vars))
+  # df over the cell's rows, not the full design (issue #326)
+  df_design <- max(1L, .degf_taylor(data[domain > 0, , drop = FALSE], vars))
   df_final <- df_design - cal_df_reduction
   if (df_final <= 0L) {
     cli::cli_warn(
@@ -126,7 +129,8 @@
     se_srs = se_srs,
     n = n_d,
     n_weighted = N_d,
-    df = df_final
+    df = df_final,
+    joint = .joint_infl(infl_mat)
   )
 }
 
@@ -138,7 +142,8 @@
 # @param design  A survey_replicate object.
 # @param y_col   Character: variable name.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: mean, se, se_srs, n, n_weighted.
+# @return Named list: mean, se, se_srs, n, n_weighted, joint (see
+#   .joint_vcov()).
 .replicate_mean_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -156,7 +161,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -182,7 +188,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = n_d,
-      n_weighted = N_d
+      n_weighted = N_d,
+      joint = .joint_na()
     ))
   }
 
@@ -204,7 +211,14 @@
     0
   }
 
-  list(mean = ybar, se = se, se_srs = se_srs, n = n_d, n_weighted = N_d)
+  list(
+    mean = ybar,
+    se = se,
+    se_srs = se_srs,
+    n = n_d,
+    n_weighted = N_d,
+    joint = .joint_rep(rep_p, ybar)
+  )
 }
 
 
@@ -317,8 +331,15 @@
     ))
   }
 
-  # HT Taylor linearization: n/(n-1) * sum(z_i^2), z_i = w_i*(y_i-ybar)/N_hat
-  var_ybar <- (n_d / (n_d - 1L)) * sum(w_sub^2 * (y_sub - ybar)^2) / N_d^2
+  # HT Taylor linearization: n/(n-1) * sum(z_i^2), z_i = w_i*(y_i-ybar)/N_hat.
+  # n is the FULL sample size, never the domain size. survey keeps each
+  # retained row's recorded stratum sample size when a design is subset, so
+  # survey::svydesign(ids = ~1) takes this factor from the full sample on a
+  # domain too, and .taylor_mean_cell() agrees. Taking it from the domain
+  # inflated every domain SE by sqrt((n_d/(n_d-1)) / (n/(n-1))): 1.3% on a
+  # domain of 20 of 40 rows, 10.4% on a domain of 5 of 40.
+  n_full <- nrow(data)
+  var_ybar <- (n_full / (n_full - 1L)) * sum(w_sub^2 * (y_sub - ybar)^2) / N_d^2
   se <- sqrt(max(0, var_ybar))
 
   # SRS-equivalent SE for deff

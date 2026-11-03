@@ -37,15 +37,43 @@ without replicate weights and \code{survey_twophase} designs raise
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Two or more unquoted
 variable names. For \code{method = "pearson"}, non-numeric columns are dropped
-with a warning. For \code{method = "polychoric"}, every selected column must
-classify as ordinal (ordered factor, unordered factor, or integer with
-\verb{<= 10} distinct values) — non-ordinal columns raise
-\code{surveycore_error_polychoric_requires_ordinal}. For
-\code{method = "polyserial"}, each pair is canonicalized by type (one ordinal
+with a warning.
+
+For \code{method = "polychoric"}, every selected column must classify as
+ordinal — an ordered factor, an unordered factor, or a numeric column
+whose values are all whole numbers, none of them infinite, with 1 to 10
+distinct values. Non-ordinal columns raise
+\code{surveycore_error_polychoric_requires_ordinal}. Missing values do not
+count: \code{NA} and \code{NaN} are removed before the distinct values are counted.
+
+A numeric column with no non-missing value at all is not ordinal, and it
+raises the same error. A factor or ordered column declares its levels, so
+it stays ordinal even when every value is missing; a bare numeric column
+has only its values to go on, and an empty one shows no scale. An all-\code{NA}
+factor pair returns an \code{r} of \code{NA} and an \code{n} of \code{0}.
+
+A numeric column with few distinct whole values is treated as a scale.
+This is what makes the method work on a value-labelled column read from
+an SPSS, Stata or SAS file, where every coded scale arrives as a numeric
+column. It also means a coarse measurement in whole units is accepted as
+ordinal: three distinct values of \code{1000}, \code{2000} and \code{3000} are read as a
+three-point scale, not as income in whole dollars. Two consequences to
+check before you call it:
 \itemize{
-\item one continuous); logical / character / high-cardinality integer
-columns raise \code{surveycore_error_polyserial_canonicalization_ambiguous}.
-}}
+\item Recode in-band missing codes to \code{NA} first. A four-point scale that
+still carries \code{8} for "Don't know" and \code{9} for "Refused" is read as a
+six-category scale, and the two codes become the top two categories.
+\item Use \code{method = "pearson"} for a genuine count with few values, such as
+the number of people in a household.
+}
+
+For \code{method = "polyserial"}, each pair is canonicalized by type: one
+ordinal column and one continuous column. A pair of ordinal columns —
+including two numeric columns that both meet the rule above — raises
+\code{surveycore_error_polyserial_requires_mixed_types}; use
+\code{method = "polychoric"} for that pair. Logical, character and
+high-cardinality integer columns raise
+\code{surveycore_error_polyserial_canonicalization_ambiguous}.}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Combined with any grouping set by \code{group_by()}. Default
@@ -257,21 +285,21 @@ Olsson, U. (1979). Maximum likelihood estimation of the polychoric
 correlation coefficient. \emph{Psychometrika}, 44(4), 443-460.
 }
 \seealso{
-Other analysis: 
-\code{\link{SE}()},
-\code{\link{clean}()},
-\code{\link{get_anova}()},
-\code{\link{get_covariance}()},
-\code{\link{get_diffs}()},
-\code{\link{get_effective_n}()},
-\code{\link{get_freqs}()},
-\code{\link{get_means}()},
-\code{\link{get_pairwise}()},
-\code{\link{get_quantiles}()},
-\code{\link{get_ratios}()},
-\code{\link{get_t_test}()},
-\code{\link{get_totals}()},
-\code{\link{get_variance}()},
-\code{\link{meta}()}
+Other analysis:
+\code{\link[=SE]{SE()}},
+\code{\link[=clean]{clean()}},
+\code{\link[=get_anova]{get_anova()}},
+\code{\link[=get_covariance]{get_covariance()}},
+\code{\link[=get_diffs]{get_diffs()}},
+\code{\link[=get_effective_n]{get_effective_n()}},
+\code{\link[=get_freqs]{get_freqs()}},
+\code{\link[=get_means]{get_means()}},
+\code{\link[=get_pairwise]{get_pairwise()}},
+\code{\link[=get_quantiles]{get_quantiles()}},
+\code{\link[=get_ratios]{get_ratios()}},
+\code{\link[=get_t_test]{get_t_test()}},
+\code{\link[=get_totals]{get_totals()}},
+\code{\link[=get_variance]{get_variance()}},
+\code{\link[=meta]{meta()}}
 }
 \concept{analysis}

@@ -9,13 +9,15 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
+  var_extra = list(),
   universe = list(),
   missing_codes = list(),
   sata = list(),
   higher_is = list(),
   reverse_coded = list(),
   transformations = list(),
-  weighting_history = list()
+  weighting_history = list(),
+  dataset_metadata = list()
 )
 }
 \arguments{
@@ -29,6 +31,12 @@ of value labels (e.g., \code{list(sex = c(Male = 1L, Female = 2L))}).}
 question battery preface text.}
 
 \item{notes}{A named list mapping variable names to analyst notes.}
+
+\item{var_extra}{A named list mapping variable names to a pass-through
+extension payload — itself a named list, or \code{NULL}. surveycore never
+inspects, type-checks, or acts on the payload's values; it stores and
+returns them as-is. Use \code{\link[=set_var_extra]{set_var_extra()}} and \code{\link[=extract_var_extra]{extract_var_extra()}} to
+access this property. Default \code{list()}.}
 
 \item{universe}{A named list mapping variable names to universe
 descriptions (e.g., \code{list(age = "Adults 18+")}). Describes the
@@ -61,6 +69,28 @@ a \pkg{surveywts} function and contains the operation name,
 parameters, effective sample size before/after, and design effect.
 Always \code{list()} until a \pkg{surveywts} weighting function is
 applied. Reserved for Phase 2.5.}
+
+\item{dataset_metadata}{A named list of whole-dataset facts. The key
+vocabulary is \strong{closed} — exactly six keys are valid, each with a
+declared type:
+\itemize{
+\item \code{survey_name} — \code{character(1)}, the full formal survey name.
+\item \code{data_name} — \code{character(1)}, the display label for this dataset.
+\item \code{vendor} — \code{character(1)}, the fielding vendor.
+\item \code{field_start} — \code{Date} of length 1, the first day in the field.
+\item \code{field_end} — \code{Date} of length 1, the last day in the field.
+\item \code{field_period} — \code{character(1)}, the prose field period.
+}
+
+No value may be \code{NA} and no element may be \code{NULL}. Any other key is
+rejected. \code{survey_name} and \code{data_name} are independent: no function
+derives one from the other. Use \code{\link[=set_dataset_metadata]{set_dataset_metadata()}} to write keys
+and \code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}} to read them; the default is \code{list()}.
+Each key also has a convenience pair: \code{\link[=set_survey_name]{set_survey_name()}},
+\code{\link[=set_data_name]{set_data_name()}}, \code{\link[=set_vendor]{set_vendor()}}, \code{\link[=set_field_dates]{set_field_dates()}},
+\code{\link[=set_field_period]{set_field_period()}}, and the matching \code{\link[=extract_survey_name]{extract_survey_name()}},
+\code{\link[=extract_data_name]{extract_data_name()}}, \code{\link[=extract_vendor]{extract_vendor()}}, \code{\link[=extract_field_dates]{extract_field_dates()}},
+\code{\link[=extract_field_period]{extract_field_period()}}.}
 }
 \value{
 A \code{survey_metadata} object.
@@ -83,30 +113,48 @@ m <- survey_metadata(
 )
 m@variable_labels$age
 m@value_labels$sex
+
+# Dataset-level metadata (closed six-key vocabulary)
+m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+m@dataset_metadata$vendor
 }
 \seealso{
-Other metadata: 
-\code{\link{classify_question_type}()},
-\code{\link{extract_higher_is}()},
-\code{\link{extract_metadata}()},
-\code{\link{extract_missing_codes}()},
-\code{\link{extract_question_preface}()},
-\code{\link{extract_reverse_coded}()},
-\code{\link{extract_sata}()},
-\code{\link{extract_universe}()},
-\code{\link{extract_val_labels}()},
-\code{\link{extract_var_label}()},
-\code{\link{extract_var_note}()},
-\code{\link{infer_question_prefaces}()},
-\code{\link{set_higher_is}()},
-\code{\link{set_missing_codes}()},
-\code{\link{set_question_preface}()},
-\code{\link{set_reverse_coded}()},
-\code{\link{set_sata}()},
-\code{\link{set_universe}()},
-\code{\link{set_val_labels}()},
-\code{\link{set_var_label}()},
-\code{\link{set_var_note}()},
-\code{\link{survey_weighting_history}()}
+Other metadata:
+\code{\link[=classify_question_type]{classify_question_type()}},
+\code{\link[=extract_data_name]{extract_data_name()}},
+\code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
+\code{\link[=extract_field_dates]{extract_field_dates()}},
+\code{\link[=extract_field_period]{extract_field_period()}},
+\code{\link[=extract_higher_is]{extract_higher_is()}},
+\code{\link[=extract_metadata]{extract_metadata()}},
+\code{\link[=extract_missing_codes]{extract_missing_codes()}},
+\code{\link[=extract_question_preface]{extract_question_preface()}},
+\code{\link[=extract_reverse_coded]{extract_reverse_coded()}},
+\code{\link[=extract_sata]{extract_sata()}},
+\code{\link[=extract_survey_name]{extract_survey_name()}},
+\code{\link[=extract_universe]{extract_universe()}},
+\code{\link[=extract_val_labels]{extract_val_labels()}},
+\code{\link[=extract_var_extra]{extract_var_extra()}},
+\code{\link[=extract_var_label]{extract_var_label()}},
+\code{\link[=extract_var_note]{extract_var_note()}},
+\code{\link[=extract_vendor]{extract_vendor()}},
+\code{\link[=infer_question_prefaces]{infer_question_prefaces()}},
+\code{\link[=set_data_name]{set_data_name()}},
+\code{\link[=set_dataset_metadata]{set_dataset_metadata()}},
+\code{\link[=set_field_dates]{set_field_dates()}},
+\code{\link[=set_field_period]{set_field_period()}},
+\code{\link[=set_higher_is]{set_higher_is()}},
+\code{\link[=set_missing_codes]{set_missing_codes()}},
+\code{\link[=set_question_preface]{set_question_preface()}},
+\code{\link[=set_reverse_coded]{set_reverse_coded()}},
+\code{\link[=set_sata]{set_sata()}},
+\code{\link[=set_survey_name]{set_survey_name()}},
+\code{\link[=set_universe]{set_universe()}},
+\code{\link[=set_val_labels]{set_val_labels()}},
+\code{\link[=set_var_extra]{set_var_extra()}},
+\code{\link[=set_var_label]{set_var_label()}},
+\code{\link[=set_var_note]{set_var_note()}},
+\code{\link[=set_vendor]{set_vendor()}},
+\code{\link[=survey_weighting_history]{survey_weighting_history()}}
 }
 \concept{metadata}

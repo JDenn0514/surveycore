@@ -93,14 +93,21 @@ A \code{survey_means} tibble (also inheriting \code{survey_result}). Columns:
 \code{deff}) — only those requested via \code{variance}.
 \item \code{df} — degrees of freedom used for CI calculation. Present only for
 \code{survey_taylor} designs with an active \verb{@calibration} object
-(GREG-corrected SE). For all other designs the normal approximation
-(\code{Inf}) is used and \code{df} is not included.
+(GREG-corrected SE); counts only the PSUs and strata holding a row in
+the cell. For all other designs the normal approximation
+(\code{Inf}) is used and \code{df} is not included. \code{confint()} on the result
+uses the same df, so it reproduces \code{ci_low} and \code{ci_high}.
 \item \code{n} — unweighted count of non-NA observations used in the estimate.
 \item \code{n_weighted} — sum of weights (only when requested).
 }
 The variable name is stored in \code{meta(result)$x}, not as a column.
 Use \code{meta(result)} to access design type, variable labels, and other
 metadata.
+
+On a Taylor or replicate design (including a \code{survey_nonprob} design with
+replicate weights), the result also stores the joint covariance matrix of
+its estimates, covering every pair of rows. Read it with \code{vcov(result)}; see
+\code{\link[=vcov.survey_result]{vcov.survey_result()}}.
 }
 \description{
 Compute the weighted mean of a single numeric variable in a survey design,
@@ -124,21 +131,21 @@ get_means(d, ridageyr, group = riagendr)
 get_means(d, ridageyr, variance = c("ci", "moe"), n_weighted = TRUE)
 }
 \seealso{
-Other analysis: 
-\code{\link{SE}()},
-\code{\link{clean}()},
-\code{\link{get_anova}()},
-\code{\link{get_corr}()},
-\code{\link{get_covariance}()},
-\code{\link{get_diffs}()},
-\code{\link{get_effective_n}()},
-\code{\link{get_freqs}()},
-\code{\link{get_pairwise}()},
-\code{\link{get_quantiles}()},
-\code{\link{get_ratios}()},
-\code{\link{get_t_test}()},
-\code{\link{get_totals}()},
-\code{\link{get_variance}()},
-\code{\link{meta}()}
+Other analysis:
+\code{\link[=SE]{SE()}},
+\code{\link[=clean]{clean()}},
+\code{\link[=get_anova]{get_anova()}},
+\code{\link[=get_corr]{get_corr()}},
+\code{\link[=get_covariance]{get_covariance()}},
+\code{\link[=get_diffs]{get_diffs()}},
+\code{\link[=get_effective_n]{get_effective_n()}},
+\code{\link[=get_freqs]{get_freqs()}},
+\code{\link[=get_pairwise]{get_pairwise()}},
+\code{\link[=get_quantiles]{get_quantiles()}},
+\code{\link[=get_ratios]{get_ratios()}},
+\code{\link[=get_t_test]{get_t_test()}},
+\code{\link[=get_totals]{get_totals()}},
+\code{\link[=get_variance]{get_variance()}},
+\code{\link[=meta]{meta()}}
 }
 \concept{analysis}

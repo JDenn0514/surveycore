@@ -27,7 +27,8 @@ make_design <- function() {
       strata = NULL,
       fpc = NULL,
       nest = FALSE,
-      probs_provided = FALSE
+      probs_provided = FALSE,
+      visible_vars = NULL
     )
   )
 }
@@ -528,6 +529,168 @@ test_that("extract_missing_codes() data frame: reads attr(df[[var]], 'missing_co
   attr(df$q5, "missing_codes") <- c("Refused" = 99L, "DK" = 98L)
   result <- extract_missing_codes(df, q5)
   expect_identical(result, list(q5 = c("Refused" = 99L, "DK" = 98L)))
+})
+
+
+# ── extract_var_extra() ───────────────────────────────────────────────────────
+
+test_that("extract_var_extra() format = 'list' (default) returns the stored payload", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  result <- extract_var_extra(d, age)
+  expect_identical(result, list(age = list(role = "demographic")))
+})
+
+test_that("extract_var_extra() default selection omits variables with no payload", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  result <- extract_var_extra(d)
+  expect_named(result, "age")
+})
+
+test_that("extract_var_extra() fill = NA_character_ includes unset variables as NULL", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  result <- extract_var_extra(d, age, income, fill = NA_character_)
+  expect_named(result, c("age", "income"))
+  expect_null(result$income)
+})
+
+test_that("extract_var_extra() round-trips a deeply nested payload unchanged", {
+  d <- make_design()
+  payload <- list(
+    role = "demographic",
+    tags = list(1:3, "x", list(nested = TRUE))
+  )
+  d <- set_var_extra(d, age = payload)
+  result <- extract_var_extra(d, age, format = "list")
+  expect_identical(result$age, payload)
+})
+
+test_that("extract_var_extra() format = 'data_frame' returns one row per key", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic", note = "top-coded"))
+  result <- extract_var_extra(d, age, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "key", "value"))
+  expect_identical(nrow(result), 2L)
+  expect_setequal(result$key, c("role", "note"))
+})
+
+test_that("extract_var_extra() format = 'data_frame': list() payload contributes zero rows", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list())
+  result <- extract_var_extra(d, age, format = "data_frame")
+  expect_identical(nrow(result), 0L)
+  expect_named(result, c("variable", "key", "value"))
+})
+
+test_that("extract_var_extra() format = 'data_frame': no payloads gives a typed zero-row tibble", {
+  d <- make_design()
+  result <- extract_var_extra(d, format = "data_frame")
+  expect_identical(nrow(result), 0L)
+  expect_named(result, c("variable", "key", "value"))
+})
+
+test_that("extract_var_extra() data_frame value column preserves nested/NULL values unchanged", {
+  d <- make_design()
+  d <- set_var_extra(
+    d,
+    age = list(role = "demographic", note = NULL, tags = list("a", "b"))
+  )
+  result <- extract_var_extra(d, age, format = "data_frame")
+  value_by_key <- stats::setNames(result$value, result$key)
+  expect_identical(value_by_key$role, "demographic")
+  expect_null(value_by_key$note)
+  expect_identical(value_by_key$tags, list("a", "b"))
+})
+
+test_that("extract_var_extra() data frame mode reads the 'var_extra' attribute", {
+  df <- data.frame(age = 1:3)
+  df <- set_var_extra(df, age = list(role = "demographic"))
+  result <- extract_var_extra(df, age)
+  expect_identical(result, list(age = list(role = "demographic")))
+})
+
+test_that("extract_var_extra() any_of() silently skips missing variable names", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  result <- extract_var_extra(d, tidyselect::any_of(c("age", "zzz_missing")))
+  expect_named(result, "age")
+})
+
+test_that("extract_var_extra() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    extract_var_extra(list(x = 1), age),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("extract_var_extra() errors with surveycore_error_format_invalid for 'named_vector'", {
+  d <- make_design()
+  expect_error(
+    extract_var_extra(d, age, format = "named_vector"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_var_extra() errors with surveycore_error_format_invalid for an arbitrary string", {
+  d <- make_design()
+  expect_error(
+    extract_var_extra(d, age, format = "something_invalid"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_var_extra() errors with surveycore_error_fill_invalid for fill = TRUE", {
+  d <- make_design()
+  expect_error(
+    extract_var_extra(d, age, fill = TRUE),
+    class = "surveycore_error_fill_invalid"
+  )
+})
+
+test_that("extract_var_extra() works on the smallest constructible design (n = 2)", {
+  df <- make_survey_data(n = 2L, n_psu = 2L, n_strata = 1L, seed = 1)
+  d <- as_survey(df, weights = wt)
+  d <- set_var_extra(d, y1 = list(role = "demographic"))
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "demographic")))
+})
+
+test_that("extract_var_extra() is unaffected by an all-NA data column", {
+  d <- make_design()
+  d@data$age <- NA_integer_
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  expect_identical(extract_var_extra(d, age), list(age = list(role = "demographic")))
+})
+
+test_that("extract_var_extra() distinguishes list() payload from a never-set variable", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list())
+  result <- extract_var_extra(d, age, income, format = "list")
+  expect_true("age" %in% names(result))
+  expect_identical(result$age, list())
+  expect_false("income" %in% names(result))
+})
+
+test_that("extract_var_extra() works directly on a survey_replicate object", {
+  df <- make_survey_data(design = "replicate", seed = 1)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "BRR"
+  )
+  d <- set_var_extra(d, y1 = list(role = "outcome"))
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "outcome")))
+})
+
+test_that("extract_var_extra() works directly on a survey_twophase object", {
+  df <- make_survey_data(design = "twophase", seed = 1)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  d <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  d <- set_var_extra(d, y1 = list(role = "outcome"))
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "outcome")))
 })
 
 
@@ -1668,6 +1831,432 @@ test_that("snapshot: set_missing_codes() surveycore_warning_setter_empty_variabl
 })
 
 
+# ── set_var_extra() ───────────────────────────────────────────────────────────
+
+test_that("set_var_extra() convention 1 sets payload for one variable", {
+  d <- make_design()
+  test_invariants(d)
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that("set_var_extra() convention 1 sets payloads for multiple variables", {
+  d <- make_design()
+  d <- set_var_extra(
+    d,
+    age = list(role = "demographic"),
+    income = list(role = "economic")
+  )
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+  expect_identical(d@metadata@var_extra[["income"]], list(role = "economic"))
+})
+
+test_that("set_var_extra() convention 2 (single unnamed named list) sets payloads", {
+  d <- make_design()
+  d <- set_var_extra(
+    d,
+    list(age = list(role = "demographic"), income = list(role = "economic"))
+  )
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+  expect_identical(d@metadata@var_extra[["income"]], list(role = "economic"))
+})
+
+test_that("set_var_extra() convention 3 (single variable, wrapped) sets payload", {
+  d <- make_design()
+  d <- set_var_extra(
+    d,
+    variable = "age",
+    extra = list(list(role = "demographic"))
+  )
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that("set_var_extra() convention 3 (multiple variables) sets each payload positionally", {
+  d <- make_design()
+  d <- set_var_extra(
+    d,
+    variable = c("age", "income"),
+    extra = list(list(role = "demographic"), list(role = "economic"))
+  )
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+  expect_identical(d@metadata@var_extra[["income"]], list(role = "economic"))
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_not_list for a bare character string", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, age = "free_text"),
+    class = "surveycore_error_var_extra_not_list"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_not_list for a bare numeric vector", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, age = 42),
+    class = "surveycore_error_var_extra_not_list"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_not_list for a bare named atomic vector", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, age = c(role = "x")),
+    class = "surveycore_error_var_extra_not_list"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_not_list for unnamed top-level elements", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, age = list("free_text", 3)),
+    class = "surveycore_error_var_extra_not_list"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_not_list for a duplicated top-level name", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, age = list(role = "a", role = "b")),
+    class = "surveycore_error_var_extra_not_list"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_not_list for an empty-string top-level name", {
+  d <- make_design()
+  bad <- list(role = "x", 2)
+  names(bad) <- c("role", "")
+  expect_error(
+    set_var_extra(d, age = bad),
+    class = "surveycore_error_var_extra_not_list"
+  )
+})
+
+test_that("set_var_extra() accepts an empty list() payload", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list())
+  expect_true("age" %in% names(d@metadata@var_extra))
+  expect_identical(d@metadata@var_extra[["age"]], list())
+})
+
+test_that("set_var_extra() accepts a payload whose value is itself an unnamed list", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "free_text", tags = list("a", "b")))
+  expect_identical(
+    d@metadata@var_extra[["age"]],
+    list(role = "free_text", tags = list("a", "b"))
+  )
+})
+
+test_that("set_var_extra() accepts an unusual-type top-level value (function, data frame, NA)", {
+  d <- make_design()
+  payload <- list(role = "free_text", checker = mean, frame = data.frame(x = 1), flag = NA)
+  d <- set_var_extra(d, age = payload)
+  expect_identical(d@metadata@var_extra[["age"]], payload)
+})
+
+test_that("set_var_extra() errors with surveycore_error_var_extra_ambiguous_wrap for an un-wrapped single-variable payload", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, variable = "age", extra = list(role = "demographic")),
+    class = "surveycore_error_var_extra_ambiguous_wrap"
+  )
+})
+
+test_that("set_var_extra() does not false-positive the ambiguous-wrap guard on a correctly wrapped payload", {
+  d <- make_design()
+  d <- set_var_extra(d, variable = "age", extra = list(list(role = "demographic")))
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that("set_var_extra() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    set_var_extra(list(x = 1), age = list(role = "x")),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, age = list(role = "x"), variable = "income"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, variable = c("age", "income"), extra = list(list(role = "x"))),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_var_extra() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_var_extra(d, list(role = "x"), age = list(role = "y")),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_var_extra() warns with surveycore_warning_var_not_found for a missing variable", {
+  d <- make_design()
+  expect_warning(
+    result <- set_var_extra(d, zzz_missing = list(role = "x")),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_false("zzz_missing" %in% names(result@metadata@var_extra))
+})
+
+test_that("set_var_extra() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    result <- set_var_extra(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+  expect_identical(result@metadata@var_extra, d@metadata@var_extra)
+})
+
+test_that("set_var_extra() skips a missing variable but still sets a valid present one", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_var_extra(d, age = list(role = "x"), zzz_missing = list(role = "y"))
+  )
+  expect_identical(result@metadata@var_extra[["age"]], list(role = "x"))
+  expect_false("zzz_missing" %in% names(result@metadata@var_extra))
+})
+
+test_that("set_var_extra() only warns var_not_found when an absent variable's payload would also be invalid", {
+  d <- make_design()
+  expect_warning(
+    result <- set_var_extra(
+      d,
+      income = list(role = "x"),
+      zzz_missing = "not a list"
+    ),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_identical(result@metadata@var_extra[["income"]], list(role = "x"))
+  expect_false("zzz_missing" %in% names(result@metadata@var_extra))
+})
+
+test_that("set_var_extra() aborts on the first invalid payload (convention 1) leaving x untouched", {
+  d <- make_design()
+  d_before <- d
+  expect_error(
+    set_var_extra(d, age = "bad", income = "also bad"),
+    class = "surveycore_error_var_extra_not_list"
+  )
+  expect_identical(d, d_before)
+})
+
+test_that("set_var_extra() aborts on the first invalid payload (convention 2) in list order", {
+  d <- make_design()
+  d_before <- d
+  expect_error(
+    set_var_extra(d, list(age = "bad", income = "also bad")),
+    class = "surveycore_error_var_extra_not_list"
+  )
+  expect_identical(d, d_before)
+})
+
+test_that("set_var_extra() succeeds on the smallest constructible design (n = 2)", {
+  df <- make_survey_data(n = 2L, n_psu = 2L, n_strata = 1L, seed = 1)
+  d <- as_survey(df, weights = wt)
+  d <- set_var_extra(d, y1 = list(role = "demographic"))
+  expect_identical(d@metadata@var_extra[["y1"]], list(role = "demographic"))
+})
+
+test_that("set_var_extra() data frame: sets attr(df$age, 'var_extra') for a single-row frame", {
+  df <- data.frame(age = 30L)
+  df2 <- set_var_extra(df, age = list(role = "demographic"))
+  expect_identical(attr(df2$age, "var_extra"), list(role = "demographic"))
+})
+
+test_that("set_var_extra() data frame: sets attr(df[[var]], 'var_extra') generally", {
+  df <- data.frame(age = 1:5, income = 5:1)
+  df2 <- set_var_extra(df, age = list(role = "demographic"))
+  expect_identical(attr(df2$age, "var_extra"), list(role = "demographic"))
+  expect_null(attr(df2$income, "var_extra"))
+})
+
+test_that("set_var_extra() is unaffected by an all-NA target column", {
+  d <- make_design()
+  d@data$age <- NA_integer_
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that("set_var_extra() accepts the internal sentinel column name '..surveycore_wt..'", {
+  d <- make_design()
+  d@data[["..surveycore_wt.."]] <- d@data$wt
+  d <- set_var_extra(d, `..surveycore_wt..` = list(role = "sentinel"))
+  expect_identical(
+    d@metadata@var_extra[["..surveycore_wt.."]],
+    list(role = "sentinel")
+  )
+})
+
+test_that("set_var_extra() accepts a design-variable name without altering the design variable", {
+  d <- make_design()
+  wt_before <- d@data$wt
+  d <- set_var_extra(d, wt = list(role = "weight"))
+  expect_identical(d@metadata@var_extra[["wt"]], list(role = "weight"))
+  expect_identical(d@data$wt, wt_before)
+  expect_identical(d@variables$weights, "wt")
+})
+
+test_that("set_var_extra() sets a payload for every column in one call with no cross-variable interaction", {
+  d <- make_design()
+  d <- set_var_extra(
+    d,
+    list(
+      age = list(role = "a"),
+      sex = list(role = "b"),
+      income = list(role = "c"),
+      wt = list(role = "d")
+    )
+  )
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "a"))
+  expect_identical(d@metadata@var_extra[["sex"]], list(role = "b"))
+  expect_identical(d@metadata@var_extra[["income"]], list(role = "c"))
+  expect_identical(d@metadata@var_extra[["wt"]], list(role = "d"))
+})
+
+test_that("set_var_extra() extra = NULL removes the variable's key entirely", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic"))
+  d <- set_var_extra(d, age = NULL)
+  expect_false("age" %in% names(d@metadata@var_extra))
+})
+
+test_that("set_var_extra() convention 3 with extra omitted clears every listed variable", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "a"), income = list(role = "b"))
+  d <- set_var_extra(d, variable = c("age", "income"))
+  expect_false("age" %in% names(d@metadata@var_extra))
+  expect_false("income" %in% names(d@metadata@var_extra))
+})
+
+test_that("set_var_extra() payload list() is distinguishable from 'never set'", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list())
+  expect_true("age" %in% names(d@metadata@var_extra))
+  expect_identical(d@metadata@var_extra[["age"]], list())
+})
+
+test_that("set_var_extra() calling twice on the same variable fully replaces the payload", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "a"))
+  d <- set_var_extra(d, age = list(role = "b"))
+  expect_identical(d@metadata@var_extra[["age"]], list(role = "b"))
+})
+
+test_that("set_var_extra() same variable named twice in one call: last value wins", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(a = 1), age = list(b = 2))
+  expect_identical(d@metadata@var_extra[["age"]], list(b = 2))
+})
+
+test_that("set_var_extra() operates independently on a survey_nonprob and its @reference_sample", {
+  df <- make_survey_data(n = 40, n_psu = 8, n_strata = 2, seed = 5)
+  ref <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  nonprob_df <- data.frame(y = 1:20, w = runif(20, 0.5, 2))
+  x <- as_survey_nonprob(nonprob_df, weights = w, reference_sample = ref)
+
+  x <- set_var_extra(x, y = list(role = "own"))
+  x@reference_sample <- set_var_extra(x@reference_sample, y1 = list(role = "ref"))
+
+  expect_identical(extract_var_extra(x, y), list(y = list(role = "own")))
+  expect_identical(
+    extract_var_extra(x@reference_sample, y1),
+    list(y1 = list(role = "ref"))
+  )
+})
+
+test_that("set_var_extra() accepts a non-serializable payload value without error", {
+  d <- make_design()
+  conn <- textConnection("x")
+  on.exit(close(conn), add = TRUE)
+  d <- set_var_extra(d, age = list(role = "x", handle = conn))
+  expect_identical(d@metadata@var_extra[["age"]]$role, "x")
+})
+
+test_that("set_var_extra() serializable payloads round-trip through saveRDS()/readRDS()", {
+  d <- make_design()
+  d <- set_var_extra(d, age = list(role = "demographic", tags = list(1, "a")))
+  tmp <- withr::local_tempfile(fileext = ".rds")
+  saveRDS(d, tmp)
+  d2 <- readRDS(tmp)
+  expect_identical(extract_var_extra(d2, age), extract_var_extra(d, age))
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_not_survey_or_df", {
+  expect_snapshot(
+    error = TRUE,
+    set_var_extra(list(x = 1), age = list(role = "x"))
+  )
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_var_extra(d, age = list(role = "x"), variable = "income")
+  )
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_extra(d))
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_var_extra(d, variable = c("age", "income"), extra = list(list(role = "x")))
+  )
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_setter_mixed_dots", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_extra(d, list(role = "x"), age = list(role = "y")))
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_var_extra_not_list", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_extra(d, age = "free_text"))
+})
+
+test_that("snapshot: set_var_extra() surveycore_error_var_extra_ambiguous_wrap", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_var_extra(d, variable = "age", extra = list(role = "demographic"))
+  )
+})
+
+test_that("snapshot: set_var_extra() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_var_extra(d, zzz_missing = list(role = "x")))
+})
+
+test_that("snapshot: set_var_extra() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_var_extra(d, variable = character(0)))
+})
+
+
 # ── Removed plural setters ────────────────────────────────────────────────────
 
 test_that("set_variable_labels() is removed — calling it errors with 'could not find function'", {
@@ -1762,6 +2351,61 @@ test_that(".extract_haven_metadata() works with make_survey_data(with_labels=TRU
     "Outcome variable 2 (continuous)"
   )
   expect_identical(out@value_labels[["y3"]], c("No" = 0L, "Yes" = 1L))
+})
+
+test_that(".extract_haven_metadata() promotes a 'var_extra' column attribute", {
+  df <- data.frame(age = 1:3)
+  attr(df$age, "var_extra") <- list(role = "demographic")
+  out <- surveycore:::.extract_haven_metadata(df)
+  expect_identical(out@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that(".extract_haven_metadata() promotes an empty list() 'var_extra' payload unchanged", {
+  df <- data.frame(age = 1:3)
+  attr(df$age, "var_extra") <- list()
+  out <- surveycore:::.extract_haven_metadata(df)
+  expect_true("age" %in% names(out@var_extra))
+  expect_identical(out@var_extra[["age"]], list())
+})
+
+test_that(".extract_haven_metadata() does not promote a column with no 'var_extra' attribute", {
+  df <- data.frame(age = 1:3)
+  out <- surveycore:::.extract_haven_metadata(df)
+  expect_false("age" %in% names(out@var_extra))
+})
+
+test_that("set_var_extra() on a data frame promotes through as_survey() into @metadata@var_extra", {
+  df <- make_survey_data(n = 40, n_psu = 8, n_strata = 2, seed = 3)
+  df <- set_var_extra(df, y1 = list(role = "outcome"))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "outcome")))
+})
+
+test_that("set_var_extra() on a data frame with list() payload promotes through as_survey_replicate()", {
+  df <- make_survey_data(design = "replicate", seed = 1)
+  df <- set_var_extra(df, y1 = list())
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "BRR"
+  )
+  expect_identical(extract_var_extra(d, y1, format = "list")$y1, list())
+})
+
+test_that("set_var_extra() on a data frame promotes through as_survey_twophase()", {
+  df <- make_survey_data(design = "twophase", seed = 1)
+  df <- set_var_extra(df, y1 = list(role = "outcome"))
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  d <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "outcome")))
+})
+
+test_that("set_var_extra() on a data frame promotes through as_survey_nonprob()", {
+  df <- data.frame(y = 1:20, w = runif(20, 0.5, 2))
+  df <- set_var_extra(df, y = list(role = "outcome"))
+  d <- as_survey_nonprob(df, weights = w)
+  expect_identical(extract_var_extra(d, y), list(y = list(role = "outcome")))
 })
 
 
@@ -2260,6 +2904,57 @@ test_that("round-trip: set_missing_codes() on df -> as_survey() -> extract_missi
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
   result <- extract_missing_codes(d, y1)
   expect_identical(result, list(y1 = c("Refused" = -1L)))
+})
+
+
+# ── Round-trip fidelity: set_var_extra() -> extract_var_extra() ──────────────
+
+test_that("round-trip: every var_extra payload accepted by set_var_extra() is returned identical()", {
+  d <- make_design()
+  payloads <- list(
+    scalar_string = list(role = "demographic"),
+    empty = list(),
+    nested = list(role = "a", tags = list(1:3, "x", list(nested = TRUE))),
+    unnamed_nested_value = list(role = "free_text", tags = list("a", "b")),
+    null_value = list(role = "demographic", note = NULL),
+    unusual_types = list(checker = mean, frame = data.frame(x = 1), flag = NA)
+  )
+  for (nm in names(payloads)) {
+    d <- set_var_extra(d, age = payloads[[nm]])
+    got <- extract_var_extra(d, age, format = "list")$age
+    expect_identical(got, payloads[[nm]], label = paste("payload:", nm))
+  }
+})
+
+test_that("grep audit: @var_extra contents are read/written only by the intended call sites", {
+  # Recorded per spec Quality gates: the only production files under R/ that
+  # reference var_extra are core-classes.R (property definition),
+  # core-metadata.R (set_var_extra()/extract_var_extra()/.extract_haven_metadata()
+  # promotion block), and core-validators.R (.rename_metadata_keys()/
+  # .delete_metadata_col()). No other file in R/ reads or branches on its
+  # contents.
+  # Guard on source files, not on the directory. Under covr the package
+  # installs into a temporary library and the tests run from
+  # <lib>/surveycore/surveycore-tests/testthat, so "../../R" resolves to
+  # <lib>/surveycore/R. That directory exists, but it holds the lazy-load
+  # database rather than .R files, so dir.exists() is TRUE and the grep
+  # finds nothing. list.files() on a missing directory returns character(0)
+  # without erroring, so no dir.exists() call is needed.
+  r_dir <- testthat::test_path("..", "..", "R")
+  r_files <- list.files(r_dir, pattern = "\\.R$", full.names = TRUE)
+  if (length(r_files) == 0L) {
+    skip("R/ source tree not available (installed-package test layout)")
+  }
+  hits <- vapply(
+    r_files,
+    function(f) any(grepl("var_extra", readLines(f, warn = FALSE))),
+    logical(1L)
+  )
+  hit_basenames <- basename(names(hits)[hits])
+  expect_setequal(
+    hit_basenames,
+    c("core-classes.R", "core-metadata.R", "core-validators.R")
+  )
 })
 
 
@@ -3555,4 +4250,233 @@ test_that("set_sata() sata = 'yes' still errors with surveycore_error_sata_not_l
     set_sata(d, riagendr, sata = "yes"),
     class = "surveycore_error_sata_not_logical"
   )
+})
+
+
+# ── haven labelled columns ───────────────────────────────────────────────────
+#
+# One defect and its blast radius. `.validate_val_labels()` called
+# `as.character()` on a `haven_labelled` vector, which `vctrs` refuses, so
+# `set_val_labels()` aborted. The two input modes reach that line by different
+# routes: a survey design normalises its `data` property on every write, so its
+# stored column is already plain; a plain data frame is never normalised, so
+# the class arrives intact. Rows that assert a value read back out of storage,
+# or that exercise the validation, run in both modes. Rows whose answer cannot
+# depend on the column's class run once — see
+# `.claude/rules/testing-surveycore.md` §The both-modes rule.
+
+# One frame in two shapes. Both carry the same codes and the same `label` and
+# `labels` attributes; only the labelled shape carries the class vector. Every
+# comparison between the two shapes is an exact-equality comparison.
+make_hl_frame <- function(labelled = TRUE) {
+  df <- data.frame(
+    wt = c(1.2, 0.9, 1.1, 1.0, 1.3),
+    psu = c(1L, 1L, 2L, 2L, 3L)
+  )
+  sex <- c(1L, 2L, 1L, 2L, 1L)
+  if (labelled) {
+    df$sex <- make_labelled(
+      sex,
+      labels = c(Male = 1L, Female = 2L),
+      label = "Sex"
+    )
+  } else {
+    attr(sex, "labels") <- c(Male = 1L, Female = 2L)
+    attr(sex, "label") <- "Sex"
+    df$sex <- sex
+  }
+  df
+}
+
+make_hl_design <- function(labelled = TRUE) {
+  as_survey(make_hl_frame(labelled = labelled), weights = wt)
+}
+
+# M-1 — survey mode.
+test_that("set_val_labels() stores labels for a labelled column on a design", {
+  labelled <- set_val_labels(
+    make_hl_design(labelled = TRUE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  plain <- set_val_labels(
+    make_hl_design(labelled = FALSE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(
+    labelled@metadata@value_labels[["sex"]],
+    c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(
+    labelled@metadata@value_labels[["sex"]],
+    plain@metadata@value_labels[["sex"]]
+  )
+})
+
+# M-1 — data frame mode.
+test_that("set_val_labels() stores labels for a labelled column on a frame", {
+  labelled <- set_val_labels(
+    make_hl_frame(labelled = TRUE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  plain <- set_val_labels(
+    make_hl_frame(labelled = FALSE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(attr(labelled$sex, "labels"), c(Man = 1L, Woman = 2L))
+  expect_identical(attr(labelled$sex, "labels"), attr(plain$sex, "labels"))
+})
+
+test_that("set_val_labels() leaves the labelled class on a frame column", {
+  labelled <- set_val_labels(
+    make_hl_frame(labelled = TRUE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(
+    class(labelled$sex),
+    c("haven_labelled", "vctrs_vctr", "integer")
+  )
+})
+
+# M-2 — survey mode.
+test_that("set_val_labels() warns on an unlabeled code on a labelled design", {
+  d <- make_hl_design(labelled = TRUE)
+  expect_warning(
+    result <- set_val_labels(d, sex = c(Man = 1L)),
+    class = "surveycore_warning_missing_labels"
+  )
+  expect_identical(result@metadata@value_labels[["sex"]], c(Man = 1L))
+})
+
+# M-2 — data frame mode. Newly reachable: the validation no longer aborts
+# before the warning.
+test_that("set_val_labels() warns on an unlabeled code on a labelled frame", {
+  df <- make_hl_frame(labelled = TRUE)
+  expect_warning(
+    result <- set_val_labels(df, sex = c(Man = 1L)),
+    class = "surveycore_warning_missing_labels"
+  )
+  expect_identical(attr(result$sex, "labels"), c(Man = 1L))
+})
+
+test_that("snapshot: set_val_labels() missing labels on a labelled frame", {
+  df <- make_hl_frame(labelled = TRUE)
+  expect_snapshot(set_val_labels(df, sex = c(Man = 1L)))
+})
+
+# M-3 — survey mode.
+test_that("extract_val_labels() reads a labelled column back from a design", {
+  labelled <- extract_val_labels(make_hl_design(labelled = TRUE), sex)
+  plain <- extract_val_labels(make_hl_design(labelled = FALSE), sex)
+  expect_identical(labelled$sex, c(Male = 1L, Female = 2L))
+  expect_identical(labelled, plain)
+})
+
+# M-3 — data frame mode.
+test_that("extract_val_labels() reads a labelled column back from a frame", {
+  labelled <- extract_val_labels(make_hl_frame(labelled = TRUE), sex)
+  plain <- extract_val_labels(make_hl_frame(labelled = FALSE), sex)
+  expect_identical(labelled$sex, c(Male = 1L, Female = 2L))
+  expect_identical(labelled, plain)
+})
+
+# M-4 — survey mode only. Neither path is touched by this change.
+test_that("set_var_label() then extract_var_label() works on a labelled col", {
+  labelled <- set_var_label(
+    make_hl_design(labelled = TRUE),
+    sex = "Sex of respondent"
+  )
+  plain <- set_var_label(
+    make_hl_design(labelled = FALSE),
+    sex = "Sex of respondent"
+  )
+  expect_identical(
+    extract_var_label(labelled, sex),
+    c(sex = "Sex of respondent")
+  )
+  expect_identical(
+    extract_var_label(labelled, sex),
+    extract_var_label(plain, sex)
+  )
+})
+
+# M-5 — survey mode only.
+test_that("extract_metadata() returns the same result for a labelled column", {
+  labelled <- extract_metadata(make_hl_design(labelled = TRUE), sex)
+  plain <- extract_metadata(make_hl_design(labelled = FALSE), sex)
+  expect_identical(labelled$sex$variable_label, "Sex")
+  expect_identical(labelled$sex$value_labels, c(Male = 1L, Female = 2L))
+  expect_identical(labelled, plain)
+})
+
+# M-6 — survey mode only. Four extractors, one block.
+test_that("four extractors return the same result for a labelled column", {
+  build <- function(labelled) {
+    d <- make_hl_design(labelled = labelled)
+    d <- set_missing_codes(d, sex = c(Refused = -1L))
+    d <- set_higher_is(d, sex = "worse")
+    d <- set_question_preface(d, sex = "About you...")
+    d <- set_var_note(d, sex = "Self-reported.")
+    d
+  }
+  labelled <- build(TRUE)
+  plain <- build(FALSE)
+  expect_identical(
+    extract_missing_codes(labelled, sex),
+    extract_missing_codes(plain, sex)
+  )
+  expect_identical(
+    extract_higher_is(labelled, sex),
+    extract_higher_is(plain, sex)
+  )
+  expect_identical(
+    extract_question_preface(labelled, sex),
+    extract_question_preface(plain, sex)
+  )
+  expect_identical(
+    extract_var_note(labelled, sex),
+    extract_var_note(plain, sex)
+  )
+  expect_identical(extract_missing_codes(labelled, sex)$sex, c(Refused = -1L))
+})
+
+# M-7 — survey mode only. Reads no column value and no column class.
+test_that("classify_question_type() gives the same answer for labelled cols", {
+  labelled <- classify_question_type(make_hl_design(labelled = TRUE), sex, wt)
+  plain <- classify_question_type(make_hl_design(labelled = FALSE), sex, wt)
+  expect_identical(labelled$variable, c("sex", "wt"))
+  expect_identical(labelled$type, c("single", "single"))
+  expect_identical(labelled, plain)
+})
+
+# M-8 — survey mode only. A frame stores nothing, so it has no read-back.
+test_that("the SPSS missing attributes survive construction on a design", {
+  df <- data.frame(wt = c(1.2, 0.9, 1.1, 1.0, 1.3))
+  df$sex <- make_labelled_spss(
+    c(1L, 2L, 1L, 2L, 99L),
+    labels = c(Male = 1L, Female = 2L, Refused = 99L),
+    na_values = 99L,
+    na_range = c(90L, 99L),
+    label = "Sex"
+  )
+  stored <- survey_data(as_survey(df, weights = wt))$sex
+  expect_identical(attr(stored, "na_values"), 99L)
+  expect_identical(attr(stored, "na_range"), c(90L, 99L))
+  expect_null(attr(stored, "class"))
+})
+
+# M-9 — regression fence. The plain path must not change.
+test_that("set_val_labels() on a plain column is unchanged", {
+  d <- make_design()
+  expect_no_warning(
+    full <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
+  )
+  expect_identical(
+    full@metadata@value_labels[["sex"]],
+    c(Male = 1L, Female = 2L)
+  )
+  expect_warning(
+    partial <- set_val_labels(d, sex = c(Male = 1L)),
+    class = "surveycore_warning_missing_labels"
+  )
+  expect_identical(partial@metadata@value_labels[["sex"]], c(Male = 1L))
 })

@@ -8,14 +8,19 @@
 #   .corr_canonicalize_polyserial()  — assign ordinal/continuous roles
 #   .corr_estimate_thresholds()      — weighted marginal threshold estimation
 #   .corr_weighted_standardize()     — weighted standardization (Cox 1974)
-#   .corr_bivnorm_cdf()              — bivariate-normal CDF wrapper
+#   .corr_bivnorm_cdf_grid()         — vectorised bivariate-normal CDF grid
+#   .corr_cell_prob_matrix()         — polychoric cell-probability matrix
 #   .corr_polychoric_loglik()        — weighted log-likelihood (polychoric)
 #   .corr_polyserial_loglik()        — weighted log-likelihood (polyserial)
 #   .corr_count_sparse_cells()       — detect sparse ordinal cells
+#   .corr_polychoric_fit_core()      — shared MLE core (full fit + delta refit)
 #   .corr_polychoric_mle()           — MLE for polychoric rho
 #   .corr_polyserial_mle()           — MLE for polyserial rho
 #   .corr_detect_boundary_rho()      — detect boundary rho values
 #   .corr_fisher_ci()                — Fisher-z CI construction
+#   .corr_polychoric_influence_setup() — delta-refit setup for influence loop
+#   .corr_polychoric_delta_refit()   — O(1) delta refit for one perturbed row
+#   .corr_influence_pc6_abort()      — shared PC-6 rethrow for influence refits
 #   .corr_numerical_influence()      — perturbation-based influence function
 #   .corr_taylor_variance_latent()   — Taylor variance for latent methods
 #   .corr_replicate_variance_latent() — replicate variance for latent methods
@@ -28,9 +33,12 @@
 # Return values:
 #   "ordered"         — inherits("ordered")
 #   "factor"          — is.factor() && !is.ordered()
-#   "integer_ordinal" — is.integer() with <= cutoff distinct non-NA values
-#   "continuous"      — is.double() and not integer-valued or > cutoff
-#                       distinct values
+#   "integer_ordinal" — is.integer(), or is.double() with every non-NA value
+#                       finite and whole, and 1..cutoff distinct non-NA values
+#   "continuous"      — is.double() with a fractional value, an infinite
+#                       value, or more than cutoff distinct non-NA values;
+#                       also is.integer() or is.double() with no non-NA value
+#                       at all
 #   "ambiguous"       — everything else (character, logical, high-cardinality
 #                       integer, etc.)
 .corr_detect_ordinal <- function(col, integer_cardinality_cutoff = 10L) {
@@ -41,7 +49,17 @@
     return("factor")
   }
   if (is.integer(col)) {
-    n_distinct <- length(unique(col[!is.na(col)]))
+    non_na <- col[!is.na(col)]
+    # A column with no observed value carries no evidence of a category
+    # scale, so it is not ordinal. A factor or ordered vector declares its
+    # levels and stays ordinal with no data; a bare integer or double has
+    # only its values to go on. Without this guard n_distinct is 0, 0 <= 10
+    # is TRUE, and an all-NA integer classified "integer_ordinal" while the
+    # identical all-NA double classified "continuous" (issue #209).
+    if (length(non_na) == 0L) {
+      return("continuous")
+    }
+    n_distinct <- length(unique(non_na))
     if (n_distinct <= integer_cardinality_cutoff) {
       return("integer_ordinal")
     }
@@ -49,11 +67,23 @@
   }
   if (is.double(col)) {
     non_na <- col[!is.na(col)]
+    # Same no-evidence rule as the is.integer branch above.
     if (length(non_na) == 0L) {
       return("continuous")
     }
-    # Integer-valued doubles with small cardinality are still continuous
-    # under the spec's strict reading ("is.double" → "continuous").
+    # A whole-valued double within the cardinality limit is an ordinal
+    # scale. SPSS, Stata and SAS files store every coded scale as a double,
+    # so the earlier "is.double means continuous" rule refused the exact
+    # input polychoric correlation exists to serve. This branch mirrors the
+    # is.integer branch above and shares its cutoff.
+    # is.finite() is load-bearing: trunc(Inf) == Inf is TRUE, so without it
+    # an infinite value passes as a whole number and becomes a category.
+    if (all(is.finite(non_na)) && all(non_na == trunc(non_na))) {
+      n_distinct <- length(unique(non_na))
+      if (n_distinct <= integer_cardinality_cutoff) {
+        return("integer_ordinal")
+      }
+    }
     return("continuous")
   }
   # character, logical, complex, raw, list → ambiguous
@@ -187,14 +217,15 @@
 #     are renumbered 1..K for bookkeeping.
 #
 # Arguments:
-#   ordinal_vec    — factor / ordered / integer vector (row-aligned to data)
+#   ordinal_vec    — factor / ordered / integer / whole-valued double vector
+#                    (row-aligned to data)
 #   weights        — numeric vector of nonnegative weights (row-aligned)
 #   active_domain  — 0/1 numeric mask (row-aligned); 0 means out-of-domain
 #
 # Returns: list(
 #   thresholds      = numeric(K-1),
-#   levels_used     = character|integer — retained levels in order,
-#   dropped_levels  = character|integer — zero-weight levels,
+#   levels_used     = character|integer|double — retained levels in order,
+#   dropped_levels  = character|integer|double — zero-weight levels,
 #   codes           = integer vector of length-n with re-numbered levels
 #                     (NA for rows with zero effective weight)
 # )
@@ -294,7 +325,10 @@
 #
 # Returns: list(z = numeric, mean_w = numeric(1), sd_w = numeric(1)).
 #   z is the same length as the input. Rows with zero effective weight get
-#   z[i] = NA_real_. Degenerate sd_w = 0 yields NaN z values and propagates.
+#   z[i] = NA_real_. A degenerate sd_w — 0, or non-finite because the column
+#   holds an infinite value — yields NaN z values and propagates. Callers
+#   inside get_corr() never see the non-finite case: the PC-15 gate in
+#   .corr_latent_pair() refuses that column first.
 .corr_weighted_standardize <- function(
   continuous_vec,
   weights,
@@ -318,7 +352,10 @@
 
   # Zero-weight row → NA. NA values in continuous_vec also become NA.
   z <- rep(NA_real_, length(continuous_vec))
-  if (sd_w > 0) {
+  # is.finite() is load-bearing: an infinite value in continuous_vec makes
+  # mean_w, var_w and sd_w all NaN, and `NaN > 0` is NA, which aborts the
+  # `if` with an untyped base error (issue #208).
+  if (is.finite(sd_w) && sd_w > 0) {
     z[use] <- (continuous_vec[use] - mean_w) / sd_w
   } else {
     # Degenerate SD: produce NaN so downstream MLE fails visibly.
@@ -329,36 +366,100 @@
 }
 
 
-# ── .corr_bivnorm_cdf() ──────────────────────────────────────────────────────
+# ── .corr_bivnorm_cdf_grid() ─────────────────────────────────────────────────
 #
-# Thin wrapper over pbivnorm::pbivnorm with Inf-handling conventions:
-#   Φ_2(+∞, b; ρ) = Φ(b)
-#   Φ_2(a, +∞; ρ) = Φ(a)
-#   Φ_2(a, -∞; ρ) = 0
-#   Φ_2(-∞, b; ρ) = 0
-# pbivnorm itself does not accept infinite arguments.
-.corr_bivnorm_cdf <- function(a, b, rho) {
-  # NA / NaN arguments propagate as NA (pbivnorm does not accept them).
-  if (is.na(a) || is.na(b) || is.na(rho)) {
-    return(NA_real_)
+# Vectorised bivariate-normal CDF over a full grid of thresholds, at a single
+# rho. One call replaces the four scalar `.corr_bivnorm_cdf()` calls per cell
+# that both `.corr_polychoric_loglik()` and `.corr_count_sparse_cells()` used
+# to make: the (k_x + 1) x (k_y + 1) grid holds every distinct corner, and
+# neighbouring cells share corners instead of recomputing them.
+#
+# Inf-handling conventions (checked in this precedence order — NA beats
+# -Inf, so a pair of -Inf and NA gives NA, not 0):
+#   1. NA / NaN in a, b, or rho -> NA
+#   2. a == -Inf or b == -Inf   -> 0
+#   3. a == +Inf and b == +Inf  -> 1
+#   4. a == +Inf                -> Φ(b)
+#   5. b == +Inf                -> Φ(a)
+#   6. otherwise                -> one pbivnorm::pbivnorm() call
+# pbivnorm itself does not accept infinite or NA arguments.
+#
+# Arguments:
+#   tx_full — length (k_x + 1) numeric vector of x thresholds, including the
+#             -Inf / +Inf sentinels.
+#   ty_full — length (k_y + 1) numeric vector of y thresholds, including the
+#             -Inf / +Inf sentinels.
+#   rho     — scalar correlation.
+#
+# Returns: (k_x + 1) x (k_y + 1) numeric matrix, grid[i, j] = Φ2(tx_full[i],
+# ty_full[j]; rho).
+.corr_bivnorm_cdf_grid <- function(tx_full, ty_full, rho) {
+  n_a <- length(tx_full)
+  n_b <- length(ty_full)
+  a_mat <- matrix(tx_full, nrow = n_a, ncol = n_b)
+  b_mat <- matrix(ty_full, nrow = n_a, ncol = n_b, byrow = TRUE)
+
+  out <- matrix(NA_real_, nrow = n_a, ncol = n_b)
+
+  # Rule 1: NA / NaN in a, b, or rho -> NA (the default `out` value already).
+  assigned <- is.na(a_mat) | is.na(b_mat) | is.na(rho)
+
+  # Rule 2: -Inf on either side -> 0. `!assigned` filters out any position
+  # already resolved by rule 1; NA & FALSE evaluates to FALSE in R, so a
+  # comparison against an NA-holding cell never overrides its rule-1 result.
+  mask <- !assigned & (a_mat == -Inf | b_mat == -Inf)
+  out[mask] <- 0
+  assigned <- assigned | mask
+
+  # Rule 3: both sides +Inf -> 1.
+  mask <- !assigned & (a_mat == Inf & b_mat == Inf)
+  out[mask] <- 1
+  assigned <- assigned | mask
+
+  # Rule 4: a == +Inf -> Φ(b).
+  mask <- !assigned & (a_mat == Inf)
+  out[mask] <- stats::pnorm(b_mat[mask])
+  assigned <- assigned | mask
+
+  # Rule 5: b == +Inf -> Φ(a).
+  mask <- !assigned & (b_mat == Inf)
+  out[mask] <- stats::pnorm(a_mat[mask])
+  assigned <- assigned | mask
+
+  # Rule 6: everything remaining is finite. One vectorised pbivnorm() call.
+  remaining <- !assigned
+  if (any(remaining)) {
+    out[remaining] <- pbivnorm::pbivnorm(
+      a_mat[remaining],
+      b_mat[remaining],
+      rho = rho
+    )
   }
-  # Handle -Inf first (dominates).
-  if (is.infinite(a) && a < 0) {
-    return(0)
-  }
-  if (is.infinite(b) && b < 0) {
-    return(0)
-  }
-  if (is.infinite(a) && a > 0 && is.infinite(b) && b > 0) {
-    return(1)
-  }
-  if (is.infinite(a) && a > 0) {
-    return(stats::pnorm(b))
-  }
-  if (is.infinite(b) && b > 0) {
-    return(stats::pnorm(a))
-  }
-  pbivnorm::pbivnorm(a, b, rho = rho)
+
+  out
+}
+
+
+# ── .corr_cell_prob_matrix() ─────────────────────────────────────────────────
+#
+# Forms the k_x x k_y polychoric cell-probability matrix by differencing four
+# shifted sub-matrices of a CDF grid from `.corr_bivnorm_cdf_grid()`:
+#   π_{m,p} = grid[m+1, p+1] - grid[m, p+1] - grid[m+1, p] + grid[m, p]
+# Shared by `.corr_polychoric_loglik()` and `.corr_count_sparse_cells()` so
+# neither carries its own copy of the differencing.
+#
+# Arguments:
+#   grid — (k_x + 1) x (k_y + 1) matrix from `.corr_bivnorm_cdf_grid()`.
+#
+# Returns: k_x x k_y numeric matrix of cell probabilities.
+.corr_cell_prob_matrix <- function(grid) {
+  k_x <- nrow(grid) - 1L
+  k_y <- ncol(grid) - 1L
+  hi_hi <- grid[2:(k_x + 1L), 2:(k_y + 1L), drop = FALSE]
+  lo_hi <- grid[1:k_x, 2:(k_y + 1L), drop = FALSE]
+  hi_lo <- grid[2:(k_x + 1L), 1:k_y, drop = FALSE]
+  lo_lo <- grid[1:k_x, 1:k_y, drop = FALSE]
+  hi_hi - lo_hi - hi_lo + lo_lo
 }
 
 
@@ -383,38 +484,35 @@
   thresholds_y,
   cell_prob_floor = 1e-300
 ) {
-  k_x <- nrow(cell_weights)
-  k_y <- ncol(cell_weights)
   # Full threshold vectors with -Inf / +Inf sentinels.
   tx_full <- c(-Inf, thresholds_x, Inf)
   ty_full <- c(-Inf, thresholds_y, Inf)
 
-  ll <- 0
-  any_floor_active <- FALSE
+  grid <- .corr_bivnorm_cdf_grid(tx_full, ty_full, rho)
+  cell_prob <- .corr_cell_prob_matrix(grid)
 
-  for (m in seq_len(k_x)) {
-    for (p in seq_len(k_y)) {
-      w_cell <- cell_weights[m, p]
-      if (w_cell == 0) {
-        # 0 * log(anything) treated as 0. Skip to avoid log(0) on floored cell.
-        next
-      }
-      # π_{m,p}(ρ) = Φ2(t_{m+1}, t'_{p+1}) − Φ2(t_m, t'_{p+1})
-      #            − Φ2(t_{m+1}, t'_p) + Φ2(t_m, t'_p)
-      a_hi <- tx_full[[m + 1L]]
-      a_lo <- tx_full[[m]]
-      b_hi <- ty_full[[p + 1L]]
-      b_lo <- ty_full[[p]]
-      p_mp <- .corr_bivnorm_cdf(a_hi, b_hi, rho) -
-        .corr_bivnorm_cdf(a_lo, b_hi, rho) -
-        .corr_bivnorm_cdf(a_hi, b_lo, rho) +
-        .corr_bivnorm_cdf(a_lo, b_lo, rho)
-      if (is.na(p_mp) || p_mp < cell_prob_floor) {
-        any_floor_active <- TRUE
-        p_mp <- cell_prob_floor
-      }
-      ll <- ll + w_cell * log(p_mp)
-    }
+  # 0 * log(anything) treated as 0: cells with zero weight contribute nothing
+  # to `ll` and never set `any_floor_active`, floored or not.
+  w_pos <- cell_weights > 0
+  floor_mask <- is.na(cell_prob) | cell_prob < cell_prob_floor
+  cell_prob[floor_mask] <- cell_prob_floor
+  any_floor_active <- any(floor_mask & w_pos)
+
+  # Accumulate in the same (row m outer, column p inner) order, with the
+  # same double-precision `+=` steps, that the original per-cell loop used.
+  # `sum()` runs a long-double accumulator internally and would move `ll`
+  # by about 1 ULP — inside the 1e-8 tolerance the direct tests pin `ll`
+  # at, but the influence loop divides by `eps_pert` (1e-4), so even a
+  # last-bit shift in the full-sample fit gets amplified 1e4x across every
+  # perturbation. The explicit loop keeps `ll`, and everything downstream
+  # of it, bit-identical to the pre-vectorisation code.
+  w_t <- t(cell_weights)
+  p_t <- t(cell_prob)
+  pos_t <- t(w_pos)
+  terms <- w_t[pos_t] * log(p_t[pos_t])
+  ll <- 0
+  for (term in terms) {
+    ll <- ll + term
   }
 
   list(ll = ll, any_floor_active = any_floor_active)
@@ -499,7 +597,7 @@
 # the weighted log-likelihood over ρ via stats::optimize().
 #
 # Arguments:
-#   ord_x_vec      — ordinal x (factor/ordered/integer), row-aligned
+#   ord_x_vec      — ordinal x (factor/ordered/integer/whole double)
 #   ord_y_vec      — ordinal y, row-aligned
 #   weights        — numeric weights, row-aligned
 #   active_domain  — 0/1 numeric mask, row-aligned
@@ -527,7 +625,8 @@
   active_domain,
   eps = 1e-6,
   x_name = "x",
-  y_name = "y"
+  y_name = "y",
+  refit = FALSE
 ) {
   th_x <- .corr_estimate_thresholds(
     ord_x_vec,
@@ -578,45 +677,109 @@
     )
   }
 
+  core <- .corr_polychoric_fit_core(
+    cell_counts = cell_counts,
+    thresholds_x = th_x$thresholds,
+    thresholds_y = th_y$thresholds,
+    eps = eps,
+    refit = refit,
+    x_name = x_name,
+    y_name = y_name
+  )
+
+  list(
+    rho = core$rho,
+    converged = TRUE,
+    thresholds_x = th_x$thresholds,
+    thresholds_y = th_y$thresholds,
+    levels_x = th_x$levels_used,
+    levels_y = th_y$levels_used,
+    cell_counts = cell_counts,
+    n_cells_obs = as.integer(n_cells_obs),
+    n_sparse_cells = core$n_sparse_cells,
+    log_lik = core$log_lik,
+    any_floor_active = core$any_floor_active,
+    dropped_levels_x = th_x$dropped_levels,
+    dropped_levels_y = th_y$dropped_levels
+  )
+}
+
+
+# ── .corr_polychoric_fit_core() ──────────────────────────────────────────────
+#
+# Shared objective + probe + optimize + error-handling core for the
+# polychoric MLE. `.corr_polychoric_mle()` calls this for the full fit; the
+# delta refit in `.corr_numerical_influence()` (Step 3) calls it again with
+# delta-updated `cell_counts` / thresholds, so both paths run the identical
+# optimization code.
+#
+# Arguments:
+#   cell_counts             — K_x × K_y weighted matrix.
+#   thresholds_x, thresholds_y — interior threshold vectors.
+#   eps                     — boundary offset for the optimizer bounds.
+#   refit                   — when TRUE, skip the 5-point probe and the
+#                              sparse-cell count (Step 2); `n_sparse_cells`
+#                              comes back `NA_integer_`.
+#   x_name, y_name          — for diagnostics and error messages.
+#
+# Returns: list(rho, log_lik, any_floor_active, n_sparse_cells).
+#
+# Errors:
+#   PC-6 surveycore_error_polychoric_optim_failed if the optimizer returns
+#        non-finite / boundary results or the objective is not finite at a
+#        sentinel test point.
+.corr_polychoric_fit_core <- function(
+  cell_counts,
+  thresholds_x,
+  thresholds_y,
+  eps,
+  refit,
+  x_name,
+  y_name
+) {
   # Objective: weighted log-likelihood as a function of ρ.
   objective <- function(rho) {
     out <- .corr_polychoric_loglik(
       rho,
       cell_weights = cell_counts,
-      thresholds_x = th_x$thresholds,
-      thresholds_y = th_y$thresholds
+      thresholds_x = thresholds_x,
+      thresholds_y = thresholds_y
     )
     out$ll
   }
 
-  # Guard: objective must be finite somewhere before we hand off to optimize().
-  probe <- vapply(
-    c(-0.9, -0.5, 0, 0.5, 0.9),
-    function(r) objective(r),
-    numeric(1)
-  )
-  # nocov start
-  # Defensive: with cell_prob_floor = 1e-300, log(floor) ≈ -690 is finite,
-  # so objective(r) is finite for any r in the probe set on any realistic
-  # cell_weights. This branch is only reachable if future changes remove
-  # the floor or callers pass non-finite thresholds directly.
-  if (!any(is.finite(probe))) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "Numerical optimization did not converge for pair ",
-          "({.field {x_name}}, {.field {y_name}})."
-        ),
-        "i" = "Optimizer message: {.val objective not finite at any probe point}.",
-        "v" = paste0(
-          "Inspect the pair for extreme weight skew, sparse cells, ",
-          "or degenerate ordinal coding."
-        )
-      ),
-      class = "surveycore_error_polychoric_optim_failed"
+  if (!refit) {
+    # Guard: objective must be finite somewhere before handing off to
+    # optimize(). Skipped on a refit — Step 0.5 (check B) confirmed the
+    # refit caller reads nothing this guard feeds.
+    probe <- vapply(
+      c(-0.9, -0.5, 0, 0.5, 0.9),
+      function(r) objective(r),
+      numeric(1)
     )
+    # nocov start
+    # Defensive: with cell_prob_floor = 1e-300, log(floor) ≈ -690 is finite,
+    # so objective(r) is finite for any r in the probe set on any realistic
+    # cell_weights. This branch is only reachable if future changes remove
+    # the floor or callers pass non-finite thresholds directly.
+    if (!any(is.finite(probe))) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Numerical optimization did not converge for pair ",
+            "({.field {x_name}}, {.field {y_name}})."
+          ),
+          "i" = "Optimizer message: {.val objective not finite at any probe point}.",
+          "v" = paste0(
+            "Inspect the pair for extreme weight skew, sparse cells, ",
+            "or degenerate ordinal coding."
+          )
+        ),
+        class = "surveycore_error_polychoric_optim_failed"
+      )
+    }
+    # nocov end
   }
-  # nocov end
 
   fit <- tryCatch(
     stats::optimize(
@@ -651,34 +814,30 @@
   opt_out <- .corr_polychoric_loglik(
     rho_hat,
     cell_weights = cell_counts,
-    thresholds_x = th_x$thresholds,
-    thresholds_y = th_y$thresholds
+    thresholds_x = thresholds_x,
+    thresholds_y = thresholds_y
   )
 
   # Count cells whose modeled probability at ρ̂ is below the sparse tolerance
-  # (1e-12 per spec). Cells with zero weight are ignored.
-  n_sparse <- .corr_count_sparse_cells(
-    rho_hat,
-    cell_counts,
-    th_x$thresholds,
-    th_y$thresholds,
-    tol = 1e-12
-  )
+  # (1e-12 per spec). Cells with zero weight are ignored. Skipped on a
+  # refit — the influence loop reads only `$rho` (Step 0.5, check B).
+  n_sparse <- if (refit) {
+    NA_integer_
+  } else {
+    as.integer(.corr_count_sparse_cells(
+      rho_hat,
+      cell_counts,
+      thresholds_x,
+      thresholds_y,
+      tol = 1e-12
+    ))
+  }
 
   list(
     rho = rho_hat,
-    converged = TRUE,
-    thresholds_x = th_x$thresholds,
-    thresholds_y = th_y$thresholds,
-    levels_x = th_x$levels_used,
-    levels_y = th_y$levels_used,
-    cell_counts = cell_counts,
-    n_cells_obs = as.integer(n_cells_obs),
-    n_sparse_cells = as.integer(n_sparse),
     log_lik = opt_out$ll,
     any_floor_active = opt_out$any_floor_active,
-    dropped_levels_x = th_x$dropped_levels,
-    dropped_levels_y = th_y$dropped_levels
+    n_sparse_cells = n_sparse
   )
 }
 
@@ -692,29 +851,14 @@
   thresholds_y,
   tol = 1e-12
 ) {
-  k_x <- nrow(cell_counts)
-  k_y <- ncol(cell_counts)
   tx_full <- c(-Inf, thresholds_x, Inf)
   ty_full <- c(-Inf, thresholds_y, Inf)
-  n_sparse <- 0L
-  for (m in seq_len(k_x)) {
-    for (p in seq_len(k_y)) {
-      if (cell_counts[m, p] == 0) {
-        next
-      }
-      a_hi <- tx_full[[m + 1L]]
-      a_lo <- tx_full[[m]]
-      b_hi <- ty_full[[p + 1L]]
-      b_lo <- ty_full[[p]]
-      p_mp <- .corr_bivnorm_cdf(a_hi, b_hi, rho) -
-        .corr_bivnorm_cdf(a_lo, b_hi, rho) -
-        .corr_bivnorm_cdf(a_hi, b_lo, rho) +
-        .corr_bivnorm_cdf(a_lo, b_lo, rho)
-      if (is.na(p_mp) || p_mp < tol) {
-        n_sparse <- n_sparse + 1L
-      }
-    }
-  }
+  grid <- .corr_bivnorm_cdf_grid(tx_full, ty_full, rho)
+  cell_prob <- .corr_cell_prob_matrix(grid)
+
+  w_pos <- cell_counts > 0
+  sparse_mask <- w_pos & (is.na(cell_prob) | cell_prob < tol)
+  n_sparse <- as.integer(sum(sparse_mask))
   n_sparse
 }
 
@@ -726,12 +870,14 @@
 # log-likelihood over ρ via stats::optimize().
 #
 # Arguments:
-#   ordinal_vec    — ordinal (factor/ordered/integer), row-aligned
+#   ordinal_vec    — ordinal (factor/ordered/integer/whole double)
 #   continuous_vec — numeric, row-aligned
 #   weights        — numeric weights, row-aligned
 #   active_domain  — 0/1 numeric mask, row-aligned
 #   eps            — boundary offset for the optimizer bounds
 #   ord_name, cont_name — for diagnostics and error messages
+#   refit          — when TRUE, skip the 5-point probe (Step 2). The
+#                     influence loop's refits pass TRUE.
 #
 # Returns: list(
 #   rho, converged, thresholds, levels_used, mean_w, sd_w, z,
@@ -748,7 +894,8 @@
   active_domain,
   eps = 1e-6,
   ord_name = "ordinal",
-  cont_name = "continuous"
+  cont_name = "continuous",
+  refit = FALSE
 ) {
   th <- .corr_estimate_thresholds(
     ordinal_vec,
@@ -776,31 +923,34 @@
     out$ll
   }
 
-  probe <- vapply(
-    c(-0.9, -0.5, 0, 0.5, 0.9),
-    function(r) objective(r),
-    numeric(1)
-  )
-  # nocov start
-  # Defensive: with cell_prob_floor = 1e-300, the objective is always finite
-  # on realistic inputs; only reachable if callers pass NaN thresholds.
-  if (!any(is.finite(probe))) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "Numerical optimization did not converge for pair ",
-          "({.field {ord_name}}, {.field {cont_name}})."
-        ),
-        "i" = "Optimizer message: {.val objective not finite at any probe point}.",
-        "v" = paste0(
-          "Inspect the pair for extreme weight skew, sparse cells, ",
-          "or degenerate ordinal coding."
-        )
-      ),
-      class = "surveycore_error_polychoric_optim_failed"
+  if (!refit) {
+    probe <- vapply(
+      c(-0.9, -0.5, 0, 0.5, 0.9),
+      function(r) objective(r),
+      numeric(1)
     )
+    # nocov start
+    # Defensive: with cell_prob_floor = 1e-300, the objective is always
+    # finite on realistic inputs; only reachable if callers pass NaN
+    # thresholds.
+    if (!any(is.finite(probe))) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Numerical optimization did not converge for pair ",
+            "({.field {ord_name}}, {.field {cont_name}})."
+          ),
+          "i" = "Optimizer message: {.val objective not finite at any probe point}.",
+          "v" = paste0(
+            "Inspect the pair for extreme weight skew, sparse cells, ",
+            "or degenerate ordinal coding."
+          )
+        ),
+        class = "surveycore_error_polychoric_optim_failed"
+      )
+    }
+    # nocov end
   }
-  # nocov end
 
   fit <- tryCatch(
     stats::optimize(
@@ -920,19 +1070,210 @@
 }
 
 
+# ── .corr_polychoric_influence_setup() ───────────────────────────────────────
+#
+# Delta-refit setup for the polychoric path of `.corr_numerical_influence()`
+# (Step 3). Computed once, from the unperturbed data, so each of the n
+# refits below touches only what perturbing one row changes: one level sum
+# per margin and one cell, instead of rebuilding both O(n) threshold
+# estimations and the O(n) cell-count loop from scratch.
+#
+# Arguments:
+#   vec_a, vec_b — full-length ordinal x / ordinal y vectors.
+#   w_full       — full-length raw weight vector.
+#   active_lgl   — full-length logical active-domain mask.
+#
+# Returns: list(
+#   codes_x, codes_y     — full-length remapped level codes (NA excluded).
+#   w_eff                — full-length effective weight (w_full * active,
+#                           NA -> 0).
+#   level_sum_x, level_sum_y — base per-level weight sums, length K_x / K_y.
+#   idx_level_x, idx_level_y — list of row-index vectors per level.
+#   cell_counts          — base K_x x K_y weighted cell-count matrix.
+#   cell_members         — K_x x K_y list-matrix of row-index vectors, in
+#                           increasing row order.
+#   thresholds_x, thresholds_y — base interior threshold vectors.
+# )
+.corr_polychoric_influence_setup <- function(vec_a, vec_b, w_full, active_lgl) {
+  th_x <- .corr_estimate_thresholds(vec_a, w_full, active_lgl, var_name = "x")
+  th_y <- .corr_estimate_thresholds(vec_b, w_full, active_lgl, var_name = "y")
+
+  k_x <- length(th_x$levels_used)
+  k_y <- length(th_y$levels_used)
+  codes_x <- th_x$codes
+  codes_y <- th_y$codes
+
+  w_eff <- w_full * active_lgl
+  w_eff[is.na(w_eff)] <- 0
+
+  idx_level_x <- lapply(seq_len(k_x), function(k) which(codes_x == k))
+  idx_level_y <- lapply(seq_len(k_y), function(k) which(codes_y == k))
+
+  use_cell <- !is.na(codes_x) & !is.na(codes_y) & w_eff > 0
+  cell_counts <- matrix(0, nrow = k_x, ncol = k_y)
+  cell_members <- vector("list", k_x * k_y)
+  dim(cell_members) <- c(k_x, k_y)
+  for (i in which(use_cell)) {
+    m <- codes_x[[i]]
+    p <- codes_y[[i]]
+    cell_counts[m, p] <- cell_counts[m, p] + w_eff[[i]]
+    cell_members[[m, p]] <- c(cell_members[[m, p]], i)
+  }
+
+  list(
+    codes_x = codes_x,
+    codes_y = codes_y,
+    w_eff = w_eff,
+    level_sum_x = th_x$level_weights_used,
+    level_sum_y = th_y$level_weights_used,
+    idx_level_x = idx_level_x,
+    idx_level_y = idx_level_y,
+    cell_counts = cell_counts,
+    cell_members = cell_members,
+    thresholds_x = th_x$thresholds,
+    thresholds_y = th_y$thresholds
+  )
+}
+
+
+# ── .corr_polychoric_delta_refit() ───────────────────────────────────────────
+#
+# O(1) (per row, not O(n)) refit for one perturbed row, using the setup from
+# `.corr_polychoric_influence_setup()`. Perturbing row `i` by `w * (1 +
+# eps_pert)` changes at most one level sum per margin and one cell; recompute
+# only those, rebuild the two small (length K) threshold vectors, and hand
+# the delta-updated `cell_counts` / thresholds to the same
+# `.corr_polychoric_fit_core()` the full fit uses.
+#
+# Edge rows:
+#   - NA code on one margin: update only the other margin's level sum, no
+#     cell.
+#   - NA code on both margins, or zero effective weight: no updates at all.
+#     The optimizer still runs on the (numerically unchanged) perturbed
+#     data, so the result equals the full fit exactly rather than being
+#     shortcut to an assumed IF = 0.
+#
+# The affected level sum is recomputed via `sum()` over the (small) subset
+# of `w_eff` values for that level, with row `i`'s entry replaced — the same
+# call shape `.corr_estimate_thresholds()` uses today. The affected cell is
+# recomputed via an explicit `+=` loop over its member indices in increasing
+# row order, not `sum()`: Step 0.5 (check C) showed `sum()` diverges from
+# the `+=` loop on lognormal weights.
+#
+# Arguments:
+#   setup    — list from `.corr_polychoric_influence_setup()`.
+#   i        — integer(1), the perturbed row's index into `w_full`.
+#   w_full   — full-length raw weight vector (unperturbed).
+#   eps_pert — perturbation magnitude.
+#
+# Returns: list(rho, log_lik, any_floor_active, n_sparse_cells) — the
+# `.corr_polychoric_fit_core()` contract, always with `refit = TRUE`.
+.corr_polychoric_delta_refit <- function(setup, i, w_full, eps_pert) {
+  m <- setup$codes_x[[i]]
+  p <- setup$codes_y[[i]]
+  w_eff_i <- setup$w_eff[[i]]
+
+  thresholds_x <- setup$thresholds_x
+  thresholds_y <- setup$thresholds_y
+  cell_counts <- setup$cell_counts
+
+  if (w_eff_i > 0 && (!is.na(m) || !is.na(p))) {
+    w_eff_pert_i <- w_full[[i]] * (1 + eps_pert)
+
+    if (!is.na(m)) {
+      idx_m <- setup$idx_level_x[[m]]
+      w_sub <- setup$w_eff[idx_m]
+      w_sub[idx_m == i] <- w_eff_pert_i
+      level_sum_x <- setup$level_sum_x
+      level_sum_x[[m]] <- sum(w_sub, na.rm = TRUE)
+      total_w_x <- sum(level_sum_x)
+      cum_prop_x <- cumsum(level_sum_x) / total_w_x
+      thresholds_x <- stats::qnorm(cum_prop_x[-length(cum_prop_x)])
+    }
+
+    if (!is.na(p)) {
+      idx_p <- setup$idx_level_y[[p]]
+      w_sub <- setup$w_eff[idx_p]
+      w_sub[idx_p == i] <- w_eff_pert_i
+      level_sum_y <- setup$level_sum_y
+      level_sum_y[[p]] <- sum(w_sub, na.rm = TRUE)
+      total_w_y <- sum(level_sum_y)
+      cum_prop_y <- cumsum(level_sum_y) / total_w_y
+      thresholds_y <- stats::qnorm(cum_prop_y[-length(cum_prop_y)])
+    }
+
+    if (!is.na(m) && !is.na(p)) {
+      members <- setup$cell_members[[m, p]]
+      total <- 0
+      for (j in members) {
+        total <- total + if (identical(j, i)) w_eff_pert_i else setup$w_eff[[j]]
+      }
+      cell_counts[m, p] <- total
+    }
+  }
+
+  .corr_polychoric_fit_core(
+    cell_counts = cell_counts,
+    thresholds_x = thresholds_x,
+    thresholds_y = thresholds_y,
+    eps = 1e-6,
+    refit = TRUE,
+    x_name = "x",
+    y_name = "y"
+  )
+}
+
+
+# ── .corr_influence_pc6_abort() ──────────────────────────────────────────────
+#
+# Shared PC-6 rethrow for `.corr_numerical_influence()`: both the polychoric
+# and the polyserial refit loop catch an inner MLE failure and re-raise it
+# pointing at the perturbed row.
+#
+# Arguments:
+#   fit_pert — the caught condition object (an "error").
+#   i        — integer(1), the row index that failed.
+.corr_influence_pc6_abort <- function(fit_pert, i) {
+  cli::cli_abort(
+    c(
+      "x" = paste0(
+        "Numerical optimization did not converge during ",
+        "influence-function computation."
+      ),
+      "i" = paste0(
+        "Perturbation at row {.val {i}} failed: ",
+        "{.val {conditionMessage(fit_pert)}}"
+      ),
+      "v" = paste0(
+        "Inspect the pair for extreme weight skew, sparse cells, ",
+        "or degenerate ordinal coding."
+      )
+    ),
+    class = "surveycore_error_polychoric_optim_failed"
+  )
+}
+
+
 # ── .corr_numerical_influence() ──────────────────────────────────────────────
 #
 # Perturbation-based numerical influence function on the Fisher-z scale:
 #   IF_i ≈ (atanh(ρ̂_pert_i) - atanh(ρ̂_full)) / ε
 # where ρ̂_pert_i is the MLE with w_i replaced by w_i * (1 + ε).
 #
+# The polychoric path (Step 3) uses a delta refit — `.corr_polychoric_
+# influence_setup()` once, then `.corr_polychoric_delta_refit()` per row —
+# instead of calling `.corr_polychoric_mle()` from scratch for every row.
+# The polyserial path is unchanged except that its MLE call now passes
+# `refit = TRUE` (Step 2): its likelihood is already O(n) per evaluation by
+# nature, so a delta setup would not save anything there.
+#
 # Arguments:
 #   design          — survey_taylor (used for @data and @variables$weights)
 #   method          — "polychoric" or "polyserial"
 #   vec_a, vec_b    — full-length vectors. For polychoric, both are ordinal
-#                     (factor / ordered / integer). For polyserial, `vec_a`
-#                     is the ordinal side and `vec_b` is the raw continuous
-#                     variable (not pre-standardized).
+#                     (factor / ordered / integer / whole double). For
+#                     polyserial, `vec_a` is the ordinal side and `vec_b` is
+#                     the raw continuous variable (not pre-standardized).
 #   active_domain   — logical or 0/1 mask aligned to @data rows.
 #   rho_hat_full    — full-sample ρ̂ (on the ρ scale).
 #   eps_pert        — perturbation magnitude; default 1e-4.
@@ -956,54 +1297,46 @@
   n_active <- length(active_idx)
 
   rho_z_full <- atanh(rho_hat_full)
-
   ifs <- numeric(n_active)
+
+  if (identical(method, "polychoric")) {
+    setup <- .corr_polychoric_influence_setup(vec_a, vec_b, w_full, active_lgl)
+
+    for (k in seq_len(n_active)) {
+      i <- active_idx[[k]]
+      fit_pert <- tryCatch(
+        .corr_polychoric_delta_refit(setup, i, w_full, eps_pert),
+        error = function(e) e
+      )
+      if (inherits(fit_pert, "error")) {
+        .corr_influence_pc6_abort(fit_pert, i)
+      }
+      rho_z_pert <- atanh(fit_pert$rho)
+      ifs[[k]] <- (rho_z_pert - rho_z_full) / eps_pert
+    }
+
+    return(ifs)
+  }
+
   for (k in seq_len(n_active)) {
     i <- active_idx[[k]]
     w_pert <- w_full
     w_pert[[i]] <- w_pert[[i]] * (1 + eps_pert)
 
     fit_pert <- tryCatch(
-      if (identical(method, "polychoric")) {
-        .corr_polychoric_mle(
-          vec_a,
-          vec_b,
-          w_pert,
-          active_lgl,
-          x_name = "x",
-          y_name = "y"
-        )
-      } else {
-        .corr_polyserial_mle(
-          vec_a,
-          vec_b,
-          w_pert,
-          active_lgl,
-          ord_name = "ord",
-          cont_name = "cont"
-        )
-      },
+      .corr_polyserial_mle(
+        vec_a,
+        vec_b,
+        w_pert,
+        active_lgl,
+        ord_name = "ord",
+        cont_name = "cont",
+        refit = TRUE
+      ),
       error = function(e) e
     )
     if (inherits(fit_pert, "error")) {
-      # Re-throw as PC-6 pointing at the full-sample context.
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "Numerical optimization did not converge during ",
-            "influence-function computation."
-          ),
-          "i" = paste0(
-            "Perturbation at row {.val {i}} failed: ",
-            "{.val {conditionMessage(fit_pert)}}"
-          ),
-          "v" = paste0(
-            "Inspect the pair for extreme weight skew, sparse cells, ",
-            "or degenerate ordinal coding."
-          )
-        ),
-        class = "surveycore_error_polychoric_optim_failed"
-      )
+      .corr_influence_pc6_abort(fit_pert, i)
     }
     rho_z_pert <- atanh(fit_pert$rho)
     ifs[[k]] <- (rho_z_pert - rho_z_full) / eps_pert
@@ -1120,7 +1453,8 @@
           w_r,
           active_lgl,
           x_name = "x",
-          y_name = "y"
+          y_name = "y",
+          refit = TRUE
         )
       } else {
         .corr_polyserial_mle(
@@ -1129,7 +1463,8 @@
           w_r,
           active_lgl,
           ord_name = "ord",
-          cont_name = "cont"
+          cont_name = "cont",
+          refit = TRUE
         )
       },
       error = function(e) NULL
@@ -1243,7 +1578,8 @@
             w_r_srs,
             active_lgl,
             x_name = "x",
-            y_name = "y"
+            y_name = "y",
+            refit = TRUE
           )
         } else {
           .corr_polyserial_mle(
@@ -1252,7 +1588,8 @@
             w_r_srs,
             active_lgl,
             ord_name = "ord",
-            cont_name = "cont"
+            cont_name = "cont",
+            refit = TRUE
           )
         },
         error = function(e) NULL
@@ -1296,10 +1633,11 @@
 #   3. PC-1 gate for polychoric (reject non-ordinal).
 #   4. PC-13 warning when any side is unordered factor.
 #   5. Pairwise-complete active domain.
-#   6. MLE on the pair (propagates PC-4 / PC-5 / PC-6 / PC-10 / PC-11).
-#   7. Variance path by design class (PC-12, PC-8 propagated from replicate).
-#   8. PC-9 warning when ρ̂ is boundary; PC-14 additionally on survey_taylor.
-#   9. CI via .corr_fisher_ci(); truncated to [-1, 1].
+#   6. PC-15 gate for polyserial (reject a non-finite continuous side).
+#   7. MLE on the pair (propagates PC-4 / PC-5 / PC-6 / PC-10 / PC-11).
+#   8. Variance path by design class (PC-12, PC-8 propagated from replicate).
+#   9. PC-9 warning when ρ̂ is boundary; PC-14 additionally on survey_taylor.
+#  10. CI via .corr_fisher_ci(); truncated to [-1, 1].
 #
 # Returns: list with 10 fields
 #   r, se_r, se_srs, n, n_weighted, ci_low, ci_high, rho_z, se_z, method.
@@ -1462,7 +1800,38 @@
     ))
   }
 
-  # 6. MLE on the pair.
+  # 6. PC-15 gate — the continuous side must be finite on the analysed rows.
+  # NA and NaN need no gate: .corr_weighted_standardize() drops them through
+  # its !is.na() filter in both na.rm modes. Only an infinite value reaches
+  # the moment sums, where it makes mean_w, var_w and sd_w all NaN.
+  # The ordinal side needs no gate either: .corr_detect_ordinal() classifies
+  # any Inf-carrying double as "continuous", and factor / ordered / integer
+  # cannot hold an infinite value, so a canonicalized ordinal side is always
+  # finite.
+  if (identical(method, "polyserial")) {
+    cont_vec <- data[[cont_name]][pair_active]
+    nonfinite <- !is.finite(cont_vec) & !is.na(cont_vec)
+    n_bad <- sum(nonfinite)
+    if (n_bad > 0L) {
+      bad_vals <- unique(cont_vec[nonfinite])
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.code method = \"polyserial\"} requires a finite continuous ",
+            "variable."
+          ),
+          "i" = paste0(
+            "Column {.field {cont_name}} has {n_bad} non-finite ",
+            "value{?s} ({.val {bad_vals}}) in the active domain."
+          ),
+          "v" = "Filter the non-finite rows, or recode them to {.code NA}."
+        ),
+        class = "surveycore_error_polyserial_nonfinite_continuous"
+      )
+    }
+  }
+
+  # 7. MLE on the pair.
   if (identical(method, "polychoric")) {
     fit <- .corr_polychoric_mle(
       x_col_vec,
@@ -1488,7 +1857,7 @@
     vec_b <- data[[cont_name]]
   }
 
-  # 7. PC-10 — zero-count interior levels dropped.
+  # 8. PC-10 — zero-count interior levels dropped.
   if (identical(method, "polychoric")) {
     dropped_x <- fit$dropped_levels_x
     dropped_y <- fit$dropped_levels_y
@@ -1541,7 +1910,7 @@
     }
   }
 
-  # 8. PC-11 — sparse cells (polychoric only).
+  # 9. PC-11 — sparse cells (polychoric only).
   # nocov start
   # Defensive: n_sparse_cells is set by .corr_polychoric_mle() only when an
   # observed cell has modeled probability below 1e-12 at the optimum.
@@ -1568,7 +1937,7 @@
 
   rho_hat <- fit$rho
 
-  # 9. Variance path by design class.
+  # 10. Variance path by design class.
   if (S7::S7_inherits(design, survey_taylor)) {
     if_z <- .corr_numerical_influence(
       design = design,
@@ -1628,7 +1997,7 @@
   se_r <- if (!is.na(se_z)) (1 - rho_hat^2) * se_z else NA_real_
   se_srs <- if (!is.na(se_z_srs)) (1 - rho_hat^2) * se_z_srs else NA_real_
 
-  # 10. PC-9 / PC-14 boundary warnings.
+  # 11. PC-9 / PC-14 boundary warnings.
   if (.corr_detect_boundary_rho(rho_hat)) {
     cli::cli_warn(
       c(
@@ -1666,7 +2035,7 @@
     }
   }
 
-  # 11. CI via shared Fisher-z helper.
+  # 12. CI via shared Fisher-z helper.
   ci <- .corr_fisher_ci(rho_hat, se_z, conf_level = conf_level)
 
   list(

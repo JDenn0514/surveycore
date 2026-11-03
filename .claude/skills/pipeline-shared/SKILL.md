@@ -1,3 +1,9 @@
+---
+name: pipeline-shared
+description: Shared reference files for the pipeline-* skill family. Not invoked directly — the orchestrating skills read the references by path.
+disable-model-invocation: true
+---
+
 # Skill: Pipeline Shared
 
 Shared references for the pipeline-* family of skills: `pipeline-spec`, `pipeline-implement`, `pipeline-ship`, `pipeline-simplified`. This skill is not directly invoked; its `references/` are loaded by the orchestrating skills and by dispatched agents.
@@ -7,11 +13,12 @@ Shared references for the pipeline-* family of skills: `pipeline-spec`, `pipelin
 | File | Purpose |
 |---|---|
 | `references/state-model.md` | Hard-gated state machine and preconditions |
-| `references/signals.md` | HOLD / BLOCK / STOP vocabulary |
+| `references/signals.md` | HOLD / BLOCK / STOP vocabulary and review verdicts |
 | `references/pipeline-isolation.md` | Information barriers between builder, tester, reviewer |
 | `references/workspace-layout.md` | `.surveycore-workspace/` directory structure |
 | `references/artifact-schemas.md` | Required sections for each `.md` artifact |
 | `references/r-package-profile.md` | R-specific validation commands and CRAN rules |
+| `references/archive-plans.md` | Post-merge archiving of `plans/` docs to `archive/{slug}/` |
 
 ## When reading
 

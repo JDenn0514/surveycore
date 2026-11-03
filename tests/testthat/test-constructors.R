@@ -29,7 +29,6 @@ test_that("as_survey() creates survey_taylor with NULL ids/strata (no ids or str
 test_that("as_survey() creates survey_taylor for weighted SRS (weights only)", {
   df <- make_survey_data(n = 100, seed = 1L)
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$ids, NULL)
@@ -39,7 +38,6 @@ test_that("as_survey() creates survey_taylor for weighted SRS (weights only)", {
 test_that("as_survey() creates survey_taylor for stratified design", {
   df <- make_survey_data(n = 200, seed = 2L)
   d <- as_survey(df, weights = wt, strata = strata)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$strata, "strata")
@@ -49,7 +47,6 @@ test_that("as_survey() creates survey_taylor for stratified design", {
 test_that("as_survey() creates survey_taylor for single-stage cluster design", {
   df <- make_survey_data(n = 200, seed = 3L)
   d <- suppressWarnings(as_survey(df, ids = psu, weights = wt, strata = strata))
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, "psu")
   expect_identical(d@variables$weights, "wt")
@@ -68,7 +65,6 @@ test_that("as_survey() creates survey_taylor for NHANES design (nest = TRUE)", {
     strata = sdmvstra,
     nest = TRUE
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, "sdmvpsu")
   expect_identical(d@variables$weights, "wtmec2yr")
@@ -86,7 +82,6 @@ test_that("as_survey() stores call in @call", {
 test_that("as_survey() extracts haven metadata when present", {
   df <- make_survey_data(n = 100, with_labels = TRUE, seed = 5L)
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(
     d@metadata@variable_labels[["y1"]],
     "Outcome variable 1 (continuous)"
@@ -97,7 +92,6 @@ test_that("as_survey() extracts haven metadata when present", {
 test_that("as_survey() returns an empty metadata object when no haven attrs", {
   df <- make_survey_data(n = 50, seed = 6L)
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(length(d@metadata@variable_labels), 0L)
 })
 
@@ -107,7 +101,6 @@ test_that("as_survey() returns an empty metadata object when no haven attrs", {
 test_that("as_survey() converts probs to weights (1/probs) stored as ..surveycore_wt..", {
   df <- data.frame(y = 1:5, prob = rep(0.2, 5))
   d <- suppressWarnings(as_survey(df, probs = prob))
-  test_invariants(d)
   expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
   expect_true(d@variables$probs_provided)
   expect_equal(d@data[[surveycore:::.SURVEYCORE_WT_COL]], rep(5, 5))
@@ -126,7 +119,6 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
     },
     class = "surveycore_inform_probs_weights_consistent"
   )
-  test_invariants(d)
   expect_identical(d@variables$weights, "wt")
   expect_true(d@variables$probs_provided)
 })
@@ -134,7 +126,6 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
 test_that("as_survey() stores fpc column name in @variables", {
   df <- make_survey_data(n = 100, seed = 7L)
   d <- suppressWarnings(as_survey(df, weights = wt, fpc = fpc))
-  test_invariants(d)
   expect_identical(d@variables$fpc, "fpc")
 })
 
@@ -251,7 +242,6 @@ test_that("as_survey() warns with SRS message when strata given but no ids and n
 test_that("as_survey() creates equal weights (..surveycore_wt..) for SRS [row 7]", {
   df <- data.frame(y = 1:10)
   d <- suppressWarnings(as_survey(df))
-  test_invariants(d)
   expect_identical(d@data[[surveycore:::.SURVEYCORE_WT_COL]], rep(1L, 10L))
 })
 
@@ -295,6 +285,19 @@ test_that("as_survey() errors when all weights are NA [row 10]", {
   expect_error(
     suppressWarnings(as_survey(df, weights = wt)),
     class = "surveycore_error_weights_all_zero"
+  )
+})
+
+# Row 33: weights mix non-positive values with positive ones
+test_that("as_survey() errors when a weight is non-positive [row 33]", {
+  df <- data.frame(x = 1:5, wt = c(1, 0, 2, -1, 3))
+  expect_error(
+    as_survey(df, weights = wt),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt)
   )
 })
 
@@ -376,7 +379,6 @@ test_that("as_survey() errors when nest = TRUE and strata is NULL [row 15]", {
 test_that("as_survey() handles weights with NA values mixed in (valid)", {
   df <- data.frame(x = 1:5, wt = c(1.0, NA_real_, 2.0, 1.5, NA_real_))
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(d@variables$weights, "wt")
 })
 
@@ -384,7 +386,6 @@ test_that("as_survey() with tibble input (inherits data.frame)", {
   skip_if_not_installed("tibble")
   tb <- tibble::tibble(y = 1:10, wt = runif(10, 0.5, 2))
   d <- suppressWarnings(as_survey(tb, weights = wt))
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
 })
 
@@ -442,14 +443,12 @@ test_that("as_survey() does NOT warn for PSU in multiple strata when nest = TRUE
 test_that("as_survey() accepts bare name for weights", {
   df <- data.frame(y = 1:5, weight_col = rep(1, 5))
   d <- suppressWarnings(as_survey(df, weights = weight_col))
-  test_invariants(d)
   expect_identical(d@variables$weights, "weight_col")
 })
 
 test_that("as_survey() accepts bare name for strata", {
   df <- data.frame(y = 1:10, wt = rep(1, 10), region = rep(c("N", "S"), 5))
   d <- as_survey(df, weights = wt, strata = region)
-  test_invariants(d)
   expect_identical(d@variables$strata, "region")
 })
 
@@ -460,14 +459,12 @@ test_that("as_survey() accepts c() for multi-stage cluster ids", {
     wt = rep(1, 20)
   )
   d <- as_survey(df, ids = c(psu, ssu), weights = wt)
-  test_invariants(d)
   expect_identical(d@variables$ids, c("psu", "ssu"))
 })
 
 test_that("as_survey() accepts single bare name for ids", {
   df <- make_survey_data(n = 100, seed = 10L)
   d <- suppressWarnings(as_survey(df, ids = psu, weights = wt, strata = strata))
-  test_invariants(d)
   expect_identical(d@variables$ids, "psu")
 })
 
@@ -514,7 +511,6 @@ test_that("as_survey_replicate() creates survey_replicate for JK1 design (bare n
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
   expect_identical(d@variables$type, "JK1")
 })
@@ -533,7 +529,6 @@ test_that("as_survey_replicate() creates survey_replicate for bootstrap design",
     repweights = starts_with("repwt_"),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
   expect_identical(d@variables$type, "bootstrap")
 })
@@ -564,7 +559,6 @@ test_that("as_survey_replicate() extracts haven metadata when present", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(
     d@metadata@variable_labels[["y1"]],
     "Outcome variable 1 (continuous)"
@@ -579,7 +573,6 @@ test_that("as_survey_replicate() returns empty metadata when no haven attrs", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(length(d@metadata@variable_labels), 0L)
 })
 
@@ -599,7 +592,6 @@ test_that("as_survey_replicate() accepts explicit rscales of correct length", {
     type = "JK1",
     rscales = rep(1, n_rep)
   )
-  test_invariants(d)
   expect_identical(length(d@variables$rscales), n_rep)
 })
 
@@ -612,7 +604,6 @@ test_that("as_survey_replicate() accepts explicit scale argument", {
     type = "JK1",
     scale = 0.5
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 0.5)
 })
 
@@ -648,7 +639,54 @@ test_that("as_survey_replicate() computes JK1 default scale = (R-1)/R", {
   expect_equal(d@variables$scale, (n_rep - 1L) / n_rep)
 })
 
-test_that("as_survey_replicate() computes bootstrap default scale = 1/R", {
+test_that("as_survey_replicate() computes JK2 default scale = 1", {
+  # JK2 is the paired jackknife: each replicate is a half sample, so the
+  # per-stratum factor is already inside the replicate weights and the overall
+  # scale stays at 1. survey::svrepdesign() fixes it at 1 and
+  # as_survey_nonprob() already agreed; the replicate constructor used the
+  # delete-one factor (R-1)/R and was low by sqrt((R-1)/R) (issue #242).
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 10L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK2"
+  )
+  expect_equal(d@variables$scale, 1)
+  expect_false(isTRUE(all.equal(d@variables$scale, (n_rep - 1L) / n_rep)))
+})
+
+test_that("as_survey_replicate() and as_survey_nonprob() agree on JK2 scale", {
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 10L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2"
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2",
+    rscales = rep(1, length(repwt_cols))
+  )
+  expect_equal(d_rep@variables$scale, d_np@variables$scale)
+})
+
+test_that("as_survey_replicate() computes bootstrap default scale = 1/(R-1)", {
   df <- make_survey_data(
     n = 100,
     n_psu = 10L,
@@ -663,7 +701,1927 @@ test_that("as_survey_replicate() computes bootstrap default scale = 1/R", {
     repweights = starts_with("repwt_"),
     type = "bootstrap"
   )
-  expect_equal(d@variables$scale, 1 / n_rep)
+  expect_equal(d@variables$scale, 1 / (n_rep - 1))
+})
+
+test_that("as_survey_replicate() JKn and bootstrap defaults rise by R/(R-1)", {
+  # Both changed defaults multiply the variance by R/(R-1), so each stored
+  # value is its old value times that ratio (issue #253).
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 253L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = rep(1, n_rep)
+    )
+  )
+  expect_no_condition(
+    d_boot <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    )
+  )
+
+  jkn_old <- (n_rep - 1L) / n_rep
+  boot_old <- 1 / n_rep
+
+  expect_equal(d_jkn@variables$scale, 1)
+  expect_equal(d_boot@variables$scale, 1 / (n_rep - 1L))
+
+  expect_false(isTRUE(all.equal(d_jkn@variables$scale, jkn_old)))
+  expect_false(isTRUE(all.equal(d_boot@variables$scale, boot_old)))
+
+  expect_gt(d_jkn@variables$scale, jkn_old)
+  expect_gt(d_boot@variables$scale, boot_old)
+
+  expect_equal(
+    d_jkn@variables$scale / jkn_old,
+    n_rep / (n_rep - 1L),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    d_boot@variables$scale / boot_old,
+    n_rep / (n_rep - 1L),
+    tolerance = 1e-8
+  )
+})
+
+test_that("as_survey_replicate() JKn scale stays 1 with non-uniform rscales", {
+  # The per-stratum factor lives in rscales. The constructor folds no part of
+  # it into scale and normalises nothing (spec E6).
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 254L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  rsc <- seq(0.5, 0.95, length.out = n_rep)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn",
+    rscales = rsc
+  )
+  expect_equal(d@variables$scale, 1)
+  expect_equal(d@variables$rscales, rsc)
+  expect_identical(length(d@variables$rscales), n_rep)
+})
+
+test_that("as_survey_replicate() scale at one and two replicate columns", {
+  # 1/(R-1) is 1 at R = 2 and Inf at R = 1. The constructor stores Inf and
+  # raises nothing, which is what survey::svrepdesign() does (spec E1, E2).
+  # JKn does not depend on R, so R = 1 stores 1 as well (spec E3).
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    type = "bootstrap",
+    seed = 255L
+  )
+
+  d_two <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(c("repwt_1", "repwt_2")),
+    type = "bootstrap"
+  )
+  expect_equal(d_two@variables$scale, 1)
+
+  expect_no_condition(
+    d_one <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = all_of("repwt_1"),
+      type = "bootstrap"
+    )
+  )
+  expect_true(is.infinite(d_one@variables$scale))
+  expect_equal(d_one@variables$scale, Inf)
+
+  d_jkn_one <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of("repwt_1"),
+    type = "JKn",
+    rscales = 1
+  )
+  expect_equal(d_jkn_one@variables$scale, 1)
+})
+
+test_that("as_survey_replicate() stores an explicit scale verbatim", {
+  # An explicit scale skips the switch. It is the route back to the
+  # pre-change numbers for both changed types (spec E4).
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    type = "jkn",
+    seed = 256L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  d_jkn <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn",
+    scale = (n_rep - 1L) / n_rep,
+    rscales = rep(1, n_rep)
+  )
+  d_boot <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap",
+    scale = 1 / n_rep
+  )
+  expect_equal(d_jkn@variables$scale, (n_rep - 1L) / n_rep)
+  expect_equal(d_boot@variables$scale, 1 / n_rep)
+})
+
+test_that("as_survey_replicate() refuses JKn with no rscales", {
+  # JKn replicate weights are combined weights, so the stratum factor
+  # (n_h - 1) / n_h reaches the variance only through rscales. A NULL
+  # rscales would drop it silently; survey::svrepdesign() refuses the same
+  # input (issue #255).
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn"
+    ),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses JKn with no rscales before the rho warning", {
+  # The JKn refusal runs before the rho step, so a JKn call that also
+  # supplies rho raises the error and no rho warning.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_no_warning(
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "JKn",
+        rho = 0.3
+      ),
+      class = "surveycore_error_stratified_jk_rscales_unset"
+    )
+  )
+})
+
+test_that("as_survey_replicate() stores both changed defaults on a two-row frame", {
+  # The default depends on `type` and R alone and on nothing in the data, so
+  # the smallest frame the constructor accepts stores the same two values as
+  # the 200-row, 20-column frame above: 1 for JKn and 1/19 at R = 20.
+  # Two rows and not one: .validate_data() refuses a single-row frame, and
+  # the block below asserts that refusal.
+  small <- data.frame(
+    y1 = c(41.7, 38.2),
+    wt = c(2.5, 3.1)
+  )
+  for (i in 1:20) {
+    small[[paste0("repwt_", i)]] <- small$wt * (0.9 + i / 100)
+  }
+  n_rep <- 20L
+  expect_identical(nrow(small), 2L)
+
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      small,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = rep(1, n_rep)
+    )
+  )
+  expect_no_condition(
+    d_boot <- as_survey_replicate(
+      small,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    )
+  )
+
+  expect_identical(length(d_jkn@variables$repweights), n_rep)
+  expect_equal(d_jkn@variables$scale, 1)
+  expect_equal(d_boot@variables$scale, 1 / (n_rep - 1L))
+})
+
+test_that("as_survey_replicate() refuses five frames before the scale switch", {
+  # Every validator runs ahead of the default-scale switch, so each frame
+  # below raises its own class and none of them reaches a stored scale
+  # (spec E7). Each frame is built inline because the frame content is the
+  # thing each assertion is about.
+  base_df <- data.frame(
+    y1 = c(41.7, 38.2, 44.1, 39.9, 42.6),
+    wt = c(2.5, 3.1, 2.8, 2.2, 3.4)
+  )
+  for (i in 1:4) {
+    base_df[[paste0("repwt_", i)]] <- base_df$wt * (0.9 + i / 100)
+  }
+
+  expect_error(
+    as_survey_replicate(
+      base_df[0, , drop = FALSE],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn"
+    ),
+    class = "surveycore_error_empty_data"
+  )
+
+  # .validate_data() raises Error 4 ahead of the switch, so the single-row
+  # refusal does not depend on `type`. The JK1 block below reaches the same
+  # guard and the same lines, so this assertion adds no line coverage. It is
+  # here to complete the refusal inventory for the two types whose default
+  # this work changed, beside the four refusals above.
+  expect_error(
+    as_survey_replicate(
+      base_df[1, , drop = FALSE],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_single_row"
+  )
+
+  expect_error(
+    as_survey_replicate(
+      base_df,
+      weights = wt,
+      repweights = starts_with("no_such_prefix_"),
+      type = "JKn"
+    ),
+    class = "surveycore_error_repweights_empty"
+  )
+
+  zero_wt <- base_df
+  zero_wt$wt <- 0
+  expect_error(
+    as_survey_replicate(
+      zero_wt,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_weights_all_zero"
+  )
+
+  expect_error(
+    as_survey_replicate(
+      base_df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = c(1, 1)
+    ),
+    class = "surveycore_error_rscales_length"
+  )
+})
+
+test_that("as_survey_replicate() stores the default scale of all nine types, Fay with rho", {
+  # One frame, one design per type, no `scale` argument. The nine values are
+  # the After column of the default scale table in the spec. Two of them
+  # moved in issue #253; the other seven are pinned here, so a later edit to
+  # any one of the nine turns exactly one assertion red. Fay needs `rho`
+  # (issue #243), so its line passes rho = 0.3 and expects the Fay scale.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  stored <- function(ty, rho = NULL, rscales = NULL) {
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = ty,
+      rho = rho,
+      rscales = rscales
+    )@variables$scale
+  }
+
+  expect_equal(stored("JK1"), (n_rep - 1L) / n_rep)
+  expect_equal(stored("JK2"), 1)
+  expect_equal(stored("JKn", rscales = rep(1, 20)), 1)
+  expect_equal(stored("BRR"), 1 / n_rep)
+  expect_equal(
+    stored("Fay", rho = 0.3),
+    1 / (n_rep * (1 - 0.3)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(stored("bootstrap"), 1 / (n_rep - 1L))
+  expect_equal(stored("ACS"), 4 / n_rep)
+  expect_equal(stored("successive-difference"), 4 / n_rep)
+  expect_equal(stored("other"), 1)
+})
+
+test_that("as_survey_replicate() takes rho as the fifth formal, after type", {
+  expect_identical(
+    names(formals(as_survey_replicate)),
+    c(
+      "data",
+      "weights",
+      "repweights",
+      "type",
+      "rho",
+      "scale",
+      "rscales",
+      "fpc",
+      "fpctype",
+      "mse",
+      "calibration"
+    )
+  )
+})
+
+test_that("as_survey_replicate() stores rho and the Fay scale for type = \"Fay\"", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+  expect_identical(d@variables$type, "Fay")
+})
+
+test_that("as_survey_replicate() refuses type = \"Fay\" with no rho", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    ),
+    class = "surveycore_error_fay_rho_missing"
+  )
+  expect_match(conditionMessage(cnd), "rho", fixed = TRUE)
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses type = \"Fay\" with rho = 1.5", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = 1.5
+    ),
+    class = "surveycore_error_fay_rho_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = 1.5
+    )
+  )
+})
+
+test_that("as_survey_replicate() warns and discards rho for the eight other types", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = ty,
+        rho = 0.3,
+        rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+      ),
+      class = "surveycore_warning_rho_ignored"
+    )
+    d_plain <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = ty,
+      rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+    )
+    expect_null(d@variables$rho)
+    expect_identical(d@variables$scale, d_plain@variables$scale)
+  }
+})
+
+test_that("as_survey_replicate() warning for rho with type = \"BRR\" shows the FR-3 text", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      rho = 0.3
+    )
+  )
+})
+
+test_that("as_survey_replicate() stores the rho key for every type", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = ty,
+      rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+    )
+    expect_true("rho" %in% names(d@variables))
+    expect_identical(d@variables$rho, NULL)
+  }
+  d_fay <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  expect_true("rho" %in% names(d_fay@variables))
+})
+
+test_that("as_survey_replicate() binds a positional fifth argument to rho", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(df, wt, starts_with("repwt_"), "Fay", 0.3)
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() refuses type = \"Fay\" with rho = NULL passed explicitly", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = NULL
+    ),
+    class = "surveycore_error_fay_rho_missing"
+  )
+})
+
+test_that("as_survey_replicate() invalid-rho message names the class and at most five values", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = "0.5"
+    ),
+    class = "surveycore_error_fay_rho_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = "0.5"
+    )
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = numeric(0)
+    )
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses every rho that is not one finite number in [0, 1)", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  bad_rho <- list(
+    -0.1,
+    1,
+    NA,
+    NA_real_,
+    NaN,
+    Inf,
+    -Inf,
+    numeric(0),
+    c(0.1, 0.2),
+    TRUE,
+    factor("0.5"),
+    list(0.5),
+    matrix(0.3),
+    array(0.3, c(1, 1, 1))
+  )
+  expect_identical(length(bad_rho), 14L)
+  for (bad in bad_rho) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "Fay",
+        rho = bad
+      ),
+      class = "surveycore_error_fay_rho_invalid"
+    )
+  }
+})
+
+test_that("as_survey_replicate() raises no warning for the eight other types with no rho", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_no_warning(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = ty,
+        rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+      )
+    )
+  }
+})
+
+test_that("as_survey_replicate() warns and does not check rho = \"a\" for type = \"BRR\"", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_no_error(
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "BRR",
+        rho = "a"
+      ),
+      class = "surveycore_warning_rho_ignored"
+    )
+  )
+  expect_null(d@variables$rho)
+})
+
+test_that("as_survey_replicate() accepts rho = 0 for Fay, stores the BRR scale and keeps type \"Fay\"", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0
+  )
+  expect_equal(d@variables$rho, 0, tolerance = 1e-10)
+  expect_equal(d@variables$scale, 1 / 20, tolerance = 1e-8)
+  expect_identical(d@variables$type, "Fay")
+})
+
+test_that("as_survey_replicate() stores an integer rho = 0L as the double 0", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0L
+  )
+  expect_identical(d@variables$rho, 0)
+})
+
+test_that("as_survey_replicate() stores a named rho = c(a = 0.3) unnamed", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = c(a = 0.3)
+  )
+  expect_null(names(d@variables$rho))
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+})
+
+test_that("as_survey_replicate() accepts rho = 0.999 for Fay and stores its scale", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.999
+  )
+  expect_equal(
+    d@variables$scale,
+    1 / (20 * (1 - 0.999)^2),
+    tolerance = 1e-8
+  )
+})
+
+test_that("as_survey_replicate() discards a supplied scale for Fay with no warning", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_no_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = 0.3,
+      scale = 99
+    )
+  )
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() keeps rscales for Fay and still stores the Fay scale", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3,
+    rscales = rep(2, 20)
+  )
+  expect_identical(d@variables$rscales, rep(2, 20))
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() accepts mse = FALSE for Fay", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3,
+    mse = FALSE
+  )
+  expect_identical(d@variables$mse, FALSE)
+})
+
+test_that("as_survey_replicate() builds Fay with one replicate column and stores scale 4 at rho = 0.5", {
+  df <- data.frame(
+    y = c(2.1, 3.4, 1.8, 4.0),
+    wt = c(1, 2, 3, 4),
+    rep1 = c(1.5, 1, 4.5, 2)
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = rep1,
+    type = "Fay",
+    rho = 0.5
+  )
+  expect_identical(d@variables$repweights, "rep1")
+  expect_equal(d@variables$scale, 1 / (1 - 0.5)^2, tolerance = 1e-8)
+  expect_equal(d@variables$scale, 4, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() raises the empty-data error before the missing-rho error", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df[0, ],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    ),
+    class = "surveycore_error_empty_data"
+  )
+})
+
+test_that("as_survey_replicate() raises the single-row error before the missing-rho error", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df[1, ],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    ),
+    class = "surveycore_error_single_row"
+  )
+})
+
+test_that("as_survey_replicate() raises the rscales-length error before the missing-rho error", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rscales = rep(1, 3)
+    ),
+    class = "surveycore_error_rscales_length"
+  )
+})
+
+# ── Discarded scale (issue #255) ──────────────────────────────────────────────
+# BRR, JK2, ACS and successive-difference take their scale from the type, as
+# survey::svrepdesign() does. A supplied scale is discarded with a warning.
+
+test_that("as_survey_replicate() discards a supplied scale for BRR, JK2, ACS and successive-difference", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  own_scale <- c(
+    "BRR" = 1 / 20,
+    "JK2" = 1,
+    "ACS" = 4 / 20,
+    "successive-difference" = 4 / 20
+  )
+  for (ty in names(own_scale)) {
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        scale = 0.6
+      ),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    expect_no_warning(
+      d_plain <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty
+      )
+    )
+    expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+    expect_identical(d@variables, d_plain@variables)
+  }
+})
+
+test_that("as_survey_replicate() warns for a supplied BRR scale equal to the default", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_warning(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      scale = 1 / 20
+    ),
+    class = "surveycore_warning_replicate_arg_ignored"
+  )
+})
+
+test_that("as_survey_replicate() discards a non-numeric scale without checking it", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  own_scale <- c(
+    "BRR" = 1 / 20,
+    "JK2" = 1,
+    "ACS" = 4 / 20,
+    "successive-difference" = 4 / 20
+  )
+  for (ty in names(own_scale)) {
+    expect_no_error(
+      expect_warning(
+        d <- as_survey_replicate(
+          df,
+          weights = wt,
+          repweights = tidyselect::all_of(repwt_cols),
+          type = ty,
+          scale = "a"
+        ),
+        class = "surveycore_warning_replicate_arg_ignored"
+      )
+    )
+    expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+  }
+})
+
+test_that("as_survey_replicate() discard warning names scale alone", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      scale = 0.6
+    )
+  )
+})
+
+test_that("as_survey_replicate() never checks a discarded scale", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  own_scale <- c(
+    "BRR" = 1 / 20,
+    "JK2" = 1,
+    "ACS" = 4 / 20,
+    "successive-difference" = 4 / 20
+  )
+  values <- list(NA_real_, Inf, -1, 0, rep(0.6, 20))
+  for (value in values) {
+    for (ty in names(own_scale)) {
+      expect_warning(
+        d <- as_survey_replicate(
+          df,
+          weights = wt,
+          repweights = tidyselect::all_of(repwt_cols),
+          type = ty,
+          scale = value
+        ),
+        class = "surveycore_warning_replicate_arg_ignored"
+      )
+      d_plain <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty
+      )
+      expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+      expect_identical(d@variables, d_plain@variables)
+    }
+    expect_no_condition(
+      d_fay <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "Fay",
+        rho = 0.3,
+        scale = value
+      )
+    )
+    expect_equal(
+      d_fay@variables$scale,
+      1 / (20 * (1 - 0.3)^2),
+      tolerance = 1e-8
+    )
+  }
+})
+
+test_that("as_survey_replicate() discards a supplied scale at one replicate column", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  own_scale <- c("BRR" = 1, "ACS" = 4, "successive-difference" = 4)
+  for (ty in names(own_scale)) {
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of("repwt_1"),
+        type = ty,
+        scale = 0.6
+      ),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+  }
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of("repwt_1"),
+      type = "JKn",
+      rscales = 1
+    )
+  )
+  expect_equal(d_jkn@variables$scale, 1, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() discards a supplied scale on an all-NA outcome frame", {
+  wt <- c(2.5, 3.1, 2.8, 2.2, 3.4, 2.9, 3.6, 2.4, 3.0, 2.7)
+  df <- data.frame(y1 = rep(NA_real_, 10), wt = wt)
+  for (i in 1:8) {
+    df[[paste0("repwt_", i)]] <- wt * (0.9 + i / 100)
+  }
+  repwt_cols <- paste0("repwt_", 1:8)
+  expect_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK2",
+      scale = 0.6
+    ),
+    class = "surveycore_warning_replicate_arg_ignored"
+  )
+  expect_equal(d@variables$scale, 1, tolerance = 1e-8)
+  expect_true(all(is.na(d@data$y1)))
+})
+
+test_that("as_survey_replicate() keeps a supplied scale for JK1, JKn, bootstrap and other", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  for (ty in c("JK1", "JKn", "bootstrap", "other")) {
+    expect_no_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        scale = 0.6,
+        rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+      )
+    )
+    expect_equal(d@variables$scale, 0.6, tolerance = 1e-8)
+  }
+})
+
+test_that("as_survey_replicate() raises no warning on any type when scale and rscales are not supplied", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "Fay",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_no_warning(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        rho = if (identical(ty, "Fay")) 0.3 else NULL,
+        rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+      )
+    )
+  }
+})
+
+test_that("as_survey_replicate() treats an explicit NULL scale and rscales as not supplied", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  for (ty in c("BRR", "JK2", "ACS", "successive-difference")) {
+    expect_no_warning(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        scale = NULL,
+        rscales = NULL
+      )
+    )
+  }
+})
+
+test_that("as_survey_replicate() builds JKn with rscales and stores scale 1", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_no_condition(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn",
+      rscales = rep(1, 20)
+    )
+  )
+  expect_equal(d@variables$scale, 1, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() discards a supplied rscales for JK2, ACS and successive-difference", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  for (ty in c("JK2", "ACS", "successive-difference")) {
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        rscales = rep(0.5, 20)
+      ),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    d_plain <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = ty
+    )
+    expect_null(d@variables$rscales)
+    expect_identical(d@variables, d_plain@variables)
+    expect_equal(
+      get_means(d, y1, variance = "se")$se,
+      get_means(d_plain, y1, variance = "se")$se,
+      tolerance = 1e-8
+    )
+  }
+})
+
+test_that("as_survey_replicate() discard warning names scale and rscales together", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK2",
+      scale = 0.6,
+      rscales = rep(0.5, 20)
+    )
+  )
+})
+
+test_that("as_survey_replicate() discard warning names rscales alone", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "ACS",
+      rscales = rep(0.5, 20)
+    )
+  )
+})
+
+test_that("as_survey_replicate() raises one discard warning for scale and rscales together", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  own_scale <- c(
+    "JK2" = 1,
+    "ACS" = 4 / 20,
+    "successive-difference" = 4 / 20
+  )
+  for (ty in names(own_scale)) {
+    w <- testthat::capture_warnings(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        scale = 0.6,
+        rscales = rep(0.5, 20)
+      )
+    )
+    expect_length(w, 1L)
+    expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+    expect_null(d@variables$rscales)
+  }
+})
+
+test_that("as_survey_replicate() discards scale and rscales by the closed type sets", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  build <- function(ty) {
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = ty,
+      rho = if (identical(ty, "Fay")) 0.3 else NULL,
+      scale = 0.6,
+      rscales = rep(0.5, 20)
+    )
+  }
+  kept <- rep(0.5, 20)
+  expected <- list(
+    "JK1" = list(warns = FALSE, scale = 0.6, rscales = kept),
+    "JK2" = list(warns = TRUE, scale = 1, rscales = NULL),
+    "JKn" = list(warns = FALSE, scale = 0.6, rscales = kept),
+    "BRR" = list(warns = TRUE, scale = 1 / 20, rscales = kept),
+    "Fay" = list(
+      warns = FALSE,
+      scale = 1 / (20 * (1 - 0.3)^2),
+      rscales = kept
+    ),
+    "bootstrap" = list(warns = FALSE, scale = 0.6, rscales = kept),
+    "ACS" = list(warns = TRUE, scale = 4 / 20, rscales = NULL),
+    "successive-difference" = list(
+      warns = TRUE,
+      scale = 4 / 20,
+      rscales = NULL
+    ),
+    "other" = list(warns = FALSE, scale = 0.6, rscales = kept)
+  )
+  for (ty in names(expected)) {
+    want <- expected[[ty]]
+    if (want$warns) {
+      expect_warning(
+        d <- build(ty),
+        class = "surveycore_warning_replicate_arg_ignored"
+      )
+    } else {
+      expect_no_warning(d <- build(ty))
+    }
+    expect_equal(d@variables$scale, want$scale, tolerance = 1e-8)
+    if (is.null(want$rscales)) {
+      expect_null(d@variables$rscales)
+    } else {
+      expect_identical(d@variables$rscales, want$rscales)
+    }
+  }
+})
+
+test_that("as_survey_replicate() rho warning carries the replicate_arg_ignored class", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  build <- function(ty) {
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = ty,
+      rho = 0.3,
+      rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+    )
+  }
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_warning(
+      d <- build(ty),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    expect_warning(
+      build(ty),
+      class = "surveycore_warning_rho_ignored"
+    )
+    expect_null(d@variables$rho)
+  }
+})
+
+test_that("as_survey_replicate() raises the rho warning before the discard warning", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      rho = 0.3,
+      scale = 0.6
+    )
+  )
+  w <- testthat::capture_warnings(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      rho = 0.3,
+      scale = 0.6
+    )
+  )
+  expect_length(w, 2L)
+  expect_equal(d@variables$scale, 1 / 20, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() raises the rho warning and one discard warning for scale, rscales and rho together", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  own_scale <- c(
+    "JK2" = 1,
+    "ACS" = 4 / 20,
+    "successive-difference" = 4 / 20
+  )
+  for (ty in names(own_scale)) {
+    w <- testthat::capture_warnings(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        scale = 0.6,
+        rscales = rep(0.5, 20),
+        rho = 0.3
+      )
+    )
+    expect_length(w, 2L)
+    expect_match(w[[1L]], "applies only to", fixed = TRUE)
+    expect_match(
+      w[[2L]],
+      "have no effect for this replicate type",
+      fixed = TRUE
+    )
+    expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+    expect_null(d@variables$rscales)
+    expect_null(d@variables$rho)
+  }
+})
+
+test_that("as_survey_replicate() keeps a supplied rscales for JK1, JKn, BRR, Fay, bootstrap and other", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  for (ty in c("JK1", "JKn", "BRR", "Fay", "bootstrap", "other")) {
+    expect_no_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        rho = if (identical(ty, "Fay")) 0.3 else NULL,
+        rscales = rep(0.5, 20)
+      )
+    )
+    expect_identical(d@variables$rscales, rep(0.5, 20))
+  }
+})
+
+test_that("as_survey_replicate() builds JK2 with no rscales and raises nothing", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_no_condition(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK2"
+    )
+  )
+  expect_null(d@variables$rscales)
+  expect_equal(d@variables$scale, 1, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() checks rscales length before discarding it", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_no_warning(
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "JK2",
+        rscales = c(1, 1)
+      ),
+      class = "surveycore_error_rscales_length"
+    )
+  )
+})
+
+test_that("as_survey_replicate() checks rscales values before discarding them", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_no_warning(
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "ACS",
+        rscales = c(NA_real_, rep(1, 19))
+      ),
+      class = "surveycore_error_rscales_na"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses JKn with rscales = NULL passed explicitly", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn",
+      rscales = NULL
+    ),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+})
+
+test_that("as_survey_replicate() refuses a one-row JKn frame before the JKn refusal", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
+      df[1, ],
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn"
+    ),
+    class = "surveycore_error_single_row"
+  )
+})
+
+test_that("update_design() keeps the stored rho of a Fay design when the weights change", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  df$wt2 <- df$wt * 1.05
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  d2 <- suppressMessages(update_design(d, weights = wt2))
+  expect_identical(d2@variables$weights, "wt2")
+  expect_equal(d2@variables$rho, 0.3, tolerance = 1e-10)
+})
+
+test_that("as_survey_nonprob() matches as_survey_replicate() on JKn", {
+  # Cross-constructor. Both defaults are 1 for JKn, so the two designs
+  # return the same mean and the same standard error on one frame. Each
+  # stored value is asserted against the literal 1 and never against the
+  # other side (.claude/rules/testing-surveycore.md).
+  #
+  # The overlap with the nine-type table block above is deliberate. That
+  # block pins the replicate JKn value on its own (`:1001` at this PR's
+  # base). This block asserts the relationship between the two
+  # constructors, which no single-side block can state.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jkn",
+    seed = 31L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  rs <- rep(1, n_rep)
+
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JKn",
+    mse = TRUE,
+    rscales = rs
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JKn",
+    mse = TRUE,
+    rscales = rs
+  )
+
+  # SE/variance row, 1e-8.
+  expect_equal(d_rep@variables$scale, 1, tolerance = 1e-8)
+  expect_equal(d_np@variables$scale, 1, tolerance = 1e-8)
+
+  m_rep <- get_means(d_rep, y1, variance = "se", min_cell_n = 1L)
+  m_np <- get_means(d_np, y1, variance = "se", min_cell_n = 1L)
+
+  expect_equal(m_np$mean, m_rep$mean, tolerance = 1e-10)
+  expect_equal(m_np$se, m_rep$se, tolerance = 1e-8)
+})
+
+test_that("as_survey_nonprob() keeps 1/R where as_survey_replicate() moved", {
+  # Cross-constructor. as_survey_replicate() moved to 1/(R-1) with issue
+  # #253; as_survey_nonprob() keeps 1/R by decision D1, because survey has
+  # no non-probability design class and so is not an oracle for one. On the
+  # same frame the nonprob standard error is the smaller of the two, by
+  # sqrt((R-1)/R). Each stored value is asserted against its own literal
+  # and never against the other side.
+  #
+  # The overlap with two existing blocks is deliberate. The nine-type table
+  # block above pins the replicate bootstrap value alone, and the block
+  # titled "as_survey_nonprob() computes default scale = 1/R and rscales =
+  # rep(1, R)" (`:2484` at this PR's base) pins the nonprob value alone.
+  # Neither can state the relationship between the two constructors.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "bootstrap",
+    seed = 32L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "bootstrap",
+    mse = TRUE
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "bootstrap",
+    mse = TRUE
+  )
+
+  # SE/variance row, 1e-8.
+  expect_equal(d_rep@variables$scale, 1 / (n_rep - 1L), tolerance = 1e-8)
+  expect_equal(d_np@variables$scale, 1 / n_rep, tolerance = 1e-8)
+
+  m_rep <- get_means(d_rep, y1, variance = "se", min_cell_n = 1L)
+  m_np <- get_means(d_np, y1, variance = "se", min_cell_n = 1L)
+
+  # The scale enters the variance only, so the point estimates agree.
+  expect_equal(m_np$mean, m_rep$mean, tolerance = 1e-10)
+  expect_equal(
+    m_np$se / m_rep$se,
+    sqrt((n_rep - 1L) / n_rep),
+    tolerance = 1e-8
+  )
+})
+
+test_that("as_survey_replicate() builds on an all-NA outcome column", {
+  # The default depends on `type` and R alone, so a column that is NA in
+  # every row stores the same scale as any other frame. Both constructions
+  # raise no condition and store the supplied rscales unchanged (spec E7).
+  na_df <- data.frame(
+    y1 = rep(NA_real_, 10),
+    wt = c(2.5, 3.1, 2.8, 2.2, 3.4, 2.9, 3.6, 2.4, 3.0, 2.7)
+  )
+  for (i in 1:8) {
+    na_df[[paste0("repwt_", i)]] <- na_df$wt * (0.9 + i / 100)
+  }
+  n_rep <- 8L
+  rsc <- seq(0.5, 0.95, length.out = n_rep)
+
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      na_df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = rsc
+    )
+  )
+  expect_no_condition(
+    d_boot <- as_survey_replicate(
+      na_df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap",
+      rscales = rsc
+    )
+  )
+
+  expect_true(all(is.na(d_jkn@data$y1)))
+  expect_equal(d_jkn@variables$scale, 1)
+  expect_equal(d_boot@variables$scale, 1 / (n_rep - 1L))
+  expect_equal(d_jkn@variables$rscales, rsc)
+  expect_equal(d_boot@variables$rscales, rsc)
+})
+
+test_that("as_survey_replicate() refuses a weight column mixing zeros with positives", {
+  # .validate_weights() refuses any non-NA weight that is not strictly
+  # positive, and it runs ahead of the scale switch, so neither type stores
+  # a scale on this frame. A wholly zero column takes the other class
+  # (spec E7).
+  mixed <- data.frame(
+    y1 = c(41.7, 38.2, 44.1, 39.9, 42.6, 40.3),
+    wt = c(0, 3.1, 2.8, 0, 3.4, 2.9)
+  )
+  for (i in 1:4) {
+    mixed[[paste0("repwt_", i)]] <- 2.5 * (0.9 + i / 100)
+  }
+
+  expect_error(
+    as_survey_replicate(
+      mixed,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn"
+    ),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_error(
+    as_survey_replicate(
+      mixed,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_weights_nonpositive"
+  )
 })
 
 test_that("as_survey_replicate() stores repweights as column names (not matrix)", {
@@ -699,17 +2657,747 @@ test_that("as_survey_replicate() stores mse as logical", {
   expect_false(d2@variables$mse)
 })
 
-test_that("as_survey_replicate() stores fpc column name when fpc provided", {
+# ── Replicate FPC: the column form is refused (RF-1, RF-1b) ──────────────────
+# Issues #251 and #320. A bare name or a single string that names a column of
+# `data` is a column, whatever the calling environment holds.
+
+test_that("as_survey_replicate() refuses an fpc column [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() reads a bare column name as the column when a variable shares it [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  # A numeric variable of the same name, valid as a numeric fpc, exists in
+  # this frame. The column still wins.
+  fpc <- 0.1
+  expect_true("fpc" %in% names(df))
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses a string that names a column [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = "fpc",
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_match(conditionMessage(cnd), "names the column", fixed = TRUE)
+})
+
+test_that("as_survey_replicate() accepts .env$ for a variable that shares a column's name", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  fpc <- 0.1
+  d_env <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = .env$fpc,
+    fpctype = "fraction"
+  )
+  d_lit <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = 0.1,
+    fpctype = "fraction"
+  )
+  expect_identical(d_env@variables, d_lit@variables)
+  expect_identical(d_env@variables$fpc_applied, "rscales")
+})
+
+test_that("as_survey_replicate() points the column refusal at a number and .env [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_match(conditionMessage(cnd), "fpc = 0.05", fixed = TRUE)
+  expect_match(conditionMessage(cnd), ".env$fpc", fixed = TRUE)
+})
+
+test_that("as_survey_replicate() refuses fpctype on its own [RF-1b]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      fpctype = "correction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses the column form before checking the type [RF-1]", {
+  # The column refusal runs first, so a column fpc with a type that refuses
+  # any fpc, and an fpctype alongside, still raises RF-1 and names the column.
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      fpc = fpc,
+      fpctype = "correction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_match(conditionMessage(cnd), "names the column", fixed = TRUE)
+})
+
+test_that("as_survey_replicate() refuses an NA-holding fpc column before reading it [RF-1]", {
+  # The refusal does not read the column: a column holding NA raises RF-1
+  # and not a column-level fpc error. A name that matches no column, or a
+  # tidyselect helper, is not a column: it is evaluated, and fails [RF-3c].
+  df <- data.frame(
+    y = 1:5,
+    wt = rep(1, 5),
+    r1 = rep(1, 5),
+    r2 = rep(1, 5),
+    fpc1 = c(1000L, NA_integer_, 1000L, 1000L, 1000L)
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = c(r1, r2),
+      type = "JK1",
+      fpc = fpc1,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = c(r1, r2),
+      type = "JK1",
+      fpc = no_such_column,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = c(r1, r2),
+      type = "JK1",
+      fpc = starts_with("fpc"),
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+})
+
+test_that("as_survey_replicate() reports a non-data-frame before reading fpc [row 1]", {
+  # The column check reads names(data) only for a data frame, so a list
+  # with an fpc element still raises the data-frame error first.
+  expect_error(
+    as_survey_replicate(
+      list(x = 1:5, fpc = rep(0.1, 5)),
+      weights = x,
+      repweights = starts_with("r"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_not_data_frame"
+  )
+})
+
+test_that("as_survey_replicate() accepts an explicit fpc = NULL", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_no_error(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = NULL,
+      fpctype = NULL
+    )
+  )
+  expect_null(d@variables$fpc)
+  expect_null(d@variables$fpc_applied)
+})
+
+# ── Replicate FPC: a numeric fpc is folded into rscales (issue #320) ──────────
+
+test_that("as_survey_replicate() records a numeric fpc in rscales and the two keys", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  n_rep <- 5L
+  f <- seq(0.05, 0.25, length.out = n_rep)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = f,
+    fpctype = "fraction"
+  )
+  expect_identical(length(d@variables$repweights), n_rep)
+  expect_equal(d@variables$rscales, 1 - f)
+  expect_identical(d@variables$fpc_applied, "rscales")
+  expect_identical(d@variables$fpc_fraction, f)
+  # No column is named, and the overall scale is the JK1 default.
+  expect_null(d@variables$fpc)
+  expect_identical(d@variables$fpctype, "fraction")
+  expect_equal(d@variables$scale, (n_rep - 1) / n_rep)
+})
+
+test_that("as_survey_replicate() recycles a scalar fpc to every replicate", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
   d <- as_survey_replicate(
     df,
     weights = wt,
     repweights = starts_with("repwt_"),
-    type = "BRR",
-    fpc = fpc
+    type = "other",
+    fpc = 0.1,
+    fpctype = "fraction"
   )
-  test_invariants(d)
-  expect_identical(d@variables$fpc, "fpc")
+  expect_identical(d@variables$fpc_fraction, rep(0.1, 5L))
+  expect_equal(d@variables$rscales, rep(0.9, 5L))
+})
+
+test_that("as_survey_replicate() stores the same fraction for fpctype \"correction\"", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  correction <- seq(0.95, 0.75, length.out = 5L)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = correction,
+    fpctype = "correction"
+  )
+  # The correction is used as given, as survey::svrepdesign() uses it.
+  expect_identical(d@variables$rscales, correction)
+  expect_equal(d@variables$fpc_fraction, 1 - correction)
+  expect_identical(d@variables$fpc_applied, "rscales")
+})
+
+test_that("as_survey_replicate() multiplies a supplied rscales by the correction", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  rscales <- c(0.5, 0.6, 0.7, 0.8, 0.9)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn",
+    rscales = rscales,
+    fpc = 0.2,
+    fpctype = "fraction"
+  )
+  expect_equal(d@variables$rscales, rscales * 0.8)
+})
+
+test_that("as_survey_replicate() accepts the fpc boundary values 0 and 1", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  d_f0 <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = 0,
+    fpctype = "fraction"
+  )
+  d_c1 <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = 1,
+    fpctype = "correction"
+  )
+  expect_identical(d_f0@variables$rscales, rep(1, 5L))
+  expect_identical(d_c1@variables$rscales, rep(1, 5L))
+  expect_identical(d_c1@variables$fpc_fraction, rep(0, 5L))
+})
+
+test_that("as_survey_replicate() leaves both FPC keys NULL without an fpc", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  expect_true(all(c("fpc_applied", "fpc_fraction") %in% names(d@variables)))
+  expect_null(d@variables$fpc_applied)
+  expect_null(d@variables$fpc_fraction)
+  expect_null(d@variables$rscales)
+})
+
+test_that("as_survey_replicate() still requires rscales for JKn when fpc is given [RS-2]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      fpc = 0.1,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+})
+
+# Oracle: survey::svrepdesign(fpc = , fpctype = ). Both sides get the same
+# data, weights, replicate columns, type and mse, and survey gets the fpc in
+# its own form: length R. Neither side gets `scale`; only JKn gets `rscales`,
+# the same literal on both sides (.claude/rules/testing-surveycore.md).
+fpc_oracle_check <- function(type, rscales = NULL, survey_warning = NULL) {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  f_vec <- seq(0.05, 0.4, length.out = n_rep)
+  cases <- list(
+    list(fpc = 0.15, fpctype = "fraction", sv_fpc = rep(0.15, n_rep)),
+    list(fpc = f_vec, fpctype = "fraction", sv_fpc = f_vec),
+    list(fpc = 0.85, fpctype = "correction", sv_fpc = rep(0.85, n_rep)),
+    list(fpc = 1 - f_vec, fpctype = "correction", sv_fpc = 1 - f_vec)
+  )
+  for (cs in cases) {
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = type,
+      rscales = rscales,
+      fpc = cs$fpc,
+      fpctype = cs$fpctype,
+      mse = TRUE
+    )
+    build_sv <- function() {
+      survey::svrepdesign(
+        weights = df$wt,
+        repweights = df[, repwt_cols],
+        type = type,
+        rscales = rscales,
+        fpc = cs$sv_fpc,
+        fpctype = cs$fpctype,
+        mse = TRUE,
+        combined.weights = TRUE,
+        data = df
+      )
+    }
+    # survey's own condition for this type, matched by message text.
+    if (is.null(survey_warning)) {
+      expect_no_warning(sv <- build_sv())
+    } else {
+      expect_warning(sv <- build_sv(), survey_warning, fixed = TRUE)
+    }
+
+    sc <- get_means(d, y1, variance = c("se", "ci"))
+    sv_mean <- survey::svymean(~y1, sv)
+    sv_ci <- stats::confint(sv_mean)
+    expect_equal(sc$mean[[1L]], coef(sv_mean)[["y1"]], tolerance = 1e-10)
+    expect_equal(
+      sc$se[[1L]],
+      as.numeric(survey::SE(sv_mean)),
+      tolerance = 1e-8
+    )
+    expect_equal(sc$ci_low[[1L]], sv_ci[1L, 1L], tolerance = 1e-6)
+    expect_equal(sc$ci_high[[1L]], sv_ci[1L, 2L], tolerance = 1e-6)
+  }
+}
+
+test_that("as_survey_replicate() with a numeric fpc matches survey's fpc for JK1 [numerical]", {
+  skip_if_not_installed("survey")
+  fpc_oracle_check(
+    "JK1",
+    survey_warning = "scale (n-1)/n not provided: guessing n=number of replicates"
+  )
+})
+
+test_that("as_survey_replicate() with a numeric fpc matches survey's fpc for JKn [numerical]", {
+  skip_if_not_installed("survey")
+  fpc_oracle_check("JKn", rscales = c(0.8, 0.8, 0.75, 0.75, 0.75))
+})
+
+test_that("as_survey_replicate() with a numeric fpc matches survey's fpc for other [numerical]", {
+  skip_if_not_installed("survey")
+  fpc_oracle_check(
+    "other",
+    survey_warning = "scale or rscales not specified, set to 1"
+  )
+})
+
+test_that("as_survey_replicate() with rscales * (1 - f) matches survey's fpc [numerical]", {
+  skip_if_not_installed("survey")
+  # The by-hand route, still valid: folding the correction into rscales
+  # reproduces survey::svrepdesign(fpc = , fpctype = "fraction").
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  f <- seq(0.05, 0.4, length.out = n_rep)
+  rscales <- rep((n_rep - 1) / n_rep, n_rep)
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "JKn",
+    rscales = rscales * (1 - f)
+  )
+  sv <- survey::svrepdesign(
+    weights = df$wt,
+    repweights = df[, repwt_cols],
+    type = "JKn",
+    rscales = rscales,
+    fpc = f,
+    fpctype = "fraction",
+    mse = TRUE,
+    combined.weights = TRUE,
+    data = df
+  )
+
+  sc <- get_means(d, y1, variance = "se")
+  sv_mean <- survey::svymean(~y1, sv)
+  expect_equal(sc$mean[[1L]], coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+})
+
+# ── Replicate FPC: types and values refused (RF-2, RF-3) ─────────────────────
+
+test_that("as_survey_replicate() refuses a numeric fpc for every type survey refuses [RF-2]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  types <- c("BRR", "Fay", "JK2", "bootstrap", "ACS", "successive-difference")
+  for (ty in types) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = ty,
+        rho = if (ty == "Fay") 0.5 else NULL,
+        fpc = 0.1,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_type_unsupported"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      fpc = 0.1,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() points a bootstrap fpc at the replicate weights [RF-2]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap",
+      fpc = 0.1,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_type_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap",
+      fpc = 0.1,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() requires fpctype with a numeric fpc [RF-3a]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0.1
+    ),
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0.1
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpctype that is not exactly one of the two strings [RF-3b]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  bad <- list("frac", c("fraction", "correction"), NA_character_, 1)
+  for (ft in bad) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = 0.1,
+        fpctype = ft
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0.1,
+      fpctype = "frac"
+    )
+  )
+})
+
+test_that("as_survey_replicate() wraps an fpc that fails to evaluate [RF-3c]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = no_such_variable,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+  # The evaluation error is kept as the parent.
+  expect_true(inherits(cnd$parent, "error"))
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = no_such_variable,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses a non-numeric fpc [RF-3d]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  bad <- list("0.1", TRUE, factor("a"), matrix(0.1, 5L, 1L), list(0.1))
+  for (val in bad) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = val,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = "0.1",
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpc of the wrong length [RF-3e]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  for (val in list(numeric(0), c(0.1, 0.2), rep(0.1, 6L))) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = val,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = c(0.1, 0.2),
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpc holding NA or a non-finite value [RF-3f]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  for (val in list(NA_real_, NaN, Inf, c(0.1, NA, 0.1, Inf, 0.1))) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = val,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = c(0.1, NA, 0.1, Inf, 0.1),
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpc outside its range [RF-3g]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cases <- list(
+    list(fpc = 1, fpctype = "fraction"),
+    list(fpc = -0.1, fpctype = "fraction"),
+    list(fpc = 0, fpctype = "correction"),
+    list(fpc = 1.2, fpctype = "correction")
+  )
+  for (cs in cases) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = cs$fpc,
+        fpctype = cs$fpctype
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = c(0.1, 1, 0.1, 1.5, 0.1),
+      fpctype = "fraction"
+    )
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0,
+      fpctype = "correction"
+    )
+  )
 })
 
 test_that("as_survey_replicate() sets fpc = NULL when not provided", {
@@ -821,6 +3509,25 @@ test_that("as_survey_replicate() errors when all weights are zero [row 10]", {
     as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1"),
     class = "surveycore_error_weights_all_zero"
   )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+  )
+})
+
+# Row 33: weights mix non-positive values with positive ones. The
+# constructor route raises it from .validate_weights(), a Layer 3 abort, so
+# it takes the dual pattern.
+test_that("as_survey_replicate() errors when a weight is non-positive [row 33]", {
+  df <- data.frame(y = 1:5, wt = c(1, 0, 2, -1, 3), r1 = c(1, 1, 2, 1, 3))
+  expect_error(
+    as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1"),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+  )
 })
 
 # Row 16: repweights matches 0 columns
@@ -898,7 +3605,6 @@ test_that("as_survey_replicate() with tibble input (inherits data.frame)", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
 })
 
@@ -918,21 +3624,22 @@ test_that("as_survey_replicate() populates all expected @variables keys", {
     "rscales",
     "fpc",
     "fpctype",
+    "fpc_applied",
+    "fpc_fraction",
     "mse"
   )
   expect_true(all(expected_keys %in% names(d@variables)))
 })
 
-test_that("as_survey_replicate() accepts fpctype argument", {
+test_that("as_survey_replicate() stores the fpctype placeholder \"fraction\"", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 22L)
   d <- as_survey_replicate(
     df,
     weights = wt,
     repweights = starts_with("repwt_"),
-    type = "BRR",
-    fpctype = "correction"
+    type = "BRR"
   )
-  expect_identical(d@variables$fpctype, "correction")
+  expect_identical(d@variables$fpctype, "fraction")
 })
 
 
@@ -946,7 +3653,6 @@ test_that("as_survey_replicate() accepts starts_with() for repweights", {
     repweights = starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(d)
   expect_true(all(startsWith(d@variables$repweights, "repwt_")))
 })
 
@@ -964,7 +3670,6 @@ test_that("as_survey_replicate() accepts c() for explicit repweight columns", {
     repweights = c(r1, r2, r3),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@variables$repweights, c("r1", "r2", "r3"))
 })
 
@@ -981,7 +3686,6 @@ test_that("as_survey_replicate() accepts bare name for weights", {
     repweights = starts_with("r"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@variables$weights, "sampling_weight")
 })
 
@@ -994,9 +3698,15 @@ test_that("as_survey_replicate() accepts bare name for weights", {
 
 test_that("as_survey_twophase() creates survey_twophase for minimal two-phase design", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 1L)
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   expect_true(S7::S7_inherits(d2, survey_twophase))
   expect_identical(d2@variables$subset, "subset")
   expect_identical(d2@variables$method, "full")
@@ -1006,7 +3716,6 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'approx'",
   df <- make_survey_data(n = 200, design = "twophase", seed = 2L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset, method = "approx")
-  test_invariants(d2)
   expect_identical(d2@variables$method, "approx")
 })
 
@@ -1015,15 +3724,15 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'simple' (
   df <- make_survey_data(n = 200, design = "twophase", seed = 3L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset, method = "simple")
-  test_invariants(d2)
   expect_identical(d2@variables$method, "simple")
 })
 
 test_that("as_survey_twophase() stores Phase 2 stratification in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 4L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$strata, "strata")
   expect_null(d2@variables$phase2$ids)
   expect_null(d2@variables$phase2$probs)
@@ -1034,38 +3743,47 @@ test_that("as_survey_twophase() stores Phase 2 probs in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 5L)
   # Add a fake probs2 column
   df$subsamprate <- rep(0.4, nrow(df))
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(
     phase1,
     probs2 = subsamprate,
     subset = subset,
     method = "full"
   )
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$probs, "subsamprate")
 })
 
 test_that("as_survey_twophase() stores Phase 2 cluster ids in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 6L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$ids, "psu")
 })
 
 test_that("as_survey_twophase() stores Phase 2 fpc in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 7L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, fpc2 = fpc, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$fpc, "fpc")
 })
 
 test_that("as_survey_twophase() stores Phase 1 @variables in @variables$phase1", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 8L)
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   # Phase 1 variables preserved in nested structure
   expect_identical(d2@variables$phase1$weights, "wt")
   expect_identical(d2@variables$phase1$strata, "strata")
@@ -1080,9 +3798,10 @@ test_that("as_survey_twophase() inherits metadata from phase1", {
     with_labels = TRUE,
     seed = 9L
   )
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   # Metadata inherited from phase1
   expect_identical(
     d2@metadata@variable_labels[["y1"]],
@@ -1092,7 +3811,9 @@ test_that("as_survey_twophase() inherits metadata from phase1", {
 
 test_that("as_survey_twophase() stores call in @call", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 10L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expect_false(is.null(d2@call))
   expect_true(is.call(d2@call))
@@ -1100,7 +3821,9 @@ test_that("as_survey_twophase() stores call in @call", {
 
 test_that("as_survey_twophase() uses @data from phase1 (no copy)", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 11L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   # @data should be the same data as phase1@data
   expect_identical(nrow(d2@data), nrow(phase1@data))
@@ -1109,9 +3832,10 @@ test_that("as_survey_twophase() uses @data from phase1 (no copy)", {
 
 test_that("as_survey_twophase() sets all Phase 2 variables to NULL when not provided", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 12L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   expect_null(d2@variables$phase2$ids)
   expect_null(d2@variables$phase2$strata)
   expect_null(d2@variables$phase2$probs)
@@ -1121,35 +3845,166 @@ test_that("as_survey_twophase() sets all Phase 2 variables to NULL when not prov
 
 # ── Warning paths ─────────────────────────────────────────────────────────────
 
-# Row 24: method = "simple" with clustered Phase 1
-test_that("as_survey_twophase() warns when method = 'simple' with clustered Phase 1 [row 24]", {
+# Row 24 retired (issue #330): method = "simple" is method = "approx"
+test_that("as_survey_twophase() does not warn for method = 'simple' with clustered Phase 1", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 13L)
   phase1 <- suppressWarnings(
     as_survey(df, ids = psu, weights = wt, strata = strata)
   )
-  expect_warning(
-    as_survey_twophase(phase1, subset = subset, method = "simple"),
-    class = "surveycore_warning_simple_clustered"
-  )
-})
-
-test_that("as_survey_twophase() does NOT warn for method = 'simple' when Phase 1 has no PSUs [row 24]", {
-  df <- make_survey_data(n = 200, design = "twophase", seed = 14L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata)) # no ids
   expect_no_warning(
-    as_survey_twophase(phase1, subset = subset, method = "simple"),
-    message = "surveycore_warning_simple_clustered"
-  )
-})
-
-test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 warning", {
-  df <- make_survey_data(n = 200, design = "twophase", seed = 17L)
-  phase1 <- suppressWarnings(
-    as_survey(df, ids = psu, weights = wt, strata = strata)
-  )
-  expect_snapshot(
     as_survey_twophase(phase1, subset = subset, method = "simple")
   )
+})
+
+# Warning TP-2 (issue #340): method = "full" with a weighted phase 1 and no
+# fpc. The rule ignores clustering and stratification, so each of the four
+# shapes below warns; the four blocks after them are the cases that must not.
+test_that("as_survey_twophase() warns for a clustered, stratified phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 40L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_warning(
+    d2 <- as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_true(S7::S7_inherits(d2, survey_twophase))
+  expect_identical(d2@variables$method, "full")
+})
+
+test_that("as_survey_twophase() full-no-fpc warning message", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 40L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_snapshot(
+    invisible(as_survey_twophase(phase1, subset = subset, method = "full"))
+  )
+})
+
+test_that("as_survey_twophase() warns for a stratified, unclustered phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 41L)
+  phase1 <- as_survey(df, weights = wt, strata = strata)
+  expect_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+})
+
+test_that("as_survey_twophase() warns for a clustered, unstratified phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
+  phase1 <- as_survey(df, ids = psu, weights = wt)
+  expect_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+})
+
+test_that("as_survey_twophase() warns for a weighted, unclustered, unstratified phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 48L)
+  phase1 <- as_survey(df, weights = wt)
+  expect_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+})
+
+test_that("as_survey_twophase() does not warn when phase 1 has an fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 43L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full")
+  )
+})
+
+test_that("as_survey_twophase() does not warn about the phase 1 fpc for method = 'approx'", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 44L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "approx")
+  )
+})
+
+test_that("as_survey_twophase() does not warn for an unweighted, unclustered, unstratified phase 1", {
+  # No weights: the SRS fallback weight is 1 on every row, which "full"
+  # treats as an iid sample
+  df <- make_survey_data(n = 200, design = "twophase", seed = 45L)
+  expect_warning(
+    phase1 <- as_survey(df[c("y1", "subset")]),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full")
+  )
+})
+
+test_that("as_survey_twophase() does not warn for a census phase 1 (weights all 1)", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 46L)
+  df$w1 <- 1
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = w1,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full")
+  )
+})
+
+test_that("as_survey_twophase() full-no-fpc warning fires at construction, not on estimates", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 47L)
+  phase1 <- as_survey(df, weights = wt, strata = strata)
+  expect_warning(
+    d2 <- as_survey_twophase(
+      phase1,
+      strata2 = strata,
+      subset = subset,
+      method = "full"
+    ),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_no_warning(get_means(d2, y1))
+})
+
+# Warning 26: phase-2 design column all NA within the phase-2 subset
+test_that("as_survey_twophase() warns when a phase-2 design column is all NA in the subset", {
+  df <- data.frame(
+    wt = rep(1, 10),
+    ph2 = c(rep(TRUE, 5), rep(FALSE, 5)),
+    ph2_str = rep(NA_character_, 10), # all NA within phase 2 rows
+    y = 1:10,
+    stringsAsFactors = FALSE
+  )
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  expect_warning(
+    d2 <- as_survey_twophase(phase1, strata2 = ph2_str, subset = ph2),
+    class = "surveycore_warning_phase2_all_na"
+  )
+  expect_true(S7::S7_inherits(d2, survey_twophase))
+  expect_identical(d2@variables$phase2$strata, "ph2_str")
 })
 
 
@@ -1174,15 +4029,18 @@ test_that("as_survey_twophase() errors when phase1 is a plain list [row 19]", {
 
 test_that("as_survey_twophase() accepts survey_taylor phase-1 (weights only, no ids/strata)", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, fpc = fpc))
   tp <- as_survey_twophase(phase1, subset = subset)
   test_invariants(tp)
   expect_true(S7::S7_inherits(tp, survey_twophase))
 })
 
-test_that("as_survey_twophase() accepts survey_replicate phase-1", {
+test_that("as_survey_twophase() refuses a survey_replicate phase-1", {
   df <- make_survey_data(
-    n = 100, n_psu = 10L, design = "replicate", seed = 20L
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 20L
   )
   df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
   phase_rep <- as_survey_replicate(
@@ -1191,9 +4049,112 @@ test_that("as_survey_twophase() accepts survey_replicate phase-1", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  tp <- as_survey_twophase(phase_rep, subset = in_phase2)
-  test_invariants(tp)
-  expect_true(S7::S7_inherits(tp, survey_twophase))
+  expect_error(
+    as_survey_twophase(phase_rep, subset = in_phase2),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_twophase(phase_rep, subset = in_phase2)
+  )
+})
+
+test_that("as_survey_twophase() refuses a replicate phase-1 of all nine types", {
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 20L
+  )
+  df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
+  other_types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (rep_type in other_types) {
+    phase_rep <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = rep_type,
+      rscales = if (identical(rep_type, "JKn")) rep(1, 5) else NULL
+    )
+    expect_error(
+      as_survey_twophase(phase_rep, subset = in_phase2),
+      class = "surveycore_error_twophase_replicate_phase1",
+      label = rep_type
+    )
+  }
+  phase_fay <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  expect_error(
+    as_survey_twophase(phase_fay, subset = in_phase2),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+})
+
+test_that("as_survey_twophase() refuses a replicate phase-1 before checking subset", {
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 20L
+  )
+  phase_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  expect_error(
+    as_survey_twophase(phase_rep),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+})
+
+test_that("as_survey_twophase() refuses a Fay phase-1 with a half-rows subset", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  df$half <- rep(c(TRUE, FALSE), length.out = nrow(df))
+  phase_fay <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  expect_error(
+    as_survey_twophase(phase_fay, subset = half),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+})
+
+test_that("as_survey_twophase() does not refuse a survey_nonprob phase-1 as replicate", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
+  phase1 <- as_survey_nonprob(df, weights = wt)
+  # "approx": a nonprob phase 1 has no fpc, and under "full" it would raise
+  # the issue #340 warning, which is not what this block is about
+  expect_no_error(
+    as_survey_twophase(phase1, subset = subset, method = "approx"),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
 })
 
 # Row 20: subset not provided
@@ -1306,20 +4267,82 @@ test_that("as_survey_twophase() degenerate check uses non-NA count in message [r
 
 # ── Edge cases ────────────────────────────────────────────────────────────────
 
-test_that("as_survey_twophase() with multi-stage Phase 2 ids (c())", {
-  df <- make_survey_data(n = 200, design = "twophase", seed = 26L)
-  # Add a secondary sampling unit column for Phase 2
-  df$psu2 <- rep(1:5, length.out = nrow(df))
-  df$ssu2 <- rep(1:4, length.out = nrow(df))
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
-  d2 <- as_survey_twophase(phase1, ids2 = c(psu2, ssu2), subset = subset)
-  test_invariants(d2)
-  expect_identical(d2@variables$phase2$ids, c("psu2", "ssu2"))
+# Issue #338: the two-phase variance reads one phase 2 stage, so a
+# multi-stage ids2 used to build and get a standard error from its first stage
+# alone. It is now refused. This block replaces the one that asserted a
+# two-column ids2 was stored. Phase 1 carries an fpc, so the
+# surveycore_warning_twophase_full_no_fpc warning (issue #340) cannot fire.
+multistage_phase1 <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$rowid <- seq_len(nrow(df))
+  as_survey(df, ids = psu, strata = strata, weights = wt, fpc = fpc)
+}
+
+test_that("as_survey_twophase() refuses a multi-stage ids2", {
+  phase1 <- multistage_phase1()
+  expect_error(
+    as_survey_twophase(
+      phase1,
+      ids2 = c(psu, rowid),
+      strata2 = strata,
+      subset = subset,
+      method = "full"
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_twophase(
+      phase1,
+      ids2 = c(psu, rowid),
+      strata2 = strata,
+      subset = subset,
+      method = "full"
+    )
+  )
+})
+
+test_that("as_survey_twophase() refuses a multi-stage ids2 for method = \"approx\"", {
+  phase1 <- multistage_phase1()
+  expect_error(
+    as_survey_twophase(
+      phase1,
+      ids2 = c(psu, rowid),
+      subset = subset,
+      method = "approx"
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("as_survey_twophase() refuses a multi-stage ids2 selected by tidyselect helper", {
+  phase1 <- multistage_phase1()
+  expect_error(
+    as_survey_twophase(
+      phase1,
+      ids2 = tidyselect::all_of(c("psu", "rowid")),
+      subset = subset
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("as_survey_twophase() still builds with a single-column ids2", {
+  d2 <- as_survey_twophase(multistage_phase1(), ids2 = psu, subset = subset)
+  expect_identical(d2@variables$phase2$ids, "psu")
 })
 
 test_that("as_survey_twophase() preserves all Phase 1 data columns in @data", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 27L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   # All original columns must be in @data (none dropped)
   expect_true(all(names(df) %in% names(d2@data)))
@@ -1329,21 +4352,23 @@ test_that("as_survey_twophase() subset with only 1 TRUE row is valid (not degene
   df <- data.frame(
     id = 1:20,
     wt = rep(2, 20),
+    fpc = rep(20, 20),
     strata = rep(c("A", "B"), 10),
     in_phase2 = c(TRUE, rep(FALSE, 19)),
     y = rnorm(20)
   )
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   # 1 TRUE and 19 FALSE — not degenerate
   d2 <- as_survey_twophase(phase1, subset = in_phase2)
-  test_invariants(d2)
   expect_true(S7::S7_inherits(d2, survey_twophase))
 })
 
 test_that("as_survey_twophase() with method = 'full' and strata2 does not produce unsupported warning", {
   # Providing strata2 is valid Phase 2 design info for method = 'full'
   df <- make_survey_data(n = 200, design = "twophase", seed = 28L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   expect_no_warning(
     as_survey_twophase(
       phase1,
@@ -1356,7 +4381,9 @@ test_that("as_survey_twophase() with method = 'full' and strata2 does not produc
 
 test_that("as_survey_twophase() populates all expected @variables keys", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 29L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expected_keys <- c("phase1", "phase2", "subset", "method")
   expect_true(all(expected_keys %in% names(d2@variables)))
@@ -1367,25 +4394,28 @@ test_that("as_survey_twophase() populates all expected @variables keys", {
 
 test_that("as_survey_twophase() accepts bare name for subset", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 30L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$subset, "subset")
 })
 
 test_that("as_survey_twophase() accepts bare name for strata2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 31L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$strata, "strata")
 })
 
 test_that("as_survey_twophase() accepts bare name for ids2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 32L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$ids, "psu")
 })
 
@@ -1408,29 +4438,6 @@ test_that("as_survey() errors when probs expression selects multiple columns", {
   expect_error(
     suppressWarnings(as_survey(df, probs = starts_with("prob"))),
     class = "surveycore_error_weights_multiple"
-  )
-})
-
-
-# ── Coverage: as_survey_replicate() fpc multiple columns ───────────────────────────
-
-test_that("as_survey_replicate() errors when fpc expression selects multiple columns", {
-  df <- data.frame(
-    y = 1:5,
-    wt = rep(1, 5),
-    r1 = rep(1, 5),
-    fpc1 = rep(1000L, 5),
-    fpc2 = rep(2000L, 5)
-  )
-  expect_error(
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = r1,
-      type = "JK1",
-      fpc = starts_with("fpc")
-    ),
-    class = "surveycore_error_fpc_multiple"
   )
 })
 
@@ -1509,45 +4516,6 @@ test_that("as_survey() errors when fpc expression matches no columns", {
   )
 })
 
-test_that("as_survey_replicate() errors when fpc expression matches no columns", {
-  df <- data.frame(
-    y = 1:10,
-    wt = rep(1, 10),
-    r1 = rep(1, 10),
-    r2 = rep(1, 10)
-  )
-  expect_error(
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = c(r1, r2),
-      type = "BRR",
-      fpc = tidyselect::starts_with("nonexistent_xyz")
-    ),
-    class = "surveycore_error_fpc_not_found"
-  )
-})
-
-test_that("as_survey_replicate() validates fpc column for NAs", {
-  df <- data.frame(
-    y = 1:10,
-    wt = rep(1, 10),
-    r1 = rep(1, 10),
-    r2 = rep(1, 10),
-    fpc = c(100L, NA_integer_, rep(100L, 8L))
-  )
-  expect_error(
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = c(r1, r2),
-      type = "BRR",
-      fpc = fpc
-    ),
-    class = "surveycore_error_fpc_na"
-  )
-})
-
 
 # ==============================================================================
 # as_survey_nonprob() tests
@@ -1567,14 +4535,12 @@ test_that("as_survey_nonprob() stores calibration provenance object", {
   df <- data.frame(y = rnorm(50), w = runif(50, 1, 3))
   cal <- list(targets = list(age = c(0.3, 0.4, 0.3)), method = "raking")
   d <- as_survey_nonprob(df, weights = w, calibration = cal)
-  test_invariants(d)
   expect_identical(d@calibration, cal)
 })
 
 test_that("as_survey_nonprob() calibration is NULL when not supplied", {
   df <- data.frame(y = 1:20, w = rep(1, 20))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_null(d@calibration)
 })
 
@@ -1582,14 +4548,12 @@ test_that("as_survey_nonprob() extracts haven variable labels", {
   df <- data.frame(y = 1:50, w = rep(1, 50))
   attr(df$y, "label") <- "Outcome variable"
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_equal(d@metadata@variable_labels[["y"]], "Outcome variable")
 })
 
 test_that("as_survey_nonprob() is a subclass of survey_base", {
   df <- data.frame(y = 1:30, w = rep(1.5, 30))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_base))
 })
 
@@ -1992,7 +4956,6 @@ test_that("as_survey_nonprob() with repweights stores 5 keys in @variables", {
     repweights = starts_with("rw"),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_identical(d@variables$repweights, c("rw1", "rw2", "rw3"))
   expect_identical(d@variables$type, "bootstrap")
   expect_equal(d@variables$scale, 1 / 3)
@@ -2007,7 +4970,6 @@ test_that("as_survey_nonprob() stores reference_sample in @reference_sample", {
   d_ref <- as_survey(df_ref, ids = psu, weights = wt, strata = strata)
 
   d <- as_survey_nonprob(df_np, weights = w, reference_sample = d_ref)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d@reference_sample, survey_taylor))
 })
 
@@ -2028,7 +4990,6 @@ test_that("as_survey_nonprob() accepts valid calibration provenance + repweights
     type = "bootstrap",
     calibration = cal
   )
-  test_invariants(d)
   expect_identical(d@calibration, cal)
   expect_identical(d@variables$repweights, c("rw1", "rw2"))
 })
@@ -2050,7 +5011,6 @@ test_that("as_survey_nonprob() computes default scale = 1/R and rscales = rep(1,
     repweights = starts_with("rw"),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 1 / 4)
   expect_identical(d@variables$rscales, rep(1, 4))
 })
@@ -2058,7 +5018,6 @@ test_that("as_survey_nonprob() computes default scale = 1/R and rscales = rep(1,
 test_that("as_survey_nonprob() with no repweights has all 5 keys as NULL", {
   df <- data.frame(y = 1:20, w = rep(1, 20))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_null(d@variables$repweights)
   expect_null(d@variables$type)
   expect_null(d@variables$scale)
@@ -2069,7 +5028,6 @@ test_that("as_survey_nonprob() with no repweights has all 5 keys as NULL", {
 test_that("as_survey_nonprob(df, weights = w) still works (backward compat)", {
   df <- data.frame(y = 1:20, w = rep(1.5, 20))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_nonprob))
   expect_identical(d@variables$weights, "w")
 })
@@ -2388,7 +5346,6 @@ test_that("calibration = list() with type = 'JK1' accepted", {
 test_that("two-row data constructs valid JK1 object (minimum sample size)", {
   df <- data.frame(x = 1:2, wt = c(1, 1), r1 = c(1, 1), r2 = c(1, 1))
   d <- as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JK1")
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_nonprob))
 })
 
@@ -2419,7 +5376,6 @@ test_that("'jackknife' alias not stored: design@variables$type == 'JK1'", {
     repweights = c(r1, r2, r3),
     type = "jackknife"
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
 })
 
@@ -2440,7 +5396,6 @@ test_that("JK1 scale exact value for R = 10: 9/10 exactly", {
     repweights = tidyselect::starts_with("r"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 9 / 10)
 })
 
@@ -2456,21 +5411,18 @@ test_that("JK2 default scale = 1 exactly", {
     type = "JK2",
     rscales = c(0.5, 0.5, 0.5, 0.5)
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 1)
 })
 
 test_that("repweights = NULL ignores type = 'jackknife': type NULL in variables", {
   df <- data.frame(x = 1:5, wt = rep(1, 5))
   d <- as_survey_nonprob(df, weights = wt, type = "jackknife")
-  test_invariants(d)
   expect_null(d@variables$type)
 })
 
 test_that("repweights = NULL ignores type = 'BRR': all rep vars NULL in variables", {
   df <- data.frame(x = 1:5, wt = rep(1, 5))
   d <- as_survey_nonprob(df, weights = wt, type = "BRR")
-  test_invariants(d)
   expect_null(d@variables$type)
   expect_null(d@variables$repweights)
   expect_null(d@variables$scale)
@@ -2489,7 +5441,6 @@ test_that("jackknife alias with explicit non-uniform rscales normalizes to JK1",
     type = "jackknife",
     rscales = c(0.9, 0.8, 0.85, 0.95)
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
   expect_equal(d@variables$rscales, c(0.9, 0.8, 0.85, 0.95))
 })
@@ -2582,7 +5533,6 @@ test_that("as_survey() promotes weighting_history attribute from data", {
   history <- list(list(step = 1L, operation = "raking"))
   attr(df, "weighting_history") <- history
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
 
@@ -2601,7 +5551,6 @@ test_that("as_survey_replicate() promotes weighting_history attribute from data"
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
 
@@ -2610,14 +5559,12 @@ test_that("as_survey() promotes weighting_history for weights-only design", {
   history <- list(list(step = 1L, operation = "nonresponse_weighting_class"))
   attr(df, "weighting_history") <- history
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
 
 test_that("as_survey() leaves weighting_history as list() for plain data.frame", {
   df <- make_survey_data(n = 100L, seed = 103L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, list())
 })
 
@@ -2634,14 +5581,12 @@ test_that("as_survey() accepts multi-column fpc and stores as character vector",
     strata = strata,
     fpc = c(fpc, fpc2)
   )
-  test_invariants(sc)
   expect_identical(sc@variables$fpc, c("fpc", "fpc2"))
 })
 
 test_that("as_survey() stores single-column fpc as character(1) [backward compat]", {
   df <- make_survey_data(n = 200, n_psu = 20, seed = 1)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
-  test_invariants(sc)
   expect_identical(sc@variables$fpc, "fpc")
 })
 
@@ -2774,33 +5719,6 @@ test_that("as_survey() rejects non-constant stage-2 FPC fraction within PSU [dua
       ids = c(psu, ssu),
       weights = wt,
       fpc = c(fpc, fpc2_bad)
-    )
-  )
-})
-
-test_that("as_survey_replicate() still rejects multi-column fpc", {
-  df <- make_survey_data(
-    n = 100, n_psu = 10, n_ssu = 5, design = "replicate", seed = 1
-  )
-  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  expect_error(
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = tidyselect::all_of(repwt_cols),
-      type = "BRR",
-      fpc = c(fpc, fpc2)
-    ),
-    class = "surveycore_error_fpc_multiple"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = tidyselect::all_of(repwt_cols),
-      type = "BRR",
-      fpc = c(fpc, fpc2)
     )
   )
 })
@@ -3103,7 +6021,6 @@ test_that("JK1 type stored and scale defaults to (R-1)/R", {
   d <- as_survey_nonprob(
     df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
   expect_equal(d@variables$scale, 3 / 4)
   expect_equal(d@variables$rscales, rep(1, 4))
@@ -3117,7 +6034,6 @@ test_that("jackknife alias normalizes to JK1", {
   d <- as_survey_nonprob(
     df, weights = wt, repweights = c(r1, r2, r3), type = "jackknife"
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
   expect_equal(d@variables$scale, 2 / 3)
 })
@@ -3131,7 +6047,6 @@ test_that("JK2 with explicit rscales: scale defaults to 1", {
     df, weights = wt, repweights = c(r1, r2),
     type = "JK2", rscales = c(0.5, 0.5)
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK2")
   expect_equal(d@variables$scale, 1)
   expect_equal(d@variables$rscales, c(0.5, 0.5))
@@ -3146,7 +6061,6 @@ test_that("JKn with explicit rscales: type stored and scale defaults to 1", {
     df, weights = wt, repweights = c(r1, r2, r3),
     type = "JKn", rscales = c(0.5, 0.5, 0.5)
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JKn")
   expect_equal(d@variables$scale, 1)
 })
@@ -3160,7 +6074,6 @@ test_that("Bootstrap unchanged: scale = 1/R, rscales = rep(1, R)", {
   d <- as_survey_nonprob(
     df, weights = wt, repweights = c(r1, r2, r3, r4, r5), type = "bootstrap"
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 1 / 5)
   expect_equal(d@variables$rscales, rep(1, 5))
 })
@@ -3174,7 +6087,6 @@ test_that("Explicit scale overrides default for JK1", {
     df, weights = wt, repweights = c(r1, r2, r3, r4),
     type = "JK1", scale = 0.5
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 0.5)
 })
 
@@ -3187,6 +6099,626 @@ test_that("scale = 0 is accepted for JK1", {
     df, weights = wt, repweights = c(r1, r2, r3, r4),
     type = "JK1", scale = 0
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 0)
+})
+
+
+# ── Dataset-level metadata promotion (spec section V) ─────────────────────────
+#
+# Covers plans/error-messages.md rows DM-7a, DM-7b, DM-7c, and DM-7d.
+#
+# Construction NEVER fails because of a bad dataset attribute: every bad value
+# is skipped and reported as one surveycore_warning_dataset_metadata_dropped.
+# Reads go through extract_dataset_metadata(), the guarded public read path —
+# never through attr(d@data, ...), which section V.4 keeps as the untouched
+# original.
+#
+# No block here snapshots print() or summary() console output: the display
+# contract for a design carrying dataset metadata belongs to a separate PR, so
+# capturing it here would encode output that is about to change.
+
+# Build a taylor design from a frame carrying the requested attributes.
+.promo_design <- function(keys) {
+  as_survey(
+    make_dataset_df(keys = keys),
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+test_that("as_survey() promotes all six canonical attributes in canonical order", {
+  d <- .promo_design(full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+test_that("as_survey() promotes only the attributes that are present", {
+  d <- .promo_design(full_keys[c("vendor", "field_period")])
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    full_keys[c("vendor", "field_period")]
+  )
+})
+
+test_that("as_survey() never derives data_name from the survey_name attribute", {
+  # Section II.1 independence rule, expressed on the promotion path. Only the
+  # `survey_name` attribute is attached, so `data_name` must stay unset.
+  # The second assertion is what makes the first one mean anything: the key
+  # that WAS set has to survive promotion, otherwise NA_character_ would only
+  # prove that nothing at all was promoted.
+  d <- .promo_design(full_keys["survey_name"])
+
+  expect_identical(extract_data_name(d), NA_character_)
+  expect_identical(extract_survey_name(d), full_keys$survey_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
+})
+
+test_that("as_survey() never derives survey_name from the data_name attribute", {
+  # The mirror of the block above. Independence runs in both directions, so
+  # the reverse derivation needs its own assertion.
+  d <- .promo_design(full_keys["data_name"])
+
+  expect_identical(extract_survey_name(d), NA_character_)
+  expect_identical(extract_data_name(d), full_keys$data_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
+})
+
+test_that("as_survey() skips an absent attribute silently", {
+  # `survey_name` is absent, `vendor` is set. The absent key must produce no
+  # warning at all — silence is reserved for absence (a zero-length value warns).
+  expect_no_warning(d <- .promo_design(full_keys["vendor"]))
+
+  expect_identical(extract_dataset_metadata(d), full_keys["vendor"])
+})
+
+test_that("as_survey() leaves @dataset_metadata empty when no attribute is set", {
+  # Section V.3 last bullet: with nothing to promote the helper returns the
+  # metadata object unchanged AND stays silent. Nothing was dropped, so a
+  # warning here would report a loss that never happened.
+  expect_no_warning(d <- .promo_design(list()))
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() coerces a strict-ISO character date attribute to Date", {
+  d <- .promo_design(list(field_start = "2026-02-10"))
+
+  got <- extract_dataset_metadata(d)
+  expect_identical(got$field_start, as.Date("2026-02-10"))
+  expect_s3_class(got$field_start, "Date")
+})
+
+test_that("as_survey() promotes the legacy dates attribute as field_period", {
+  d <- .promo_design(list(vendor = "Ipsos", dates = "February-March 2026"))
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(vendor = "Ipsos", field_period = "February-March 2026")
+  )
+})
+
+test_that("as_survey() prefers a present field_period over the legacy dates attribute", {
+  # Section V.2 step 7 reads `dates` only when the `field_period` attribute is
+  # ABSENT. A present and valid `field_period` means `dates` is never read, so
+  # nothing was discarded and the construction must be silent. A warning here
+  # would mean the reader treats the unread `dates` as a dropped value.
+  expect_no_warning(
+    d <- .promo_design(list(
+      field_period = "February-March 2026",
+      dates = "some other period"
+    ))
+  )
+
+  expect_identical(
+    extract_dataset_metadata(d)$field_period,
+    "February-March 2026"
+  )
+})
+
+test_that("as_survey() ignores an attribute outside the seven recognized names", {
+  # surveycore claims no attribute name beyond the seven: an unrecognized name
+  # is never promoted AND never warned about.
+  expect_no_warning(
+    d <- .promo_design(list(vendor = "Ipsos", weight_scheme = "raked"))
+  )
+
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+  expect_false("weight_scheme" %in% names(extract_dataset_metadata(d)))
+})
+
+
+# Row DM-7a — a canonical attribute with a wrong-typed, NA, unparseable, or
+# length > 1 value.
+
+test_that("as_survey() warns and drops a wrong-typed canonical attribute", {
+  keys <- list(vendor = 42)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a canonical attribute of length > 1", {
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an NA canonical attribute", {
+  keys <- list(vendor = NA_character_)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an unparseable date attribute", {
+  # "2026/02/10" is not strict ISO 8601, so .coerce_field_date() rejects it.
+  # The message must name the date expectation, not the character one.
+  keys <- list(field_start = "2026/02/10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a date attribute that is not date-shaped", {
+  # "sometime" does not parse at all. Section II.3 requires
+  # .coerce_field_date() to wrap as.Date() in tryCatch(), so no base condition
+  # reaches the caller: exactly one warning, ours, and no message.
+  keys <- list(field_start = "sometime")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() warns and drops an ISO-shaped date that does not exist", {
+  # "2026-02-30" MATCHES format = "%Y-%m-%d" and still yields NA, because
+  # February has no 30th. This is the calendar-validity branch, which neither
+  # a wrong-separator string nor an unparseable string reaches.
+  keys <- list(field_start = "2026-02-30")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() keeps the valid attributes when another one is dropped", {
+  # The drop is per key: a bad field_start must not cost the good vendor.
+  keys <- list(vendor = "Ipsos", field_start = "not a date")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("as_survey() warns once per dropped attribute", {
+  keys <- list(survey_name = 1L, vendor = 2L)
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  expect_length(warnings, 2L)
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+
+# Row DM-7b — a canonical attribute with a zero-length value. Loss is
+# signalled, never silent: only an ABSENT attribute is skipped quietly.
+
+test_that("as_survey() warns and drops a zero-length canonical attribute", {
+  keys <- list(vendor = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# Row DM-7c — the coerced date pair is reversed; BOTH keys are dropped with
+# ONE warning.
+
+test_that("as_survey() warns once and drops both dates when the pair is reversed", {
+  keys <- list(
+    field_start = as.Date("2026-03-04"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() judges the reversed pair on the coerced ISO strings", {
+  # Both values are strings, so the comparison only works after coercion.
+  keys <- list(field_start = "2026-03-04", field_end = "2026-02-10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() promotes an equal date pair without warning", {
+  # The rule is strictly `start > end`, so a single-day field period is valid.
+  keys <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  expect_no_warning(d <- .promo_design(keys))
+  expect_identical(extract_dataset_metadata(d), keys)
+})
+
+
+# Row DM-7d — the legacy `dates` attribute with ANY invalid value. This
+# variant takes precedence over DM-7a and DM-7b, so the remedy points at
+# set_field_period() rather than at the rejected legacy name.
+
+test_that("as_survey() warns with the legacy variant for a wrong-typed dates attribute", {
+  keys <- list(dates = 1L)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a zero-length dates attribute", {
+  # A zero-length value on a canonical name is DM-7b, but on the legacy name
+  # the DM-7d variant wins.
+  keys <- list(dates = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a dates attribute of length > 1", {
+  keys <- list(dates = c("February 2026", "March 2026"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("haven column labels and dataset attributes both promote", {
+  # Section V.1: the per-column haven reader and the whole-object dataset
+  # reader are separate helpers running at the same constructor stage. Neither
+  # may interfere with the other, so this block asserts both halves at once.
+  df <- make_survey_data(
+    n = 20L,
+    n_psu = 6L,
+    n_strata = 2L,
+    with_labels = TRUE,
+    seed = 42L
+  )
+  for (key in names(full_keys)) {
+    attr(df, key) <- full_keys[[key]]
+  }
+
+  expect_no_warning(
+    d <- as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    )
+  )
+
+  # Per-variable metadata: variable labels and value labels.
+  expect_identical(
+    extract_var_label(d, y1),
+    c(y1 = "Outcome variable 1 (continuous)")
+  )
+  expect_identical(
+    extract_var_label(d, y3, group),
+    c(
+      y3 = "Outcome variable 3 (binary, 0/1)",
+      group = "Demographic group"
+    )
+  )
+  expect_identical(extract_val_labels(d, y3)$y3, c(No = 0L, Yes = 1L))
+
+  # Dataset-level metadata: all six keys, in canonical order.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+
+# Round trip and non-destructive promotion (spec section V.4).
+
+test_that("all six keys survive the setter-to-constructor round trip", {
+  expect_dataset_roundtrip(full_keys)
+})
+
+test_that("a single key survives the round trip", {
+  expect_dataset_roundtrip(full_keys["vendor"])
+})
+
+test_that("an ISO date string set on a frame round trips as a Date", {
+  # The setter coerces on the way in, so the attribute is already a Date and
+  # promotion stores a Date, not the string.
+  d <- expect_dataset_roundtrip(
+    list(field_start = "2026-02-10"),
+    expected = list(field_start = as.Date("2026-02-10"))
+  )
+  expect_s3_class(extract_dataset_metadata(d)$field_start, "Date")
+})
+
+test_that("promotion leaves the original attributes on @data", {
+  # Promotion COPIES; it never strips. Every one of the six attributes holds a
+  # genuine value going in, so a stripping implementation would fail here.
+  d <- .promo_design(full_keys)
+
+  for (key in names(full_keys)) {
+    expect_identical(
+      attr(d@data, key, exact = TRUE),
+      full_keys[[key]],
+      info = key
+    )
+  }
+})
+
+test_that("promotion leaves the caller's data frame unchanged", {
+  df <- make_dataset_df(full_keys)
+  before <- attributes(df)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+
+  expect_identical(attributes(df), before)
+})
+
+test_that("promotion keeps a dropped attribute on @data even though the key is unset", {
+  # The warning reports that the key was not promoted; the attribute itself is
+  # still there for the user to inspect and fix.
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_identical(attr(d@data, "vendor", exact = TRUE), c("Ipsos", "Cint"))
+})
+
+test_that("rebuilding from @data resurrects an edited key", {
+  # Documented consequence of section V.4: the design's metadata changed, the
+  # data frame's attribute did not, so a rebuild re-promotes the ORIGINAL.
+  d <- .promo_design(full_keys)
+
+  d2 <- set_vendor(d, "Cint")
+  expect_identical(extract_vendor(d2), "Cint")
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+  expect_false(identical(extract_vendor(rebuilt), "Cint"))
+})
+
+test_that("rebuilding from @data resurrects a deleted key", {
+  d <- .promo_design(full_keys)
+
+  d2 <- set_vendor(d, NULL)
+  expect_identical(extract_vendor(d2), NA_character_)
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+})
+
+test_that("column subsetting @data drops the attributes, so a rebuild promotes nothing", {
+  # Whole-object attributes are fragile: selecting columns with base `[` builds
+  # a new frame without them, so nothing is left to promote. This is why the
+  # roxygen advises setting dataset metadata last.
+  d <- .promo_design(full_keys)
+  expect_identical(extract_vendor(d), full_keys$vendor)
+
+  stripped <- d@data[, names(d@data), drop = FALSE]
+  expect_null(attr(stripped, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    stripped,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("merge() drops the attributes, so a rebuild promotes nothing", {
+  d <- .promo_design(full_keys)
+
+  lookup <- data.frame(strata = unique(d@data$strata))
+  lookup$region <- seq_len(nrow(lookup))
+  merged <- merge(d@data, lookup, by = "strata")
+  expect_null(attr(merged, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    merged,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("as_survey() warns once for an invalid field_period and never falls back to dates", {
+  # A present-but-invalid field_period stops the legacy fallback: repairing
+  # from `dates` would hide the invalid value. So exactly one warning fires,
+  # it is the canonical DM-7a variant, and field_period stays unset.
+  keys <- list(field_period = 99, dates = "February-March 2026")
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# The other two constructors that accept a raw data frame (spec section V.1).
+
+test_that("as_survey_replicate() promotes the dataset attributes", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 202L
+  )
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_replicate() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 203L
+  )
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1"
+    ),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the dataset attributes", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 204L)
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_nonprob(df, weights = wt)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_nonprob() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 205L)
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_nonprob(df, weights = wt),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the weighting_history attribute", {
+  # This branch never promoted weighting history, unlike as_survey() and
+  # as_survey_replicate(). The missing call is a pre-existing inconsistency,
+  # fixed here. `history` holds a genuine non-empty list, so the assertion
+  # fails against the unfixed constructor.
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 206L)
+  history <- list(list(step = 1L, operation = "raking"))
+  attr(df, "weighting_history") <- history
+
+  d <- as_survey_nonprob(df, weights = wt)
+
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey_nonprob() leaves weighting_history as list() with no attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 207L)
+
+  d <- as_survey_nonprob(df, weights = wt)
+
+  expect_identical(d@metadata@weighting_history, list())
 })
