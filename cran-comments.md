@@ -67,8 +67,17 @@ minutes (248 s elapsed). Heavy numerical-oracle tests (comparisons against
 the `survey` package, polychoric/polyserial MLE, two-phase variance parity)
 are gated with `skip_on_cran()` and run on every CI push.
 
-win-builder R-devel and R-release: not yet run. TO BE FILLED IN by the
-maintainer from the win-builder emails before submission.
+win-builder, on the built tarball:
+
+* R-devel (2026-11-02 r90827 ucrt), Windows Server 2022 x64:
+  `Status: 1 NOTE`
+* R-release (R 4.6.2, 2026-10-29 ucrt), Windows Server 2022 x64:
+  `Status: 1 NOTE`
+
+The one NOTE on both is `checking CRAN incoming feasibility`: package was
+archived on CRAN, and surveytidy is available from
+`Additional_repositories` (both explained above). Tests took 238 s on
+R-devel and 244 s on R-release.
 
 ## Package size
 
