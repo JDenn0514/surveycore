@@ -246,3 +246,32 @@ Trial measures, PR 3: errata 6 (builder) plus D21 and D22 (leader); BLOCKs 0;
 STOPs 0; hand-written additions by the leader: the `style:` commit split and
 the DESCRIPTION revert, no code; CI cycles: recorded at ship time.
 PR 3 shipped as #365, squash-merged to `develop` as `20d180c` on 2026-11-12. CI: 1 cycle, 7 of 7 checks passed on the first run.
+
+## D24 — PR 4 errata and trial record (SETTLED, orchestrator, 2026-11-12)
+Builder errata E-1 to E-6 (`prs/pr-4-analysis-cell-freqs/implementation.md`)
+stand. The reviewer (`prs/pr-4-analysis-cell-freqs/review.md`, PASS, no
+FIX-BEFORE-MERGE) agrees with all six.
+- E-1 / N-3: `.taylor_freq_cell()` takes `mats` and never reads it, as the
+  spec writes it (same shape as PR 3 E-1).
+- E-2: tests and `_snaps/` ship in one commit, `R/` in a second. Done.
+- E-3 / N-1: the direct `.freq_cell()` call at
+  `tests/testthat/test-analysis-freqs.R:2048` passes 3 of 5 arguments and
+  passes only because that branch reads neither `ctx` nor `rep_N_d`. A later
+  edit that reads `ctx` first breaks it. That file predates PR 1, so gate 9
+  keeps it out of this arc.
+- E-4 / N-4: rule 4 with a supplied `v` cannot be reached through the API.
+- E-5 / N-2: the guarded subset sum and `check_rep_finite` change speed
+  only. Forcing the full product, or setting the `.cell_context()` default
+  to `TRUE`, stays green. Only the gate 6 coverage check guards them.
+- E-6: reset `trace()` counters with `ls(all.names = TRUE)`.
+- N-5: three new test titles pass 80 columns; the plan fixes the titles.
+- Row 5.5.3 raises `simpleError` on the base commit; the PR states it.
+- No `style:` commit: all four `.R` files were `air`-clean on the base.
+- The gate run bumped `Config/roxygen2/version` again (D22); reverted.
+- Gate 6: the leader read the uncovered lines from `gate-7-covr.log`
+  (`UNCOVERED_LINE`) instead of a second `covr` run. None is an added line.
+- The PR commits were made before the gates, so the `Tree:` line names the
+  tested tree (D22 does not recur).
+
+Trial measures, PR 4: errata 6 (builder); BLOCKs 0; STOPs 0; hand-written
+additions by the leader: none; CI cycles: recorded at ship time.
