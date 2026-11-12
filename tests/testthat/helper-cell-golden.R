@@ -357,8 +357,13 @@ expect_matches_golden <- function(object, expected, label) {
   object <- cell_golden_strip(object)
   expect_equal(object, expected, tolerance = 1e-12, label = label)
   # The tolerance comparison treats NaN and NA as equal; these keep them
-  # apart.
-  for (nm in names(expected)) {
+  # apart. The interval columns are left out: each one is arithmetic on the
+  # estimate and the SE, and when one is NA and the other NaN, R returns
+  # either, by platform (?NA). The fixture was captured on Windows, and
+  # Linux and macOS return the other one. The tolerance comparison still
+  # asserts that these columns are missing in the same cells.
+  derived <- c("ci_low", "ci_high", "moe")
+  for (nm in setdiff(names(expected), derived)) {
     if (is.double(expected[[nm]])) {
       expect_identical(
         is.nan(object[[nm]]),

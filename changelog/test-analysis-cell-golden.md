@@ -38,7 +38,7 @@ documents only.
   builders, the 261-scenario catalogue, the noisy-scenario warning table,
   and the comparison helpers
 - `tests/testthat/test-analysis-cell-equivalence.R` (new): 21 blocks,
-  3,664 expectations; adds no warning to the suite
+  2,838 expectations; adds no warning to the suite
 - `tests/testthat/fixtures/analysis-cell-golden.rds` (new): the base-commit
   results, 182 KB, xz-compressed
 - `data-raw/analysis-cell-golden.R` (new): the fixture generator and its

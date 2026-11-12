@@ -185,3 +185,17 @@ points that change later PRs:
   (review F-2).
 - Review NOTEs F-3 to F-6 are not fixed. F-4 (`%||%` needs R 4.4) was fixed
   in the generator anyway; the guard (F-5) checks `R/` only.
+
+## D19 — NaN check leaves out the interval columns (SETTLED, orchestrator, 2026-11-12)
+PR #364 CI: Linux and macOS each failed 16 expectations, all
+`is.nan(ci_high)` or `is.nan(moe)`, on 8 scenarios where an `NA` estimate
+meets a `NaN` SE (`means/tay_y1_na`, `ratios/tay_c_zero_den` and six more).
+The fixture, captured on Windows, holds `NaN` there; Linux and macOS give
+`NA`. R does not fix which one arithmetic on `NA` and `NaN` returns (`?NA`).
+`se`, the estimate and `.vcov` agreed on all three platforms.
+Fix: `expect_matches_golden()` keeps the NaN-versus-NA check for every
+double column except `ci_low`, `ci_high` and `moe`. The tolerance comparison
+still asserts that those are missing in the same cells. The test file now
+carries 2,838 expectations, not 3,664. Plan §H.5 and test-spec §5 step 298
+("is.nan on every part") read with this exception. For the trial: the gates
+ran on Windows only, so no local gate could catch this; CI did.
