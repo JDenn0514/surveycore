@@ -271,9 +271,11 @@
 
   na_dropped <- sum(is.na(rep_v))
   na_frac <- na_dropped / n_rep
-  if (isTRUE(
-    .nonprob_rep_na_warn(design, na_frac, na_dropped, n_rep, vars$scale)
-  )) {
+  if (
+    isTRUE(
+      .nonprob_rep_na_warn(design, na_frac, na_dropped, n_rep, vars$scale)
+    )
+  ) {
     return(list(
       variance = NA_real_,
       se = NA_real_,

@@ -24,7 +24,6 @@
 #   .add_variance_cols()    — compute requested uncertainty columns
 #   .degf()                 — design degrees of freedom over estimate rows
 
-
 # ── haven availability ────────────────────────────────────────────────────────
 
 # Is the haven namespace available? Wrapped in a helper so tests can stub it.
