@@ -7,6 +7,7 @@
 #   .taylor_variance_cell()   — Taylor domain-estimation variance of variance
 #   .replicate_variance_cell() — replicate-weight domain variance
 #   .variance_cell()          — dispatcher
+#   .variance_flush_se()      — SEs of one block of buffered Taylor cells
 
 # ── .score_variance() ─────────────────────────────────────────────────────────
 #
@@ -110,14 +111,20 @@
 # the variance of that estimate is the plugged-in weighted-mean influence
 # function run through the stratified-clustered recursive variance engine.
 #
-# Returns the same cell payload as .taylor_mean_cell() but with keys renamed:
-# variance (the point estimate), se, se_srs, n, n_weighted.
+# The cell does not run its own variance call. A cell that reaches the
+# variance step returns its influence column in `infl` and se = NA_real_;
+# get_variance() takes the SE from a stacked call (.taylor_cell_se()). A cell
+# that returns early has no `infl` and keeps its NaN SE.
 #
 # @param design  A survey_taylor object.
 # @param y_col   Character: column name.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: variance, se, se_srs, n, n_weighted.
-.taylor_variance_cell <- function(design, y_col, domain) {
+# @param mats    The .build_cluster_matrices() list (ctx$mats). Not read
+#                here; the caller passes it to .taylor_cell_se().
+# @return Named list: variance, se, se_srs, n, n_weighted, and infl (an
+#   unnamed numeric vector of length nrow(design@data)) when the cell
+#   reaches the variance step.
+.taylor_variance_cell <- function(design, y_col, domain, mats) {
   data <- design@data
   vars <- design@variables
   w <- data[[vars$weights]]
@@ -155,20 +162,6 @@
   #   u_i = w_i * a_i * (score_i - v_hat) / W   (out-of-domain rows = 0)
   u <- w * active_num * (score - v_hat) / W
 
-  mats <- .build_cluster_matrices(data, vars)
-  lonely.psu <- getOption("survey.lonely.psu", "remove")
-
-  infl_mat <- matrix(u, ncol = 1L, dimnames = list(NULL, y_col))
-  v <- .svy_recvar(
-    infl_mat,
-    mats$clusters_mat,
-    mats$strata_mat,
-    mats$fpcs,
-    lonely.psu = lonely.psu
-  )
-
-  se <- sqrt(max(0, v[1L, 1L]))
-
   # SRS-equivalent SE for design effect: treat the score as an ordinary
   # variable under SRS sampling of size n_d.
   sc_active <- score[sc$active]
@@ -182,10 +175,11 @@
 
   list(
     variance = v_hat,
-    se = se,
+    se = NA_real_,
     se_srs = se_srs,
     n = n_d,
-    n_weighted = W
+    n_weighted = W,
+    infl = unname(u)
   )
 }
 
@@ -196,11 +190,13 @@
 # replicate with per-replicate ybar^{(r)} and runs .svy_rep_var() on the
 # replicate estimates.
 #
-# @param design  A survey_replicate object.
-# @param y_col   Character: variable name.
-# @param domain  Numeric 0/1 vector (full length).
+# @param design   A survey_replicate object, or a survey_nonprob with
+#                 replicate weights.
+# @param y_col    Character: variable name.
+# @param domain   Numeric 0/1 vector (full length).
+# @param rep_mat  Numeric matrix of the replicate weights (ctx$rep_mat).
 # @return Named list: variance, se, se_srs, n, n_weighted.
-.replicate_variance_cell <- function(design, y_col, domain) {
+.replicate_variance_cell <- function(design, y_col, domain, rep_mat) {
   data <- design@data
   vars <- design@variables
   w <- data[[vars$weights]]
@@ -235,7 +231,6 @@
 
   # Per-replicate recomputation: use replicate weights to recompute ybar^{(r)}
   # and V^{(r)} on the same active rows (n is fixed across replicates).
-  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   n_rep <- ncol(rep_mat)
   kish <- n_d / (n_d - 1L)
 
@@ -490,17 +485,21 @@
 # @param design  Any survey design object.
 # @param y_col   Character: variable name.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: variance, se, se_srs, n, n_weighted.
-.variance_cell <- function(design, y_col, domain) {
+# @param ctx     The call context from .cell_context(). ctx$mats goes to the
+#                Taylor cell, ctx$rep_mat to the replicate cell; the
+#                two-phase and nonprob SRS cells take neither.
+# @return Named list: variance, se, se_srs, n, n_weighted, and infl from a
+#   Taylor cell that reaches the variance step.
+.variance_cell <- function(design, y_col, domain, ctx) {
   if (S7::S7_inherits(design, survey_taylor)) {
-    .taylor_variance_cell(design, y_col, domain)
+    .taylor_variance_cell(design, y_col, domain, ctx$mats)
   } else if (S7::S7_inherits(design, survey_replicate)) {
-    .replicate_variance_cell(design, y_col, domain)
+    .replicate_variance_cell(design, y_col, domain, ctx$rep_mat)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_variance_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     if (!is.null(design@variables$repweights)) {
-      .replicate_variance_cell(design, y_col, domain)
+      .replicate_variance_cell(design, y_col, domain, ctx$rep_mat)
     } else {
       cli::cli_warn(
         c(
@@ -529,4 +528,23 @@
       class = "surveycore_error_unsupported_class"
     )
   }
+}
+
+
+# ── .variance_flush_se() ──────────────────────────────────────────────────────
+#
+# Flush one block of get_variance()'s Taylor buffer: the SE of each buffered
+# cell from .taylor_cell_se(), with NaN for a cell under the na.rm = FALSE
+# override. The override cell still joins the stacked call, so under
+# survey.lonely.psu = "fail" its variance step can abort.
+#
+# @param columns   List of influence columns, one per buffered cell.
+# @param override  Logical vector, one per buffered cell: TRUE when the
+#                  na.rm = FALSE override sets that cell's SE to NaN.
+# @param ctx       The call context from .cell_context().
+# @return Unnamed numeric vector, one SE per buffered cell.
+.variance_flush_se <- function(columns, override, ctx) {
+  se <- .taylor_cell_se(do.call(cbind, columns), ctx$mats, ctx$lonely.psu)
+  se[override] <- NaN
+  se
 }

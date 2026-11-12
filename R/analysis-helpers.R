@@ -23,6 +23,9 @@
 #   .check_unsupported_class() — throw for non-survey-base objects
 #   .add_variance_cols()    — compute requested uncertainty columns
 #   .degf()                 — design degrees of freedom over estimate rows
+#   TAYLOR_SE_BLOCK         — columns per stacked Taylor SE call
+#   .cell_context()         — per-call matrices and options for the cells
+#   .taylor_cell_se()       — Taylor SEs of influence columns, in blocks
 
 # ── haven availability ────────────────────────────────────────────────────────
 
@@ -1276,6 +1279,103 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     attr(result, ".vcov") <- v
   }
   result
+}
+
+
+# ── Call context and stacked Taylor SEs ──────────────────────────────────────
+#
+# TAYLOR_SE_BLOCK is the largest number of influence columns that one
+# stacked .svy_recvar() call takes when the caller needs only the diagonal.
+# One stacked call builds a k x k matrix per stratum, so its memory grows
+# with k^2. Blocks keep it small. For finite columns, entry [j, j] of a
+# stacked call equals the one-column result, so the block size does not
+# change any SE.
+TAYLOR_SE_BLOCK <- 64L
+
+# ── .cell_context() ───────────────────────────────────────────────────────────
+#
+# The work that is the same for every cell of one analysis call, done once
+# per call: the cluster matrices on the Taylor route, the replicate weight
+# matrix on the replicate route, and the lonely.psu option.
+#
+# @param design  A survey design object.
+# @return Named list: taylor, replicate (logical), mats (the
+#   .build_cluster_matrices() list, or NULL), rep_mat (numeric matrix, or
+#   NULL), rep_finite (always FALSE here), lonely.psu (character).
+.cell_context <- function(design) {
+  taylor <- S7::S7_inherits(design, survey_taylor)
+  replicate <- S7::S7_inherits(design, survey_replicate) ||
+    (S7::S7_inherits(design, survey_nonprob) &&
+      !is.null(design@variables$repweights))
+  mats <- if (taylor) {
+    .build_cluster_matrices(design@data, design@variables)
+  }
+  rep_mat <- if (replicate) {
+    as.matrix(design@data[, design@variables$repweights, drop = FALSE])
+  }
+  list(
+    taylor = taylor,
+    replicate = replicate,
+    mats = mats,
+    rep_mat = rep_mat,
+    rep_finite = FALSE,
+    lonely.psu = getOption("survey.lonely.psu", "remove")
+  )
+}
+
+# ── .taylor_cell_se() ─────────────────────────────────────────────────────────
+#
+# The Taylor SE of each influence column in `vals`. When every value is
+# finite, the columns go to .svy_recvar() in consecutive blocks of at most
+# TAYLOR_SE_BLOCK columns, and each SE comes from the block's diagonal. When
+# any value is not finite, each column gets its own .svy_recvar() call: one
+# non-finite column makes .svy_onestage() drop a stratum for every column of
+# its call, which would move the SE of a clean column.
+#
+# Applies no calibration projection. Raises only what .svy_recvar() raises.
+#
+# @param vals        Numeric matrix, n rows, k >= 1 columns: one influence
+#                    column per live cell, in result row order.
+# @param mats        The .build_cluster_matrices() list (ctx$mats).
+# @param lonely.psu  The survey.lonely.psu option value (ctx$lonely.psu).
+# @return Unnamed numeric vector of length k: the SE of each column.
+.taylor_cell_se <- function(
+  vals,
+  mats,
+  lonely.psu = getOption("survey.lonely.psu", "remove")
+) {
+  k <- ncol(vals)
+  if (!all(is.finite(vals))) {
+    se <- vapply(
+      seq_len(k),
+      function(j) {
+        v <- .svy_recvar(
+          vals[, j, drop = FALSE],
+          mats$clusters_mat,
+          mats$strata_mat,
+          mats$fpcs,
+          lonely.psu = lonely.psu
+        )
+        sqrt(max(0, v[1L, 1L]))
+      },
+      numeric(1L)
+    )
+    return(unname(se))
+  }
+
+  se <- numeric(k)
+  for (start in seq(1L, k, by = TAYLOR_SE_BLOCK)) {
+    blk <- start:min(k, start + TAYLOR_SE_BLOCK - 1L)
+    v <- .svy_recvar(
+      vals[, blk, drop = FALSE],
+      mats$clusters_mat,
+      mats$strata_mat,
+      mats$fpcs,
+      lonely.psu = lonely.psu
+    )
+    se[blk] <- sqrt(pmax(0, diag(v)))
+  }
+  unname(se)
 }
 
 
