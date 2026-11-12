@@ -597,7 +597,7 @@ total of 261 does not change. List every correction in the PR description.
 
 ## PR map
 
-- [ ] PR 1: `test/analysis-cell-golden-fixture` — the golden harness, the
+- [x] PR 1: `test/analysis-cell-golden-fixture` — the golden harness, the
   fixture captured on the base commit, and the golden loops of
   `get_freqs()`, `get_means()`, `get_totals()` and `get_variance()`
   - **Budget** — 12 test-spec rows | 8 criteria
@@ -737,7 +737,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/test-analysis-cell-equivalence.R` (new)
   - **Pipeline tier**: recommended
 
-- [ ] PR 2: `test/analysis-cell-golden-cross` — the golden loops of
+- [x] PR 2: `test/analysis-cell-golden-cross` — the golden loops of
   `get_covariance()`, `get_ratios()` and the second callers, and the
   cross-function rows
   - **Budget** — 12 test-spec rows | 8 criteria

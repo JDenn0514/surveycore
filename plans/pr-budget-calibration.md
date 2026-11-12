@@ -62,6 +62,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-10-13 | #315 | 12 | 325 | 27.1 | 0 | 0 | — |
 | 2026-10-13 | #316 | 10 | 678 | 67.8 | 0 | 0 | — |
 | 2026-10-13 | #317 | 8 | 173 | 21.6 | 0 | 1 | — |
+| 2026-11-12 | #364 | 24 | 1570 | 65.4 | n/a | 0 | — |
 
 ## Notes on individual rows
 
@@ -113,6 +114,14 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
   the first fix guarded a different case. That is a cost of stripping row ids,
   not a builder error, and it is the one place in five pull requests where the
   D11 barrier produced a defect rather than preventing one.
+
+- **#364** (analysis-cell-performance, plan PRs 1 and 2 merged; slim-pipeline
+  trial, decision D17). Test-only. There was no tester, so the Tester BLOCKs
+  column reads `n/a`. Additions are hand-written test and `data-raw/` lines.
+  They leave out the `.rds` fixture, the planning copies and the changelog.
+  About 300 of the 1,209 helper lines are a transcribed warning table. The
+  two plan entries became one PR of 24 rows, twice the 12-row bound. It took
+  one CI fix: NaN against NA by platform, D19.
 
 ## Reading the five rows
 
