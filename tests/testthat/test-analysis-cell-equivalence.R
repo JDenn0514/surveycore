@@ -367,3 +367,87 @@ test_that("get_variance() still errors when a base weight inside a cell is NA", 
     class = "simpleError"
   )
 })
+
+# ------------------------------------------------------------------------------
+# get_freqs() rows
+# ------------------------------------------------------------------------------
+
+test_that("get_freqs() errors when every replicate weight is NA on a row outside the domain", {
+  d <- cell_golden_design("rep_allna_dom")
+  expect_error(
+    get_freqs(
+      d,
+      f5,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_freqs(
+      d,
+      f5,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_freqs() errors on a single-PSU stratum when lonely.psu is fail", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(calls$freqs(), class = "surveycore_error_lonely_psu")
+  expect_snapshot(error = TRUE, calls$freqs())
+})
+
+test_that("get_freqs() errors on a single-PSU stratum when lonely.psu is an unknown value", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "unknown_value")
+  expect_error(
+    calls$freqs(),
+    class = "surveycore_error_lonely_psu_unknown_option"
+  )
+  expect_snapshot(error = TRUE, calls$freqs())
+})
+
+test_that("get_freqs() still errors when a base weight is Inf", {
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("infwt")
+  expect_error(
+    get_freqs(
+      d,
+      f5,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})
+
+test_that("get_freqs() errors on an all-NA variable when na.rm is FALSE", {
+  d <- cell_golden_design("tay")
+  expect_error(
+    get_freqs(
+      d,
+      y_allna,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_freqs(
+      d,
+      y_allna,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})

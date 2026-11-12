@@ -41,3 +41,37 @@
       Error in `.svy_onestrat()`:
       x Stratum 6 has only one PSU at stage 1.
 
+# get_freqs() errors when every replicate weight is NA on a row outside the domain
+
+    Code
+      get_freqs(d, f5, variance = .cg_variance, n_weighted = TRUE, min_cell_n = 0L)
+    Condition
+      Error in `.svy_rep_var()`:
+      x All replicates produced NA estimates.
+
+# get_freqs() errors on a single-PSU stratum when lonely.psu is fail
+
+    Code
+      calls$freqs()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Stratum 6 has only one PSU at stage 1.
+
+# get_freqs() errors on a single-PSU stratum when lonely.psu is an unknown value
+
+    Code
+      calls$freqs()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Unknown `lonely.psu` value: "unknown_value".
+
+# get_freqs() errors on an all-NA variable when na.rm is FALSE
+
+    Code
+      get_freqs(d, y_allna, na.rm = FALSE, variance = .cg_variance, n_weighted = TRUE,
+        min_cell_n = 0L)
+    Condition
+      Error in `get_freqs()`:
+      x All values of y_allna are `NA`.
+      i Cannot compute estimate with `na.rm = FALSE`. Set `na.rm = TRUE` to exclude `NA` values.
+
