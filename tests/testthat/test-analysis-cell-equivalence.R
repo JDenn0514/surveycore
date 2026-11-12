@@ -215,3 +215,155 @@ test_that("an NA domain marker gives the same results as FALSE on a nonprob desi
     list(means = rep("surveycore_warning_nonprob_srs_fallback", 3L))
   )
 })
+
+# ------------------------------------------------------------------------------
+# get_variance() rows
+# ------------------------------------------------------------------------------
+
+test_that("get_variance() and get_covariance() results carry no stored covariance matrix", {
+  ids <- c(
+    "variance/tay_c_na",
+    "variance/blk65",
+    "covariance/tay_c_na",
+    "covariance/blk65"
+  )
+  scenarios <- cell_golden_scenarios()
+  for (id in ids) {
+    w <- cell_golden_noisy[[id]]
+    if (is.null(w)) {
+      w <- character(0)
+    }
+    r <- expect_warning_count(scenarios[[id]](), w, length(w))
+    expect_null(attr(r, ".vcov"))
+  }
+})
+
+test_that("get_variance() gives each clean group the SE of its own domain when another group has an Inf", {
+  expect_groups_match_domain(
+    "variance/tay_y1_inf",
+    "tay",
+    function(d) {
+      get_variance(
+        d,
+        y1_inf,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "variance"
+  )
+})
+
+test_that("get_variance() errors when every replicate weight is NA on a row inside a cell", {
+  d <- cell_golden_design("rep_allna")
+  expect_error(
+    get_variance(
+      d,
+      y1,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_variance(
+      d,
+      y1,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_variance() errors on a single-PSU stratum when lonely.psu is fail", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(calls$variance(), class = "surveycore_error_lonely_psu")
+  expect_snapshot(error = TRUE, calls$variance())
+})
+
+test_that("get_variance() errors on a single-PSU stratum when lonely.psu is an unknown value", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "unknown_value")
+  expect_error(
+    calls$variance(),
+    class = "surveycore_error_lonely_psu_unknown_option"
+  )
+  expect_snapshot(error = TRUE, calls$variance())
+})
+
+test_that("get_variance() errors on a single-PSU stratum under fail when the call has 65 cells", {
+  d <- cell_golden_design("lonely")
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(
+    get_variance(
+      d,
+      y1,
+      group = g65,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_lonely_psu"
+  )
+  expect_snapshot(error = TRUE, {
+    get_variance(
+      d,
+      y1,
+      group = g65,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_variance() errors on a single-PSU stratum under fail when its only cell has an NA and na.rm = FALSE", {
+  # Ungrouped: the one cell is the only cell that reaches the variance step,
+  # and it has an NA (at b1) in its active domain. A flush that skipped a cell
+  # under the na.rm = FALSE override would raise nothing.
+  d <- cell_golden_design("lonely")
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(
+    get_variance(
+      d,
+      y1_na,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_lonely_psu"
+  )
+  expect_snapshot(error = TRUE, {
+    get_variance(
+      d,
+      y1_na,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_variance() still errors when a base weight inside a cell is NA", {
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("nawt_in")
+  expect_error(
+    get_variance(
+      d,
+      y1,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})

@@ -255,6 +255,18 @@ get_variance <- function(
     listwise_nonna <- rep(TRUE, nrow(design@data))
   }
 
+  # Work that is the same for every cell, once per call.
+  ctx <- .cell_context(design)
+
+  # Taylor SE buffer. A Taylor cell that reaches its variance step returns
+  # its influence column; the column waits here with the cell's row position
+  # in the acc_* vectors and its na.rm = FALSE override flag. Each full block
+  # of TAYLOR_SE_BLOCK columns takes its SEs from stacked calls, so the call
+  # never holds more than one block of columns.
+  buf_infl <- list()
+  buf_row <- integer(0)
+  buf_override <- logical(0)
+
   for (vn in var_names) {
     x_col <- design@data[[vn]]
 
@@ -288,15 +300,19 @@ get_variance <- function(
         domain_vec <- as.numeric(active_mask)
       }
 
-      cell <- .variance_cell(design, vn, domain_vec)
+      cell <- .variance_cell(design, vn, domain_vec, ctx)
+      infl <- cell$infl
+      cell$infl <- NULL
 
       # When na.rm = FALSE, n reports the size of the active domain
       # (pre-NA filter), not the complete-case count. Estimate is NaN
       # whenever any NA exists in the active domain because the weighted
       # mean propagates NaN.
+      override <- FALSE
       if (!isTRUE(na.rm)) {
         cell$n <- as.integer(sum(active_mask))
         if (any(is.na(design@data[[vn]][active_mask]))) {
+          override <- TRUE
           cell$variance <- NaN
           cell$se <- NaN
           cell$se_srs <- NaN
@@ -331,7 +347,24 @@ get_variance <- function(
       if (length(group_vars) > 0L) {
         acc_grp_rows <- c(acc_grp_rows, list(combo_row))
       }
+
+      if (!is.null(infl)) {
+        buf_infl[[length(buf_infl) + 1L]] <- infl
+        buf_row <- c(buf_row, length(acc_se))
+        buf_override <- c(buf_override, override)
+        if (length(buf_infl) == TAYLOR_SE_BLOCK) {
+          acc_se[buf_row] <- .variance_flush_se(buf_infl, buf_override, ctx)
+          buf_infl <- list()
+          buf_row <- integer(0)
+          buf_override <- logical(0)
+        }
+      }
     }
+  }
+
+  # Flush the last partial block, before any post-loop condition.
+  if (length(buf_infl) > 0L) {
+    acc_se[buf_row] <- .variance_flush_se(buf_infl, buf_override, ctx)
   }
 
   # ── Step 7: Variance-specific warnings ──────────────────────────────────────
