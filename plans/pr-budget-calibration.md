@@ -122,13 +122,13 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
   They leave out the `.rds` fixture, the planning copies and the changelog.
   About 300 of the 1,209 helper lines are a transcribed warning table. The
   two plan entries became one PR of 24 rows, twice the 12-row bound. It took
+  one CI fix: NaN against NA by platform, D19.
 
 - **#365** (analysis-cell-performance, plan PR 3; slim-pipeline trial, D17).
   Source and test. Additions are the `R/` lines and the test-file lines.
   They leave out the generated `_snaps/` file, the planning copies and the
   changelog, and include a `style:` reformat of two spots (9 lines). CI
   passed on the first run.
-  one CI fix: NaN against NA by platform, D19.
 
 ## Reading the five rows
 
