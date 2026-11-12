@@ -245,3 +245,4 @@ buffer, or accept coverage as the guard.
 Trial measures, PR 3: errata 6 (builder) plus D21 and D22 (leader); BLOCKs 0;
 STOPs 0; hand-written additions by the leader: the `style:` commit split and
 the DESCRIPTION revert, no code; CI cycles: recorded at ship time.
+PR 3 shipped as #365, squash-merged to `develop` as `20d180c` on 2026-11-12. CI: 1 cycle, 7 of 7 checks passed on the first run.
