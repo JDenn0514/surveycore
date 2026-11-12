@@ -199,3 +199,49 @@ still asserts that those are missing in the same cells. The test file now
 carries 2,838 expectations, not 3,664. Plan §H.5 and test-spec §5 step 298
 ("is.nan on every part") read with this exception. For the trial: the gates
 ran on Windows only, so no local gate could catch this; CI did.
+
+## D20 — PR 3 errata and trial record (SETTLED, orchestrator, 2026-11-12)
+Builder errata E-1 to E-6 (`prs/pr-3-analysis-cell-variance/implementation.md`)
+stand as written. The reviewer (`prs/pr-3-analysis-cell-variance/review.md`,
+verdict PASS) agrees with E-1, E-2, E-3, E-5 and E-6, and in part with E-4.
+- E-1: `spec.md` §II.3 gives `.taylor_variance_cell()` a `mats` argument it
+  never reads. Kept as written.
+- E-2: `R/analysis-helpers.R` and `R/analysis-variance-helpers.R` were not
+  `air`-clean on `develop`. The reformat ships as its own `style:` commit.
+- E-3: row 4.6.3 asserts the recorded warnings of three of its four ids (D18).
+- E-4: criterion 4 checks that the first commit touching `_snaps/` holds no
+  `R/` file and that the snapshots did not move after it. It does not check
+  order on its own; task 2 asks for tests first. The leader committed
+  style, then tests and snapshots, then `R/`. Criterion 4 passes.
+- E-5: rule 3 runs one block per call inside `.taylor_cell_se()`; the case of
+  more than one block comes from the caller (D15).
+- E-6: rule 4 is guarded only by `variance/tay_y1_inf` and row 5.1.8.
+- Row 5.5.1 raises `simpleError` on the base commit; the PR states it.
+
+## D21 — warning baseline on this machine is 254 (SETTLED, orchestrator, 2026-11-12)
+Plan §Standard gates, `test-spec.md` §8 and `CLAUDE.md` say 369. That figure
+is for a library without `surveytidy` and `srr`. This machine has both, and
+clean `develop` gives 254. PR 3 measured 254: no new warning. Later PRs on
+this machine compare against 254.
+
+## D22 — gate-script tree line and roxygen bump (SETTLED, orchestrator, 2026-11-12)
+- `run-gates.sh` prints `Tree:` from `HEAD^{tree}`, so on an uncommitted
+  tree it names the base commit, not the content it tested. The PR 3 gates
+  tested the working tree that the three PR commits now hold.
+- The gate run's `devtools::document()` bumped `Config/roxygen2/version` in
+  `DESCRIPTION` to 8.1.1. The leader reverted it; it is not part of the PR.
+- Gate 9: the branch also carries the PR 1 and 2 bookkeeping edits to
+  `plans/implementation-plan-analysis-cell-performance.md` and
+  `plans/pr-budget-calibration.md`, as a separate `docs:` commit by the
+  leader's instruction. They are outside PR 3's Files touched.
+
+## D23 — PR 3 reviewer NOTE carried forward (OPEN, orchestrator, 2026-11-12)
+No test catches a removed in-loop flush in `get_variance()`: the reviewer
+disabled it and the equivalence file stayed green. Only the gate 6 coverage
+check catches it, because the line goes uncovered. A later PR that touches
+the flush should add a scenario with more than 64 cells and a partial
+buffer, or accept coverage as the guard.
+
+Trial measures, PR 3: errata 6 (builder) plus D21 and D22 (leader); BLOCKs 0;
+STOPs 0; hand-written additions by the leader: the `style:` commit split and
+the DESCRIPTION revert, no code; CI cycles: recorded at ship time.
