@@ -63,6 +63,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-10-13 | #316 | 10 | 678 | 67.8 | 0 | 0 | — |
 | 2026-10-13 | #317 | 8 | 173 | 21.6 | 0 | 1 | — |
 | 2026-11-12 | #364 | 24 | 1570 | 65.4 | n/a | 0 | — |
+| 2026-11-12 | #365 | 8 | 339 | 42.4 | n/a | 0 | — |
 
 ## Notes on individual rows
 
@@ -122,6 +123,12 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
   About 300 of the 1,209 helper lines are a transcribed warning table. The
   two plan entries became one PR of 24 rows, twice the 12-row bound. It took
   one CI fix: NaN against NA by platform, D19.
+
+- **#365** (analysis-cell-performance, plan PR 3; slim-pipeline trial, D17).
+  Source and test. Additions are the `R/` lines and the test-file lines.
+  They leave out the generated `_snaps/` file, the planning copies and the
+  changelog, and include a `style:` reformat of two spots (9 lines). CI
+  passed on the first run.
 
 ## Reading the five rows
 

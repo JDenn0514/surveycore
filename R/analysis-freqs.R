@@ -275,6 +275,10 @@ get_freqs <- function(
 
   small_cell_ns <- integer(0) # for small-cell warning
 
+  # Work shared by every cell, done once per call: the cluster matrices
+  # (Taylor), the replicate matrix and whether it is finite (replicate).
+  ctx <- .cell_context(design, check_rep_finite = TRUE)
+
   for (vn in var_names) {
     x_col <- design@data[[vn]]
     vl <- x_meta_list[[vn]]$value_labels # named vector or NULL
@@ -346,6 +350,13 @@ get_freqs <- function(
         denom <- as.numeric(active_mask)
       }
 
+      # Replicate denominator totals, computed once for every level of this
+      # combination. .freq_rep_total() picks the subset sum or the full
+      # product from ctx$rep_finite, the same form the numerators use.
+      rep_N_d <- if (ctx$replicate) {
+        .freq_rep_total(denom, ctx$rep_mat, ctx$rep_finite)
+      }
+
       # ── Loop over levels ───────────────────────────────────────────────────
       for (lvl in levels_vn) {
         # Build numerator: in active_mask AND matches this level
@@ -355,7 +366,7 @@ get_freqs <- function(
           num <- as.numeric(active_mask & !is.na(x_col) & (x_col == lvl))
         }
 
-        cell <- .freq_cell(design, num, denom)
+        cell <- .freq_cell(design, num, denom, ctx, rep_N_d)
 
         # Track small cells
         if (!is.na(cell$n) && cell$n > 0L && cell$n < min_cell_n) {
@@ -386,6 +397,26 @@ get_freqs <- function(
       } # end level loop
     } # end group combo loop
   } # end variable loop
+
+  # ── Taylor SE step ──────────────────────────────────────────────────────────
+  # One stacked .svy_recvar() call over every live cell gives the .vcov
+  # matrix, and each live cell's SE is read from its diagonal. Runs before
+  # any post-loop condition, so a lonely-PSU abort fires here.
+  v_all <- NULL
+  if (ctx$taylor) {
+    v_all <- .joint_vcov(design, acc_joint, mats = ctx$mats)
+    kinds <- vapply(acc_joint, function(j) j$kind, character(1L))
+    live <- kinds == "infl"
+    if (any(live)) {
+      vals <- do.call(cbind, lapply(acc_joint[live], function(j) j$value))
+      acc_se[live] <- .taylor_cell_se(
+        vals,
+        ctx$mats,
+        ctx$lonely.psu,
+        v = v_all[live, live, drop = FALSE]
+      )
+    }
+  }
 
   # ── Step 8: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
@@ -495,7 +526,9 @@ get_freqs <- function(
     estimate_cols = c("pct"),
     statistic = "freq"
   )
-  result <- .attach_joint_vcov(result, design, acc_joint)
+  # Taylor: attach the matrix of the SE step. Replicate: v_all is NULL, so
+  # .svy_rep_vcov() computes it here, as before.
+  result <- .attach_joint_vcov(result, design, acc_joint, v = v_all)
 
   # The .survey_result df is left at its Inf default (from
   # .make_result_tibble()), the same df the ci_low/ci_high columns use, so

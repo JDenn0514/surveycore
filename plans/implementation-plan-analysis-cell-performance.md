@@ -815,7 +815,7 @@ total of 261 does not change. List every correction in the PR description.
   - **Pipeline tier**: optional (no exported function, no numerical method,
     no contract change, one file)
 
-- [ ] PR 3: `refactor/analysis-cell-variance` — `get_variance()` builds its
+- [x] PR 3: `refactor/analysis-cell-variance` — `get_variance()` builds its
   context once and takes its Taylor SEs from stacked calls in blocks; adds
   `TAYLOR_SE_BLOCK`, `.cell_context()` and `.taylor_cell_se()`
   - **Budget** — 8 test-spec rows | 8 criteria

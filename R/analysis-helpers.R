@@ -1207,14 +1207,19 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 # ── .joint_vcov() ─────────────────────────────────────────────────────────────
 #
 # Reduce the per-cell `joint` elements of one result to its k x k covariance
-# matrix, in row order. The diagonal equals each cell's own se^2: the Taylor
-# reduction is .svy_recvar() over the same columns, and the replicate one is
-# .svy_rep_vcov(), whose diagonal is .svy_rep_var() on each column.
+# matrix, in row order. The Taylor reduction is .svy_recvar() over the stacked
+# columns; its diagonal equals each cell's se^2 only when every live column is
+# finite, because one non-finite column makes .svy_onestage() drop a stratum
+# for every column. The replicate reduction is .svy_rep_vcov(); its diagonal
+# equals each cell's .svy_rep_var() se^2 in exact arithmetic only, because
+# the two sum in different orders.
 #
 # @param design  The design the cells were computed on.
 # @param joint   List of length k: each element NULL or a .joint_*() value.
+# @param mats    The .build_cluster_matrices() list (ctx$mats), or NULL to
+#                build it here. Used on the Taylor route only.
 # @return k x k numeric matrix, or NULL when any cell has no joint form.
-.joint_vcov <- function(design, joint) {
+.joint_vcov <- function(design, joint, mats = NULL) {
   k <- length(joint)
   if (any(vapply(joint, is.null, logical(1L)))) {
     return(NULL)
@@ -1228,7 +1233,9 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 
   vals <- do.call(cbind, lapply(joint[live], function(j) j$value))
   if (all(kinds[live] == "infl")) {
-    mats <- .build_cluster_matrices(design@data, design@variables)
+    if (is.null(mats)) {
+      mats <- .build_cluster_matrices(design@data, design@variables)
+    }
     v <- .svy_recvar(
       vals,
       mats$clusters_mat,
@@ -1267,12 +1274,17 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 # @param result  A survey_result tibble with its .survey_result attribute.
 # @param design  The design the cells were computed on.
 # @param joint   List of per-cell `joint` elements, in row order.
+# @param v       NULL, or the matrix .joint_vcov() already returned for
+#                `joint` (the Taylor SE step). When supplied, it is attached
+#                and .joint_vcov() is not called again.
 # @return result, possibly with a ".vcov" attribute.
-.attach_joint_vcov <- function(result, design, joint) {
+.attach_joint_vcov <- function(result, design, joint, v = NULL) {
   if (nrow(result) == 0L) {
     return(result)
   }
-  v <- .joint_vcov(design, joint)
+  if (is.null(v)) {
+    v <- .joint_vcov(design, joint)
+  }
   if (!is.null(v)) {
     nms <- .build_coef_names(result, attr(result, ".survey_result"))
     dimnames(v) <- list(nms, nms)
@@ -1298,11 +1310,15 @@ TAYLOR_SE_BLOCK <- 64L
 # per call: the cluster matrices on the Taylor route, the replicate weight
 # matrix on the replicate route, and the lonely.psu option.
 #
-# @param design  A survey design object.
+# @param design            A survey design object.
+# @param check_rep_finite  TRUE computes rep_finite on the replicate route.
+#                          Only get_freqs() uses it, so the other functions
+#                          skip the pass over rep_mat.
 # @return Named list: taylor, replicate (logical), mats (the
 #   .build_cluster_matrices() list, or NULL), rep_mat (numeric matrix, or
-#   NULL), rep_finite (always FALSE here), lonely.psu (character).
-.cell_context <- function(design) {
+#   NULL), rep_finite (TRUE when replicate, check_rep_finite and every
+#   replicate weight is finite; else FALSE), lonely.psu (character).
+.cell_context <- function(design, check_rep_finite = FALSE) {
   taylor <- S7::S7_inherits(design, survey_taylor)
   replicate <- S7::S7_inherits(design, survey_replicate) ||
     (S7::S7_inherits(design, survey_nonprob) &&
@@ -1318,7 +1334,7 @@ TAYLOR_SE_BLOCK <- 64L
     replicate = replicate,
     mats = mats,
     rep_mat = rep_mat,
-    rep_finite = FALSE,
+    rep_finite = replicate && check_rep_finite && all(is.finite(rep_mat)),
     lonely.psu = getOption("survey.lonely.psu", "remove")
   )
 }
@@ -1326,11 +1342,13 @@ TAYLOR_SE_BLOCK <- 64L
 # ── .taylor_cell_se() ─────────────────────────────────────────────────────────
 #
 # The Taylor SE of each influence column in `vals`. When every value is
-# finite, the columns go to .svy_recvar() in consecutive blocks of at most
-# TAYLOR_SE_BLOCK columns, and each SE comes from the block's diagonal. When
-# any value is not finite, each column gets its own .svy_recvar() call: one
-# non-finite column makes .svy_onestage() drop a stratum for every column of
-# its call, which would move the SE of a clean column.
+# finite and the caller supplies `v`, each SE comes from the diagonal of `v`.
+# When every value is finite and `v` is NULL, the columns go to .svy_recvar()
+# in consecutive blocks of at most TAYLOR_SE_BLOCK columns, and each SE comes
+# from the block's diagonal. When any value is not finite, each column gets
+# its own .svy_recvar() call and `v` is not used: one non-finite column makes
+# .svy_onestage() drop a stratum for every column of its call, which would
+# move the SE of a clean column.
 #
 # Applies no calibration projection. Raises only what .svy_recvar() raises.
 #
@@ -1338,14 +1356,21 @@ TAYLOR_SE_BLOCK <- 64L
 #                    column per live cell, in result row order.
 # @param mats        The .build_cluster_matrices() list (ctx$mats).
 # @param lonely.psu  The survey.lonely.psu option value (ctx$lonely.psu).
+# @param v           NULL, or the k x k .svy_recvar() matrix of `vals` that
+#                    the caller already computed for .vcov.
 # @return Unnamed numeric vector of length k: the SE of each column.
 .taylor_cell_se <- function(
   vals,
   mats,
-  lonely.psu = getOption("survey.lonely.psu", "remove")
+  lonely.psu = getOption("survey.lonely.psu", "remove"),
+  v = NULL
 ) {
   k <- ncol(vals)
-  if (!all(is.finite(vals))) {
+  ok <- all(is.finite(vals))
+  if (ok && !is.null(v)) {
+    return(unname(sqrt(pmax(0, diag(v)))))
+  }
+  if (!ok) {
     se <- vapply(
       seq_len(k),
       function(j) {
