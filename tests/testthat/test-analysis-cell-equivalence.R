@@ -451,3 +451,143 @@ test_that("get_freqs() errors on an all-NA variable when na.rm is FALSE", {
     )
   })
 })
+
+# ------------------------------------------------------------------------------
+# get_covariance() rows
+# ------------------------------------------------------------------------------
+
+test_that("get_covariance() gives each clean group the SE of its own domain when another group has an Inf", {
+  # The "cv" column warns once on the grouped call and once on the group A
+  # call: each has a covariance estimate at or below zero.
+  expect_warning_count(
+    expect_groups_match_domain(
+      "covariance/tay_y1_inf",
+      "tay",
+      function(d) {
+        get_covariance(
+          d,
+          c(y1_inf, y2),
+          variance = .cg_variance,
+          n_weighted = TRUE,
+          min_cell_n = 0L
+        )
+      },
+      "covariance"
+    ),
+    "surveycore_warning_cv_undefined",
+    2L
+  )
+})
+
+test_that("get_covariance() errors when every replicate weight is NA on a row inside a cell", {
+  d <- cell_golden_design("rep_allna")
+  expect_error(
+    get_covariance(
+      d,
+      c(y1, y2),
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_covariance(
+      d,
+      c(y1, y2),
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_covariance() errors on a single-PSU stratum when lonely.psu is fail", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(calls$covariance(), class = "surveycore_error_lonely_psu")
+  expect_snapshot(error = TRUE, calls$covariance())
+})
+
+test_that("get_covariance() errors on a single-PSU stratum when lonely.psu is an unknown value", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "unknown_value")
+  expect_error(
+    calls$covariance(),
+    class = "surveycore_error_lonely_psu_unknown_option"
+  )
+  expect_snapshot(error = TRUE, calls$covariance())
+})
+
+test_that("get_covariance() errors on a single-PSU stratum under fail when the call has 65 cells", {
+  d <- cell_golden_design("lonely")
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(
+    get_covariance(
+      d,
+      c(y1, y2),
+      group = g65,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_lonely_psu"
+  )
+  expect_snapshot(error = TRUE, {
+    get_covariance(
+      d,
+      c(y1, y2),
+      group = g65,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_covariance() errors on a single-PSU stratum under fail when its only pair has an NA and na.rm = FALSE", {
+  # Ungrouped with two variables: the one pair y1_na-y2 is the only cell, and
+  # it carries the na.rm = FALSE override. A flush that skipped a cell under
+  # the override would raise nothing.
+  d <- cell_golden_design("lonely")
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(
+    get_covariance(
+      d,
+      c(y1_na, y2),
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_lonely_psu"
+  )
+  expect_snapshot(error = TRUE, {
+    get_covariance(
+      d,
+      c(y1_na, y2),
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_covariance() still errors when a base weight inside a cell is NA", {
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("nawt_in")
+  expect_error(
+    get_covariance(
+      d,
+      c(y1, y2),
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})

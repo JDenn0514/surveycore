@@ -7,7 +7,6 @@
 #   .taylor_variance_cell()   — Taylor domain-estimation variance of variance
 #   .replicate_variance_cell() — replicate-weight domain variance
 #   .variance_cell()          — dispatcher
-#   .variance_flush_se()      — SEs of one block of buffered Taylor cells
 
 # ── .score_variance() ─────────────────────────────────────────────────────────
 #
@@ -528,23 +527,4 @@
       class = "surveycore_error_unsupported_class"
     )
   }
-}
-
-
-# ── .variance_flush_se() ──────────────────────────────────────────────────────
-#
-# Flush one block of get_variance()'s Taylor buffer: the SE of each buffered
-# cell from .taylor_cell_se(), with NaN for a cell under the na.rm = FALSE
-# override. The override cell still joins the stacked call, so under
-# survey.lonely.psu = "fail" its variance step can abort.
-#
-# @param columns   List of influence columns, one per buffered cell.
-# @param override  Logical vector, one per buffered cell: TRUE when the
-#                  na.rm = FALSE override sets that cell's SE to NaN.
-# @param ctx       The call context from .cell_context().
-# @return Unnamed numeric vector, one SE per buffered cell.
-.variance_flush_se <- function(columns, override, ctx) {
-  se <- .taylor_cell_se(do.call(cbind, columns), ctx$mats, ctx$lonely.psu)
-  se[override] <- NaN
-  se
 }

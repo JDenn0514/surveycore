@@ -362,6 +362,23 @@ get_covariance <- function(
   all_na_pairs <- list()
   insuff_n_pairs <- list()
 
+  # Work that is the same for every pair, once per call.
+  ctx <- .cell_context(design)
+
+  # Taylor SE buffer. A Taylor pair that reaches its variance step returns its
+  # influence column; the column waits here with its locator (the group
+  # combination index and the pair key) and its na.rm = FALSE override flag.
+  # Each full block of TAYLOR_SE_BLOCK columns takes its SEs from stacked
+  # calls, so the call never holds more than one block of columns. A block
+  # can span two group combinations: a flush writes to pair_results_this for
+  # the current combination and to all_pair_results for an earlier one. The
+  # flush calls .variance_flush_se() (R/analysis-helpers.R), which
+  # holds the na.rm = FALSE override rule for both functions.
+  buf_infl <- list()
+  buf_ci <- integer(0)
+  buf_key <- character(0)
+  buf_override <- logical(0)
+
   for (ci_idx in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
       combo_row <- group_combos[ci_idx, , drop = FALSE]
@@ -388,12 +405,16 @@ get_covariance <- function(
         xnm,
         ynm,
         active_domain,
-        na.rm
+        na.rm,
+        ctx
       )
+      infl <- res$infl
+      res$infl <- NULL
 
       # Apply na.rm = FALSE semantics: when NAs are present in either
       # variable on the active domain, NaN-out the estimates and use
       # active-mask count (pre-NA filter) for n.
+      override <- FALSE
       if (!isTRUE(na.rm)) {
         n_active_rows <- as.integer(sum(active_mask))
         any_na <- any(
@@ -402,6 +423,7 @@ get_covariance <- function(
         )
         res$n <- n_active_rows
         if (any_na) {
+          override <- TRUE
           res$covariance <- NaN
           res$se <- NaN
           res$se_srs <- NaN
@@ -409,6 +431,27 @@ get_covariance <- function(
       }
 
       pair_results_this[[key]] <- res
+
+      if (!is.null(infl)) {
+        buf_infl[[length(buf_infl) + 1L]] <- infl
+        buf_ci <- c(buf_ci, ci_idx)
+        buf_key <- c(buf_key, key)
+        buf_override <- c(buf_override, override)
+        if (length(buf_infl) == TAYLOR_SE_BLOCK) {
+          se_blk <- .variance_flush_se(buf_infl, buf_override, ctx)
+          for (b in seq_along(se_blk)) {
+            if (buf_ci[[b]] == ci_idx) {
+              pair_results_this[[buf_key[[b]]]]$se <- se_blk[[b]]
+            } else {
+              all_pair_results[[buf_ci[[b]]]][[buf_key[[b]]]]$se <- se_blk[[b]]
+            }
+          }
+          buf_infl <- list()
+          buf_ci <- integer(0)
+          buf_key <- character(0)
+          buf_override <- logical(0)
+        }
+      }
 
       # Per-pair edge-case warning bookkeeping (only with na.rm = TRUE).
       if (isTRUE(na.rm)) {
@@ -426,6 +469,15 @@ get_covariance <- function(
     }
 
     all_pair_results[[ci_idx]] <- pair_results_this
+  }
+
+  # Flush the last partial block, before any post-loop condition. Every
+  # combination is stored by now, so each SE goes to all_pair_results.
+  if (length(buf_infl) > 0L) {
+    se_blk <- .variance_flush_se(buf_infl, buf_override, ctx)
+    for (b in seq_along(se_blk)) {
+      all_pair_results[[buf_ci[[b]]]][[buf_key[[b]]]]$se <- se_blk[[b]]
+    }
   }
 
   # ── Step 11: Per-pair edge-case warnings (deduplicated) ─────────────────────

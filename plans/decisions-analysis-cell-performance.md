@@ -275,3 +275,33 @@ FIX-BEFORE-MERGE) agrees with all six.
 
 Trial measures, PR 4: errata 6 (builder); BLOCKs 0; STOPs 0; hand-written
 additions by the leader: none; CI cycles: recorded at ship time.
+PR 4 shipped as #366, squash-merged to `develop` on 2026-11-13. CI: 1 cycle, 7 of 7 checks passed on the first run.
+
+## D25 — PR 5 errata, leader edit and trial record (SETTLED, orchestrator, 2026-11-13)
+Builder errata E-1 to E-5 (`prs/pr-5-analysis-cell-covariance/implementation.md`)
+stand. The reviewer (`prs/pr-5-analysis-cell-covariance/review.md`, PASS, no
+FIX-BEFORE-MERGE) agrees with all five.
+- E-1 / N-3: `mats` is required and not read, as in PRs 3 and 4.
+- E-2: `.variance_flush_se()` gained a second caller, `get_covariance()`.
+  `code-style.md` §Internal helpers moves such a helper to a shared file in
+  the same PR. **Leader edit:** a separate `refactor(analysis)` commit moved
+  it, body byte-identical, from `R/analysis-variance-helpers.R` to
+  `R/analysis-helpers.R`, beside `.taylor_cell_se()`, and updated both file
+  headers and the pointer comment in `R/analysis-covariance.R`. Both files
+  are outside PR 5's Files touched; the reviewer accepted the gate 9
+  exception, because a copy would duplicate the override rule.
+- E-3: D23 recurs for `get_covariance()`'s in-loop flush.
+- E-4: tests and `_snaps/` in one commit, `R/` after. Done.
+- E-5 / N-4: six of the seven new titles pass 80 columns; the plan fixes them.
+- Row 5.5.2 raises `simpleError` on the base commit; the PR states it.
+- N-1: no scenario puts an `na.rm = FALSE` override pair into a full block
+  of 64, so an in-loop flush that ignored the override flag stays green
+  (break K5). Carried with D23: both are flush paths that only coverage
+  guards. A later PR may add a 65-cell `na.rm = FALSE` scenario.
+- N-2: removing `res$infl <- NULL` stays green; it saves memory only.
+- D18: the equivalence file runs with 0 warnings, so no `cv_undefined`
+  fires before the moved lonely-PSU abort (D6).
+
+Trial measures, PR 5: errata 5 (builder); BLOCKs 0; STOPs 0; hand-written
+additions by the leader: the helper move (one commit, 20 lines moved, 4
+comment lines changed); CI cycles: recorded at ship time.

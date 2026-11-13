@@ -943,7 +943,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/_snaps/analysis-cell-equivalence.md` (new)
   - **Pipeline tier**: recommended
 
-- [ ] PR 4: `refactor/analysis-cell-freqs` — `get_freqs()` builds its context
+- [x] PR 4: `refactor/analysis-cell-freqs` — `get_freqs()` builds its context
   once, takes its Taylor SEs and `.vcov` from one stacked call, and uses
   guarded replicate subset sums; completes the shared helpers
   - **Budget** — 5 test-spec rows | 7 criteria
