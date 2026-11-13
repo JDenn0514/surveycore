@@ -314,3 +314,42 @@ the reviewer's write surface. Supersedes the revert in D22, D24 and D25.
 PR #367 shipped without it; no change there.
 
 PR 5 shipped as #367, squash-merged to `develop` on 2026-11-13. CI: 1 cycle, 7 of 7 checks passed on the first run.
+
+## D27 — PR 6 errata and trial record (SETTLED, orchestrator, 2026-11-13)
+Builder errata (`prs/pr-6-analysis-cell-means/implementation.md`) stand.
+The reviewer (`prs/pr-6-analysis-cell-means/review.md`, PASS, no
+FIX-BEFORE-MERGE) agrees, and compared 2,412 `get_means()` and
+`get_quantiles()` calls on `origin/develop` and on HEAD with `identical()`:
+all matched, `.vcov` dimnames, warning order and error text included.
+- E-1: `test-spec.md` row 5.1.10's note says the `.vcov` diagonal is finite.
+  It is `Inf` on `tay`, `multi`, `strat` and `cal`, because a mean's
+  influence column is all `NA`. The finite, rescaled case is `get_totals()`.
+  The row asserts the right thing; correct the note at archive time.
+- E-2: the step after the loop that computes the SEs and `.vcov` is
+  byte-identical in `get_freqs()` (`R/analysis-freqs.R` 401-419) and
+  `get_means()` (`R/analysis-means.R` 267-285). Deferred to PR 7 (D28):
+  spec §II.2 closes the helper list and `R/analysis-freqs.R` is outside
+  PR 6's Files touched.
+- E-3: a `get_means()` that keeps each cell's own variance call stays green
+  (breaks B5, K2, K4). Only the call counts guard it, as D23.
+- E-4: `test-effective-n.R` fails 4 print snapshots when run alone, on the
+  base as well. The full suite gives 0 failures: an artifact of a lone run.
+- E-5: 8 new titles pass 80 columns; the plan fixes the titles.
+- Reviewer NOTE: the `crossprod()` replicate form is bit-identical under the
+  reference BLAS this R uses. Under an optimised BLAS only the 1e-12 golden
+  tolerance holds it.
+- Rows 5.5.5 and 5.5.8 raise `simpleError` on the base commit.
+- D26 applied: `DESCRIPTION` roxygen bump shipped as its own `chore:` commit.
+
+Trial measures, PR 6: errata 5 (builder); BLOCKs 0; STOPs 0; hand-written
+additions by the leader: none; CI cycles: recorded at ship time.
+
+## D28 — PR 7 extracts the shared SE step (SETTLED, orchestrator, 2026-11-13)
+Before PR 7 adds a third copy of the step after the loop, PR 7 extracts it
+(`engineering-preferences.md` §DRY; `code-style.md` §Internal helpers).
+PR 7's Files touched grow by `R/analysis-freqs.R` and `R/analysis-means.R`.
+Reviewer's proposal: `.taylor_se_step(design, acc_joint, acc_se, ctx)` in
+`R/analysis-helpers.R`, returning `list(se, v)`. The PR 7 builder confirms
+the signature against the three call sites, ships the extraction as its own
+`refactor` commit before the `get_totals()` change, and adds no test row:
+the golden blocks for freqs and means guard it.
