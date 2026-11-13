@@ -221,6 +221,10 @@ get_means <- function(
 
   small_cell_ns <- integer(0)
 
+  # Work shared by every cell, done once per call: the cluster matrices
+  # (Taylor) and the replicate matrix (replicate).
+  ctx <- .cell_context(design)
+
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
       combo_row <- group_combos[ci, , drop = FALSE]
@@ -232,7 +236,16 @@ get_means <- function(
     }
 
     domain <- .mean_domain_vec(active_mask, x_col, na.rm)
-    cell <- .mean_cell(design, x_name, domain)
+    # Taylor cells skip their own variance call; the SE step below fills
+    # their SE.
+    cell <- .mean_cell(
+      design,
+      x_name,
+      domain,
+      mats = ctx$mats,
+      compute_se = FALSE,
+      rep_mat = ctx$rep_mat
+    )
 
     if (!is.na(cell$n) && cell$n > 0L && cell$n < min_cell_n) {
       small_cell_ns <- c(small_cell_ns, cell$n)
@@ -248,6 +261,26 @@ get_means <- function(
 
     if (length(group_vars) > 0L) {
       acc_grp_rows <- c(acc_grp_rows, list(combo_row))
+    }
+  }
+
+  # ── Taylor SE step ──────────────────────────────────────────────────────────
+  # One stacked .svy_recvar() call over every live cell gives the .vcov
+  # matrix, and each live cell's SE is read from its diagonal. Runs before
+  # any post-loop condition, so a lonely-PSU abort fires here.
+  v_all <- NULL
+  if (ctx$taylor) {
+    v_all <- .joint_vcov(design, acc_joint, mats = ctx$mats)
+    kinds <- vapply(acc_joint, function(j) j$kind, character(1L))
+    live <- kinds == "infl"
+    if (any(live)) {
+      vals <- do.call(cbind, lapply(acc_joint[live], function(j) j$value))
+      acc_se[live] <- .taylor_cell_se(
+        vals,
+        ctx$mats,
+        ctx$lonely.psu,
+        v = v_all[live, live, drop = FALSE]
+      )
     }
   }
 
@@ -345,7 +378,9 @@ get_means <- function(
     statistic = "mean",
     cell_df = cell_df_attr
   )
-  result <- .attach_joint_vcov(result, design, acc_joint)
+  # Taylor: attach the matrix of the SE step. Replicate: v_all is NULL, so
+  # .svy_rep_vcov() computes it here, as before.
+  result <- .attach_joint_vcov(result, design, acc_joint, v = v_all)
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {

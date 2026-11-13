@@ -41,13 +41,27 @@
 # have zero influence. This gives correct SEs for subpopulation means (wider
 # than physical subsetting).
 #
-# @param design  A survey_taylor object (also used for the SRS path of
-#                survey_nonprob without repweights).
-# @param y_col   Character: name of the numeric variable column.
-# @param domain  Numeric 0/1 vector (full length): 1 = in domain and non-NA.
-# @return Named list: mean, se, df (Taylor only), se_srs, n, n_weighted,
-#   joint (see .joint_vcov()).
-.taylor_mean_cell <- function(design, y_col, domain) {
+# @param design      A survey_taylor object. The SRS path of survey_nonprob
+#                    without repweights goes to .calibrated_mean_cell(), not
+#                    here.
+# @param y_col       Character: name of the numeric variable column.
+# @param domain      Numeric 0/1 vector (full length): 1 = in domain and
+#                    non-NA.
+# @param mats        The .build_cluster_matrices() list (ctx$mats), or NULL
+#                    to build it here.
+# @param compute_se  TRUE runs this cell's own .svy_recvar() call. FALSE
+#                    skips it and returns se = NA_real_; the caller takes
+#                    the SE from the joint influence column (.taylor_cell_se()).
+# @return Named list: mean, se, se_srs, n, n_weighted, joint (see
+#   .joint_vcov()), and df on a calibrated design only. An uncalibrated
+#   design returns no df; get_means() stores Inf for it.
+.taylor_mean_cell <- function(
+  design,
+  y_col,
+  domain,
+  mats = NULL,
+  compute_se = TRUE
+) {
   data <- design@data
   vars <- design@variables
   n_full <- nrow(data)
@@ -76,42 +90,53 @@
   # Out-of-domain rows contribute 0; in-domain rows contribute (y_i - ybar)
   u <- domain * (y_safe - ybar)
 
-  # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
-  mats <- .build_cluster_matrices(data, vars)
-  lonely.psu <- getOption("survey.lonely.psu", "remove")
-
   infl_mat <- matrix(w * u / N_d, ncol = 1L, dimnames = list(NULL, y_col))
   infl_mat <- .maybe_apply_calibration(infl_mat, design)
-  cal_df_reduction <- .get_calibration_df_reduction(design)
 
-  v <- .svy_recvar(
-    infl_mat,
-    mats$clusters_mat,
-    mats$strata_mat,
-    mats$fpcs,
-    lonely.psu = lonely.psu
-  )
-
-  se <- sqrt(max(0, v[1L, 1L]))
-
-  # Calibration-adjusted degrees of freedom
-  # df over the cell's rows, not the full design (issue #326)
-  df_design <- max(1L, .degf_taylor(data[domain > 0, , drop = FALSE], vars))
-  df_final <- df_design - cal_df_reduction
-  if (df_final <= 0L) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "Calibration reduces design df ({df_design}) to {df_final}."
-        ),
-        "i" = "CIs and p-values may be invalid.",
-        "v" = paste0(
-          "Reduce the number of calibration columns or use a larger design."
-        )
-      ),
-      class = "surveycore_warning_zero_df_after_calibration"
+  se <- NA_real_
+  if (compute_se) {
+    # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
+    if (is.null(mats)) {
+      mats <- .build_cluster_matrices(data, vars)
+    }
+    v <- .svy_recvar(
+      infl_mat,
+      mats$clusters_mat,
+      mats$strata_mat,
+      mats$fpcs,
+      lonely.psu = getOption("survey.lonely.psu", "remove")
     )
-    df_final <- max(1L, df_final)
+    se <- sqrt(max(0, v[1L, 1L]))
+  }
+
+  # Calibration-adjusted degrees of freedom, over the cell's rows, not the
+  # full design (issue #326). Only a calibrated design reads it, so an
+  # uncalibrated design skips the call and returns no df. .degf_taylor()
+  # reads only the first ids column and the strata column, so the frame
+  # passed to it holds only those.
+  df_final <- NULL
+  if (!is.null(design@calibration) && length(design@calibration) > 0L) {
+    df_cols <- c(vars$ids[1L], vars$strata)
+    df_design <- max(
+      1L,
+      .degf_taylor(data[domain > 0, df_cols, drop = FALSE], vars)
+    )
+    df_final <- df_design - .get_calibration_df_reduction(design)
+    if (df_final <= 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Calibration reduces design df ({df_design}) to {df_final}."
+          ),
+          "i" = "CIs and p-values may be invalid.",
+          "v" = paste0(
+            "Reduce the number of calibration columns or use a larger design."
+          )
+        ),
+        class = "surveycore_warning_zero_df_after_calibration"
+      )
+      df_final <- max(1L, df_final)
+    }
   }
 
   # SRS-equivalent SE for design effect computation
@@ -123,15 +148,17 @@
     0
   }
 
-  list(
+  out <- list(
     mean = ybar,
     se = se,
     se_srs = se_srs,
     n = n_d,
-    n_weighted = N_d,
-    df = df_final,
-    joint = .joint_infl(infl_mat)
+    n_weighted = N_d
   )
+  # Assigning NULL adds no element, so an uncalibrated cell has no df.
+  out$df <- df_final
+  out$joint <- .joint_infl(infl_mat)
+  out
 }
 
 
@@ -139,12 +166,15 @@
 #
 # Domain estimation of a weighted mean using replicate weights.
 #
-# @param design  A survey_replicate object.
-# @param y_col   Character: variable name.
-# @param domain  Numeric 0/1 vector (full length).
+# @param design   A survey_replicate object, or a survey_nonprob object with
+#                 replicate weights.
+# @param y_col    Character: variable name.
+# @param domain   Numeric 0/1 vector (full length).
+# @param rep_mat  The replicate weight matrix (ctx$rep_mat), or NULL to
+#                 convert the replicate columns here.
 # @return Named list: mean, se, se_srs, n, n_weighted, joint (see
 #   .joint_vcov()).
-.replicate_mean_cell <- function(design, y_col, domain) {
+.replicate_mean_cell <- function(design, y_col, domain, rep_mat = NULL) {
   data <- design@data
   vars <- design@variables
   w <- data[[vars$weights]]
@@ -168,11 +198,16 @@
 
   ybar <- sum(w * domain * y_safe) / N_d
 
-  # Per-replicate domain means
-  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
-  rep_N_d <- as.numeric(domain %*% rep_mat) # weighted domain size per replicate
-  # weighted sum per replicate
-  rep_Y <- as.numeric((y_safe * domain) %*% rep_mat)
+  # Per-replicate domain means. One product gives both totals: column 1 is
+  # the weighted domain size per replicate, column 2 the weighted sum. Keep
+  # it a BLAS product; colSums() or sum() would add in long double and move
+  # the last bit.
+  if (is.null(rep_mat)) {
+    rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  }
+  rep_tot <- crossprod(rep_mat, cbind(domain, y_safe * domain))
+  rep_N_d <- as.numeric(rep_tot[, 1L])
+  rep_Y <- as.numeric(rep_tot[, 2L])
   rep_p <- ifelse(rep_N_d > 0, rep_Y / rep_N_d, NA_real_)
 
   R <- ncol(rep_mat)
@@ -358,20 +393,43 @@
 #
 # Dispatch to the correct per-cell mean estimator by design class.
 #
-# @param design  Any survey design object.
-# @param y_col   Character: variable name.
-# @param domain  Numeric 0/1 vector (full length).
-# @return Named list: mean, se, df (Taylor path only), se_srs, n, n_weighted.
-.mean_cell <- function(design, y_col, domain) {
+# Two callers: get_means() passes the call context; get_quantiles() passes
+# none of the optional arguments and gets the base behaviour.
+#
+# @param design      Any survey design object.
+# @param y_col       Character: variable name.
+# @param domain      Numeric 0/1 vector (full length).
+# @param mats        Taylor route only: ctx$mats, or NULL to build it in the
+#                    cell.
+# @param compute_se  Taylor route only: FALSE skips the cell's own variance
+#                    call (se = NA_real_).
+# @param rep_mat     Replicate route only (both replicate classes):
+#                    ctx$rep_mat, or NULL to convert in the cell.
+# @return Named list: mean, se, df (calibrated Taylor path only), se_srs, n,
+#   n_weighted.
+.mean_cell <- function(
+  design,
+  y_col,
+  domain,
+  mats = NULL,
+  compute_se = TRUE,
+  rep_mat = NULL
+) {
   if (S7::S7_inherits(design, survey_taylor)) {
-    .taylor_mean_cell(design, y_col, domain)
+    .taylor_mean_cell(
+      design,
+      y_col,
+      domain,
+      mats = mats,
+      compute_se = compute_se
+    )
   } else if (S7::S7_inherits(design, survey_replicate)) {
-    .replicate_mean_cell(design, y_col, domain)
+    .replicate_mean_cell(design, y_col, domain, rep_mat = rep_mat)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_mean_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     if (!is.null(design@variables$repweights)) {
-      .replicate_mean_cell(design, y_col, domain)
+      .replicate_mean_cell(design, y_col, domain, rep_mat = rep_mat)
     } else {
       cli::cli_warn(
         c(

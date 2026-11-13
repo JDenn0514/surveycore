@@ -118,3 +118,28 @@
       Error in `.svy_onestrat()`:
       x Stratum 6 has only one PSU at stage 1.
 
+# get_means() errors when x is NA in a cell with na.rm = FALSE on a replicate design
+
+    Code
+      get_means(d, y1_na, group = group, na.rm = FALSE, variance = .cg_variance,
+        n_weighted = TRUE, min_cell_n = 0L)
+    Condition
+      Error in `.svy_rep_var()`:
+      x All replicates produced NA estimates.
+
+# get_means() errors on a single-PSU stratum when lonely.psu is fail
+
+    Code
+      calls$means()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Stratum 6 has only one PSU at stage 1.
+
+# get_means() errors on a single-PSU stratum when lonely.psu is an unknown value
+
+    Code
+      calls$means()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Unknown `lonely.psu` value: "unknown_value".
+

@@ -1026,7 +1026,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/_snaps/analysis-cell-equivalence.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 5: `refactor/analysis-cell-covariance` — `get_covariance()` builds
+- [x] PR 5: `refactor/analysis-cell-covariance` — `get_covariance()` builds
   its context once and takes its Taylor SEs from stacked calls in blocks
   - **Budget** — 7 test-spec rows | 7 criteria
     - Rows: §5 5.1.9, 5.2.10, 5.3.5, 5.3.11, 5.3.15, 5.3.17, 5.5.2
