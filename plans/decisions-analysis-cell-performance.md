@@ -305,3 +305,12 @@ FIX-BEFORE-MERGE) agrees with all five.
 Trial measures, PR 5: errata 5 (builder); BLOCKs 0; STOPs 0; hand-written
 additions by the leader: the helper move (one commit, 20 lines moved, 4
 comment lines changed); CI cycles: recorded at ship time.
+
+## D26 — keep the roxygen version bump (SETTLED, user via the parent session, 2026-11-13)
+From PR 6 on, do not revert the `Config/roxygen2/version` bump (8.1.0 to
+8.1.1) that the gate run's `devtools::document()` writes to `DESCRIPTION`.
+Commit it with the PR as its own `chore:` commit, and name `DESCRIPTION` in
+the reviewer's write surface. Supersedes the revert in D22, D24 and D25.
+PR #367 shipped without it; no change there.
+
+PR 5 shipped as #367, squash-merged to `develop` on 2026-11-13. CI: 1 cycle, 7 of 7 checks passed on the first run.
