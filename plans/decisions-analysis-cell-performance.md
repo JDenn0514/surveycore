@@ -275,3 +275,4 @@ FIX-BEFORE-MERGE) agrees with all six.
 
 Trial measures, PR 4: errata 6 (builder); BLOCKs 0; STOPs 0; hand-written
 additions by the leader: none; CI cycles: recorded at ship time.
+PR 4 shipped as #366, squash-merged to `develop` on 2026-11-13. CI: 1 cycle, 7 of 7 checks passed on the first run.
