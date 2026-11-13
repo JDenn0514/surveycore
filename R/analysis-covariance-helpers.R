@@ -174,14 +174,30 @@
 # variance of that estimate is the weighted-mean influence run through the
 # stratified-clustered recursive variance engine.
 #
+# The pair does not run its own variance call. A pair that reaches the
+# variance step returns its influence column in `infl` and se = NA_real_;
+# get_covariance() takes the SE from a stacked call (.taylor_cell_se()). A
+# pair that returns early has no `infl` and keeps its NaN SE.
+#
 # @param design  A survey_taylor object.
 # @param x_col   Character: column name of the first variable.
 # @param y_col   Character: column name of the second variable.
 # @param domain  Numeric 0/1 vector (full length).
 # @param na.rm   Logical scalar; echoed only — pairwise-complete construction
 #                of `domain` is the caller's responsibility.
-# @return Named list: covariance, se, se_srs, var_x, var_y, n, n_weighted.
-.covariance_pair_taylor <- function(design, x_col, y_col, domain, na.rm) {
+# @param mats    The .build_cluster_matrices() list (ctx$mats). Not read
+#                here; the caller passes it to .taylor_cell_se().
+# @return Named list: covariance, se, se_srs, var_x, var_y, n, n_weighted,
+#   and infl (an unnamed numeric vector of length nrow(design@data)) when
+#   the pair reaches the variance step.
+.covariance_pair_taylor <- function(
+  design,
+  x_col,
+  y_col,
+  domain,
+  na.rm,
+  mats
+) {
   data <- design@data
   vars <- design@variables
   w <- data[[vars$weights]]
@@ -224,29 +240,17 @@
   #   u_i = w_i * a_i * (score_i - c_hat) / W   (out-of-domain rows = 0)
   u <- w * active_num * (score - c_hat) / W
 
-  mats <- .build_cluster_matrices(data, vars)
-  lonely.psu <- getOption("survey.lonely.psu", "remove")
-
-  infl_mat <- matrix(u, ncol = 1L, dimnames = list(NULL, x_col))
-  v <- .svy_recvar(
-    infl_mat,
-    mats$clusters_mat,
-    mats$strata_mat,
-    mats$fpcs,
-    lonely.psu = lonely.psu
-  )
-
-  se <- sqrt(max(0, v[1L, 1L]))
   se_srs <- .se_srs_cov(c_hat, sc$var_x, sc$var_y, n_d)
 
   list(
     covariance = c_hat,
-    se = se,
+    se = NA_real_,
     se_srs = se_srs,
     var_x = sc$var_x,
     var_y = sc$var_y,
     n = n_d,
-    n_weighted = W
+    n_weighted = W,
+    infl = unname(u)
   )
 }
 
@@ -262,8 +266,17 @@
 # @param y_col   Character: column name of the second variable.
 # @param domain  Numeric 0/1 vector (full length).
 # @param na.rm   Logical scalar; echoed only.
+# @param rep_mat The replicate weight matrix (ctx$rep_mat), converted once
+#                per call.
 # @return Named list: covariance, se, se_srs, var_x, var_y, n, n_weighted.
-.covariance_pair_replicate <- function(design, x_col, y_col, domain, na.rm) {
+.covariance_pair_replicate <- function(
+  design,
+  x_col,
+  y_col,
+  domain,
+  na.rm,
+  rep_mat
+) {
   data <- design@data
   vars <- design@variables
   w <- data[[vars$weights]]
@@ -300,7 +313,6 @@
   c_hat <- sc$c_hat
   active <- sc$active
 
-  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   n_rep <- ncol(rep_mat)
   kish <- n_d / (n_d - 1L)
 
@@ -545,17 +557,35 @@
 # @param y_col   Character: column name of the second variable.
 # @param domain  Numeric 0/1 vector (full length).
 # @param na.rm   Logical scalar; echoed only.
-# @return Named list: covariance, se, se_srs, var_x, var_y, n, n_weighted.
-.covariance_pair_result <- function(design, x_col, y_col, domain, na.rm) {
+# @param ctx     The call context from .cell_context(): ctx$mats goes to the
+#                Taylor pair, ctx$rep_mat to the replicate pair (both
+#                classes). The two-phase and nonprob SRS pairs get neither.
+# @return Named list: covariance, se, se_srs, var_x, var_y, n, n_weighted;
+#   the Taylor pair adds infl when it reaches the variance step.
+.covariance_pair_result <- function(design, x_col, y_col, domain, na.rm, ctx) {
   if (S7::S7_inherits(design, survey_taylor)) {
-    .covariance_pair_taylor(design, x_col, y_col, domain, na.rm)
+    .covariance_pair_taylor(design, x_col, y_col, domain, na.rm, ctx$mats)
   } else if (S7::S7_inherits(design, survey_replicate)) {
-    .covariance_pair_replicate(design, x_col, y_col, domain, na.rm)
+    .covariance_pair_replicate(
+      design,
+      x_col,
+      y_col,
+      domain,
+      na.rm,
+      ctx$rep_mat
+    )
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .covariance_pair_twophase(design, x_col, y_col, domain, na.rm)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     if (!is.null(design@variables$repweights)) {
-      .covariance_pair_replicate(design, x_col, y_col, domain, na.rm)
+      .covariance_pair_replicate(
+        design,
+        x_col,
+        y_col,
+        domain,
+        na.rm,
+        ctx$rep_mat
+      )
     } else {
       cli::cli_warn(
         c(
