@@ -69,4 +69,4 @@ URL: https://github.com/JDenn0514/surveycore, https://jdenn0514.github.io/survey
 BugReports: https://github.com/JDenn0514/surveycore/issues
 LazyData: true
 LazyDataCompression: xz
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
