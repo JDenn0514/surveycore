@@ -143,3 +143,27 @@
       Error in `.svy_onestrat()`:
       x Unknown `lonely.psu` value: "unknown_value".
 
+# get_totals() errors when every replicate weight is NA on a row outside the domain
+
+    Code
+      get_totals(d, y1, variance = .cg_variance, n_weighted = TRUE, min_cell_n = 0L)
+    Condition
+      Error in `.svy_rep_var()`:
+      x All replicates produced NA estimates.
+
+# get_totals() errors on a single-PSU stratum when lonely.psu is fail
+
+    Code
+      calls$totals()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Stratum 6 has only one PSU at stage 1.
+
+# get_totals() errors on a single-PSU stratum when lonely.psu is an unknown value
+
+    Code
+      calls$totals()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Unknown `lonely.psu` value: "unknown_value".
+
