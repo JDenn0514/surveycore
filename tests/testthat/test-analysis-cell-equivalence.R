@@ -591,3 +591,166 @@ test_that("get_covariance() still errors when a base weight inside a cell is NA"
     class = "simpleError"
   )
 })
+
+# ------------------------------------------------------------------------------
+# get_means() rows
+# ------------------------------------------------------------------------------
+
+test_that("get_means() gives each clean group the SE of its own domain when another group has an NA and na.rm = FALSE", {
+  expect_groups_match_domain(
+    "means/tay_y1_na",
+    "tay",
+    function(d) {
+      get_means(
+        d,
+        y1_na,
+        na.rm = FALSE,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "mean"
+  )
+})
+
+test_that("get_means() gives each clean group the SE of its own domain when another group has an NA and na.rm = FALSE, calibrated design", {
+  expect_groups_match_domain(
+    "means/cal_y1_na",
+    "cal",
+    function(d) {
+      get_means(
+        d,
+        y1_na,
+        na.rm = FALSE,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "mean"
+  )
+})
+
+test_that("get_means() gives each clean group the SE of its own domain when another group has an NA and na.rm = FALSE, two-stage design with FPC", {
+  expect_groups_match_domain(
+    "means/multi_y1_na",
+    "multi",
+    function(d) {
+      get_means(
+        d,
+        y1_na,
+        na.rm = FALSE,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "mean"
+  )
+})
+
+test_that("get_means() gives each clean group the SE of its own domain when another group has an Inf", {
+  expect_groups_match_domain(
+    "means/tay_y1_inf",
+    "tay",
+    function(d) {
+      get_means(
+        d,
+        y1_inf,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "mean"
+  )
+})
+
+test_that("get_means() keeps a stored variance that differs from se^2 for a clean group when another group has an NA and na.rm = FALSE", {
+  r <- expect_warning_count(
+    cell_golden_scenarios()[["means/tay_y1_na"]](),
+    character(0),
+    0L
+  )
+  i <- which(r$group == "A")
+  expect_true(is.finite(r$se[[i]]))
+  expect_false(isTRUE(all.equal(attr(r, ".vcov")[i, i], r$se[[i]]^2)))
+})
+
+test_that("get_means() errors when x is NA in a cell with na.rm = FALSE on a replicate design", {
+  d <- cell_golden_design("rep")
+  expect_error(
+    get_means(
+      d,
+      y1_na,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_means(
+      d,
+      y1_na,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_means() errors on a single-PSU stratum when lonely.psu is fail", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(calls$means(), class = "surveycore_error_lonely_psu")
+  expect_snapshot(error = TRUE, calls$means())
+})
+
+test_that("get_means() errors on a single-PSU stratum when lonely.psu is an unknown value", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "unknown_value")
+  expect_error(
+    calls$means(),
+    class = "surveycore_error_lonely_psu_unknown_option"
+  )
+  expect_snapshot(error = TRUE, calls$means())
+})
+
+test_that("grouped get_means() still errors when a base weight is Inf", {
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("infwt")
+  expect_error(
+    get_means(
+      d,
+      y1,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})
+
+test_that("get_means() still errors on a calibrated design when x is Inf", {
+  # The calibration projection aborts in qr.resid() on the Inf in group B.
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("cal")
+  expect_error(
+    get_means(
+      d,
+      y1_inf,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})

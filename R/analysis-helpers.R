@@ -344,6 +344,11 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' 3. Stratified, no PSUs: `n_obs - n_strata`.
 #' 4. No structure (SRS): `n - 1`.
 #'
+#' The function reads only three things: the column named by `vars$ids[[1L]]`,
+#' the column named by `vars$strata`, and the flag `vars$nest`. Every other
+#' column of `data` is ignored, so a caller may pass a frame that holds only
+#' those two columns (`.taylor_mean_cell()` does). The rows still count.
+#'
 #' @param data A data.frame (the survey design's `@data`).
 #' @param vars A named list with `ids`, `strata`, and `nest` keys, taken from
 #'   the design's `@variables`.

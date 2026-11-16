@@ -65,6 +65,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-11-12 | #364 | 24 | 1570 | 65.4 | n/a | 0 | — |
 | 2026-11-12 | #365 | 8 | 339 | 42.4 | n/a | 0 | — |
 | 2026-11-13 | #366 | 5 | 247 | 49.4 | n/a | 0 | — |
+| 2026-11-13 | #367 | 7 | 267 | 38.1 | n/a | 0 | — |
 
 ## Notes on individual rows
 
@@ -134,6 +135,10 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 - **#366** (analysis-cell-performance, plan PR 4; slim-pipeline trial, D17).
   Source and test, counted as for #365. No `style:` reformat. CI passed on
   the first run.
+
+- **#367** (analysis-cell-performance, plan PR 5; slim-pipeline trial, D17).
+  Source and test, counted as for #365. Includes the leader's move of
+  `.variance_flush_se()` (20 lines moved). CI passed on the first run.
 
 ## Reading the five rows
 
