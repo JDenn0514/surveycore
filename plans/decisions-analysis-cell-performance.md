@@ -353,3 +353,5 @@ Reviewer's proposal: `.taylor_se_step(design, acc_joint, acc_se, ctx)` in
 the signature against the three call sites, ships the extraction as its own
 `refactor` commit before the `get_totals()` change, and adds no test row:
 the golden blocks for freqs and means guard it.
+
+PR 6 shipped as #368, squash-merged to `develop` on 2026-11-16. CI: 1 cycle, 7 of 7 checks passed on the first run.
