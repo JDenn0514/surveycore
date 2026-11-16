@@ -8,8 +8,13 @@
 #
 #   --skip-pkgdown  Skip gate 6. Allowed ONLY under the skip conditions in
 #                   r-package-profile.md (never when NAMESPACE changes).
-#   --baseline      Run only gates 2 (tests) and 7 (coverage). For the
-#                   orchestrator's Before-column capture on a clean tree.
+#   --baseline      Run only gates 2 (tests) and 7 (full coverage with the
+#                   95% floor). For the orchestrator's Before-column capture
+#                   on a clean tree.
+#
+# Gates: 1 document(), 2 test(), 4 R CMD build, 5 R CMD check (no tests),
+# 6 check_pkgdown(), 7 covr (skipped or scoped to the changed R/ files).
+# Gate 3 (run_examples()) is removed: R CMD check runs the examples.
 #
 # Exit code 0 = all gates PASS. The summary names the log file of any FAIL.
 # Gate definitions live in r-package-profile.md §Validation commands.
@@ -57,19 +62,16 @@ gate_test() {
 }
 
 # --- Gate 7: coverage ----------------------------------------------------
-gate_covr() {
+# NOT_CRAN=true matches gate 2. Eleven test files carry a file-level
+# skip_on_cran(); without the variable they skip and coverage reads low.
+#
+# --baseline: full covr::package_coverage() and the package total, checked
+# against the 95% floor. Unchanged from the old gate.
+gate_covr_baseline() {
   local log="$LOGDIR/gate-7-covr.log"
-  # NOT_CRAN=true matches gate 2. Ten test files carry a file-level
-  # skip_on_cran(); without the variable they skip, roughly 3300 lines of
-  # source read as untested, and coverage reports ~93.7% instead of ~95.9%
-  # — a false failure against the 95% floor below.
-  # Report the package total AND per-file coverage plus uncovered line numbers
-  # for the R/ files this branch changed. The plan states the bar as "98%+ on
-  # the NEW code; blocked below 95%" — the package total alone cannot answer
-  # that, so covr-report.R adds the per-file and per-line detail.
   local changed
   changed=$(git diff --name-only develop...HEAD -- 'R/*.R' 2>/dev/null | tr '\n' ',')
-  NOT_CRAN=true CHANGED_R_FILES="$changed" \
+  NOT_CRAN=true COVR_MODE=full CHANGED_R_FILES="$changed" \
     Rscript .claude/scripts/covr-report.R > "$log" 2>&1
   local pct
   pct=$(grep -oE 'COVERAGE_PCT=[0-9.]+' "$log" | tail -1 | cut -d= -f2)
@@ -88,9 +90,68 @@ gate_covr() {
   fi
 }
 
+# Normal mode: answer "are this PR's changed lines tested". The gates run
+# before the shipper commits, so the changed-file list takes committed,
+# uncommitted and untracked R/ files, measured from the merge base with
+# develop. A deleted file has nothing to cover and drops out.
+# - No changed R/ file: covr is skipped.
+# - Otherwise covr-report.R runs only the test files mapped to the changed
+#   files, or the full suite when a changed file has no mapped test file.
+# The gate fails only when covr did not run or a test failed. The 95%
+# package floor is enforced by the CI test-coverage job only.
+# The base is the newer of the merge bases with develop and origin/develop,
+# so a stale local develop does not count develop's own commits as changes.
+changed_r_files() {
+  local base b2
+  base=$(git merge-base develop HEAD 2>/dev/null)
+  b2=$(git merge-base origin/develop HEAD 2>/dev/null)
+  if [ -z "$base" ]; then
+    base=${b2:-develop}
+  elif [ -n "$b2" ] && git merge-base --is-ancestor "$base" "$b2"; then
+    base=$b2
+  fi
+  {
+    git diff --name-only "$base" -- 'R/*.R'
+    git ls-files --others --exclude-standard -- 'R/*.R'
+  } 2>/dev/null | sort -u | while read -r f; do
+    [ -f "$f" ] && printf '%s,' "$f"
+  done
+}
+
+gate_covr() {
+  local log="$LOGDIR/gate-7-covr.log"
+  local changed
+  changed=$(changed_r_files)
+  if [ -z "$changed" ]; then
+    echo "COVR_MODE=skipped (no R/ file changed vs develop)" > "$log"
+    row "| covr | SKIPPED | no R/ file changed vs develop |"
+    return
+  fi
+  NOT_CRAN=true COVR_MODE=scoped CHANGED_R_FILES="$changed" \
+    Rscript .claude/scripts/covr-report.R > "$log" 2>&1
+  local mode nfiles nunc nfail
+  mode=$(grep -oE '^COVR_MODE=[a-z]+' "$log" | tail -1 | cut -d= -f2)
+  nfiles=$(grep -c '^CHANGED_FILE_PCT' "$log")
+  nunc=$(grep -oE 'UNCOVERED_COUNT=[0-9]+' "$log" | tail -1 | cut -d= -f2)
+  nfail=$(grep -oE '^SCOPED_TEST_FAILURES=[0-9]+' "$log" | tail -1 | cut -d= -f2)
+  local detail="changed R/ files: ${nfiles}, uncovered lines in them: ${nunc}; package floor: CI only"
+  if [ "$mode" = "scoped" ]; then
+    detail="scoped, $(grep -oE 'SCOPED_TEST_FILE_COUNT=[0-9]+' "$log" | cut -d= -f2) test files; ${detail}"
+  else
+    detail="full suite (no mapped test file); ${detail}"
+  fi
+  if [ -z "$nunc" ]; then
+    fail_gate "covr" "$log" "coverage did not run"
+  elif [ "$mode" = "scoped" ] && [ "${nfail:-x}" != "0" ]; then
+    fail_gate "covr" "$log" "scoped test run: ${nfail:-unknown} failing test blocks"
+  else
+    pass_gate "covr" "$detail"
+  fi
+}
+
 if [ "$BASELINE" = "1" ]; then
   gate_test
-  gate_covr
+  gate_covr_baseline
 else
   # --- Gate 1: document() + drift check --------------------------------
   # Hash NAMESPACE and man/ before and after document(), then compare the two
@@ -121,13 +182,10 @@ else
 
   gate_test
 
-  # --- Gate 3: run_examples() ------------------------------------------
-  log="$LOGDIR/gate-3-examples.log"
-  if NOT_CRAN=true Rscript -e 'devtools::run_examples()' > "$log" 2>&1; then
-    pass_gate "run_examples()" "all examples ran"
-  else
-    fail_gate "run_examples()" "$log" "example error"
-  fi
+  # --- Gate 3: removed -------------------------------------------------
+  # Gate 3 ran devtools::run_examples(). R CMD check (gate 5) runs every
+  # example too, so the gate was a second run of the same code. The other
+  # gate numbers and log names stay as they were.
 
   # --- Gate 4: R CMD build ----------------------------------------------
   log="$LOGDIR/gate-4-build.log"
@@ -148,7 +206,11 @@ else
     # LaTeX toolchain; where none is installed it raises 1 ERROR + 1 WARNING
     # and leaves surveycore-manual.tex behind as a third NOTE — none of which
     # CI ever sees, and none of which a builder can fix.
-    R CMD check --as-cran --no-manual "$TARBALL" > "$log" 2>&1
+    # --no-tests: gate 2 already ran the full test suite, and CI runs the
+    # check with tests on four operating systems. Inside the check the
+    # suite took 534 of 810 seconds on PR 6. The check still runs the
+    # examples, which replaces the old gate 3.
+    R CMD check --as-cran --no-manual --no-tests "$TARBALL" > "$log" 2>&1
     CHECKDIR=$(ls -dt ./*.Rcheck 2>/dev/null | head -1)
     [ -n "$CHECKDIR" ] && cp "$CHECKDIR/00check.log" "$LOGDIR/gate-5-00check.log" 2>/dev/null
     status_line=$(grep -E '^Status:' "$log" | tail -1)
@@ -168,10 +230,14 @@ else
     row "| pkgdown | SKIPPED | scope (log skip reason in audit.md) |"
   else
     log="$LOGDIR/gate-6-pkgdown.log"
-    if Rscript -e 'pkgdown::build_site(preview = FALSE)' > "$log" 2>&1; then
-      pass_gate "pkgdown" "site built"
+    # check_pkgdown() checks _pkgdown.yml without building the site: every
+    # exported topic must be in the reference index. That is the failure
+    # that once broke the pkgdown CI job. It takes seconds; build_site()
+    # took 6 minutes on PR 6. CI still builds the full site.
+    if Rscript -e 'pkgdown::check_pkgdown()' > "$log" 2>&1; then
+      pass_gate "pkgdown::check_pkgdown()" "_pkgdown.yml is complete"
     else
-      fail_gate "pkgdown" "$log" "site build error"
+      fail_gate "pkgdown::check_pkgdown()" "$log" "_pkgdown.yml check error"
     fi
   fi
 
