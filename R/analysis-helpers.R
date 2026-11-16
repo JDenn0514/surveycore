@@ -27,6 +27,8 @@
 #   .cell_context()         — per-call matrices and options for the cells
 #   .taylor_cell_se()       — Taylor SEs of influence columns, in blocks
 #   .variance_flush_se()    — SEs of one block of buffered Taylor cells
+#   .taylor_se_step()       — post-loop Taylor SEs and .vcov (freqs, means,
+#                             totals)
 
 # ── haven availability ────────────────────────────────────────────────────────
 
@@ -1426,6 +1428,43 @@ TAYLOR_SE_BLOCK <- 64L
   se <- .taylor_cell_se(do.call(cbind, columns), ctx$mats, ctx$lonely.psu)
   se[override] <- NaN
   se
+}
+
+
+# ── .taylor_se_step() ─────────────────────────────────────────────────────────
+#
+# The SE step after the cell loop of get_freqs(), get_means() and
+# get_totals(). On the Taylor route, one stacked .svy_recvar() call over every
+# live cell gives the .vcov matrix, and each live cell's SE comes from
+# .taylor_cell_se() with that matrix. Cells of kind "na" keep the SE the cell
+# set. Off the Taylor route nothing runs. The caller runs this before any
+# post-loop condition, so a lonely-PSU abort fires here.
+#
+# @param design     The design the cells were computed on.
+# @param acc_joint  List of the per-cell `joint` elements, in row order. On
+#                   the Taylor route every element is non-NULL.
+# @param acc_se     Numeric vector of the per-cell SEs, in row order.
+# @param ctx        The call context from .cell_context().
+# @return Named list: se (acc_se with each live cell's SE filled in) and v
+#   (the k x k .joint_vcov() matrix on the Taylor route, else NULL). Pass v
+#   to .attach_joint_vcov().
+.taylor_se_step <- function(design, acc_joint, acc_se, ctx) {
+  if (!ctx$taylor) {
+    return(list(se = acc_se, v = NULL))
+  }
+  v_all <- .joint_vcov(design, acc_joint, mats = ctx$mats)
+  kinds <- vapply(acc_joint, function(j) j$kind, character(1L))
+  live <- kinds == "infl"
+  if (any(live)) {
+    vals <- do.call(cbind, lapply(acc_joint[live], function(j) j$value))
+    acc_se[live] <- .taylor_cell_se(
+      vals,
+      ctx$mats,
+      ctx$lonely.psu,
+      v = v_all[live, live, drop = FALSE]
+    )
+  }
+  list(se = acc_se, v = v_all)
 }
 
 

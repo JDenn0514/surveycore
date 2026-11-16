@@ -402,21 +402,9 @@ get_freqs <- function(
   # One stacked .svy_recvar() call over every live cell gives the .vcov
   # matrix, and each live cell's SE is read from its diagonal. Runs before
   # any post-loop condition, so a lonely-PSU abort fires here.
-  v_all <- NULL
-  if (ctx$taylor) {
-    v_all <- .joint_vcov(design, acc_joint, mats = ctx$mats)
-    kinds <- vapply(acc_joint, function(j) j$kind, character(1L))
-    live <- kinds == "infl"
-    if (any(live)) {
-      vals <- do.call(cbind, lapply(acc_joint[live], function(j) j$value))
-      acc_se[live] <- .taylor_cell_se(
-        vals,
-        ctx$mats,
-        ctx$lonely.psu,
-        v = v_all[live, live, drop = FALSE]
-      )
-    }
-  }
+  se_step <- .taylor_se_step(design, acc_joint, acc_se, ctx)
+  acc_se <- se_step$se
+  v_all <- se_step$v
 
   # ── Step 8: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)

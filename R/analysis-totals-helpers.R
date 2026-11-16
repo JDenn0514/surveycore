@@ -9,20 +9,32 @@
 #   .calibrated_total_cell() — calibrated domain total
 #   .total_cell()            — dispatcher
 #
-# Note: .total_cell() is also used by get_ratios() (delta method)
-# and .quantile_woodruff_cell() (mean cell reuse).
+# Note: .total_cell() is also used by get_ratios() (delta method).
+# .quantile_woodruff_cell() uses .mean_cell(), not .total_cell().
 
 # ── .taylor_total_cell() ──────────────────────────────────────────────────────
 #
 # Domain estimation of a weighted total using Taylor linearization.
 #
-# @param design  A survey_taylor object (also used for the SRS path of
-#                survey_nonprob without repweights).
-# @param y_col   Character: variable name, OR NULL for population size.
-# @param domain  Numeric 0/1 vector (full length).
+# @param design      A survey_taylor object. The SRS path of survey_nonprob
+#                    without repweights goes to .calibrated_total_cell(), not
+#                    here.
+# @param y_col       Character: variable name, OR NULL for population size.
+# @param domain      Numeric 0/1 vector (full length).
+# @param mats        The .build_cluster_matrices() list (ctx$mats), or NULL
+#                    to build it here.
+# @param compute_se  TRUE runs this cell's own .svy_recvar() call. FALSE
+#                    skips it and returns se = NA_real_; the caller takes
+#                    the SE from the joint influence column (.taylor_se_step()).
 # @return Named list: total, se, se_srs, n, n_weighted,
 #   joint (see .joint_vcov()).
-.taylor_total_cell <- function(design, y_col, domain) {
+.taylor_total_cell <- function(
+  design,
+  y_col,
+  domain,
+  mats = NULL,
+  compute_se = TRUE
+) {
   data <- design@data
   vars <- design@variables
   n_full <- nrow(data)
@@ -56,23 +68,25 @@
   # Influence: u_i = domain_i * y_i  (total linearization)
   u <- domain * y_safe
 
-  # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
-  mats <- .build_cluster_matrices(data, vars)
-  lonely.psu <- getOption("survey.lonely.psu", "remove")
-
   lbl <- if (is.null(y_col)) "pop_total" else y_col
   infl_mat <- matrix(w * u, ncol = 1L, dimnames = list(NULL, lbl))
   infl_mat <- .maybe_apply_calibration(infl_mat, design)
 
-  v <- .svy_recvar(
-    infl_mat,
-    mats$clusters_mat,
-    mats$strata_mat,
-    mats$fpcs,
-    lonely.psu = lonely.psu
-  )
-
-  se <- sqrt(max(0, v[1L, 1L]))
+  se <- NA_real_
+  if (compute_se) {
+    # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
+    if (is.null(mats)) {
+      mats <- .build_cluster_matrices(data, vars)
+    }
+    v <- .svy_recvar(
+      infl_mat,
+      mats$clusters_mat,
+      mats$strata_mat,
+      mats$fpcs,
+      lonely.psu = getOption("survey.lonely.psu", "remove")
+    )
+    se <- sqrt(max(0, v[1L, 1L]))
+  }
 
   # SRS-equivalent SE
   y_domain <- y_safe[domain > 0]
@@ -100,12 +114,15 @@
 #
 # Domain estimation of a weighted total using replicate weights.
 #
-# @param design  A survey_replicate or survey_nonprob object (with repweights).
-# @param y_col   Character: variable name, OR NULL for population size.
-# @param domain  Numeric 0/1 vector (full length).
+# @param design   A survey_replicate or survey_nonprob object (with
+#                 repweights).
+# @param y_col    Character: variable name, OR NULL for population size.
+# @param domain   Numeric 0/1 vector (full length).
+# @param rep_mat  The replicate weight matrix (ctx$rep_mat), or NULL to
+#                 convert the replicate columns here.
 # @return Named list: total, se, se_srs, n, n_weighted, joint (see
 #   .joint_vcov()).
-.replicate_total_cell <- function(design, y_col, domain) {
+.replicate_total_cell <- function(design, y_col, domain, rep_mat = NULL) {
   data <- design@data
   vars <- design@variables
   w <- data[[vars$weights]]
@@ -135,7 +152,9 @@
   T_hat <- sum(w * domain * y_safe)
 
   # Per-replicate domain totals
-  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  if (is.null(rep_mat)) {
+    rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  }
   rep_Y <- as.numeric((y_safe * domain) %*% rep_mat)
 
   R <- ncol(rep_mat)
@@ -340,20 +359,43 @@
 #
 # Dispatch to the correct per-cell total estimator by design class.
 #
-# @param design  Any survey design object.
-# @param y_col   Character: variable name, OR NULL for population size.
-# @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, df (Taylor path only), se_srs, n, n_weighted.
-.total_cell <- function(design, y_col, domain) {
+# Two callers: get_totals() passes the call context; get_ratios() passes
+# none of the optional arguments and gets the base behaviour.
+#
+# @param design      Any survey design object.
+# @param y_col       Character: variable name, OR NULL for population size.
+# @param domain      Numeric 0/1 vector (full length).
+# @param mats        Taylor route only: ctx$mats, or NULL to build it in the
+#                    cell.
+# @param compute_se  Taylor route only: FALSE skips the cell's own variance
+#                    call (se = NA_real_).
+# @param rep_mat     Replicate route only (both replicate classes):
+#                    ctx$rep_mat, or NULL to convert in the cell.
+# @return Named list: total, se, se_srs, n, n_weighted, and joint on the
+#   Taylor and replicate routes.
+.total_cell <- function(
+  design,
+  y_col,
+  domain,
+  mats = NULL,
+  compute_se = TRUE,
+  rep_mat = NULL
+) {
   if (S7::S7_inherits(design, survey_taylor)) {
-    .taylor_total_cell(design, y_col, domain)
+    .taylor_total_cell(
+      design,
+      y_col,
+      domain,
+      mats = mats,
+      compute_se = compute_se
+    )
   } else if (S7::S7_inherits(design, survey_replicate)) {
-    .replicate_total_cell(design, y_col, domain)
+    .replicate_total_cell(design, y_col, domain, rep_mat = rep_mat)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_total_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     if (!is.null(design@variables$repweights)) {
-      .replicate_total_cell(design, y_col, domain)
+      .replicate_total_cell(design, y_col, domain, rep_mat = rep_mat)
     } else {
       cli::cli_warn(
         c(
