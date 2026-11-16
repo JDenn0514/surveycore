@@ -355,3 +355,30 @@ the signature against the three call sites, ships the extraction as its own
 the golden blocks for freqs and means guard it.
 
 PR 6 shipped as #368, squash-merged to `develop` on 2026-11-16. CI: 1 cycle, 7 of 7 checks passed on the first run.
+
+## D29 — PR 7 errata and trial record (SETTLED, orchestrator, 2026-11-16)
+Builder errata E-1 to E-7 (`prs/pr-7-analysis-cell-totals/implementation.md`)
+stand. The reviewer (`prs/pr-7-analysis-cell-totals/review.md`, PASS, no
+FIX-BEFORE-MERGE) accepts all seven, and compared 784 calls over 33 designs
+and 5 `lonely.psu` settings on `origin/develop` and HEAD with `identical()`:
+all matched, `.vcov` dimnames, warning order and errors included.
+- D28 done: `.taylor_se_step(design, acc_joint, acc_se, ctx)` in
+  `R/analysis-helpers.R` returns `list(se, v)`, with `v = NULL` off the
+  Taylor route. It matches the removed freqs and means block line for line.
+  It shipped as its own `refactor` commit before the tests (E-1, E-6).
+- E-2: no other helper gained a second call site in another file.
+- E-3: a `get_totals()` that keeps each cell's own variance call stays
+  green, because the SE step overwrites the SE. Only the call counts guard
+  it; gate 6 does not, because `get_ratios()` still reaches the
+  `compute_se = TRUE` branch. Reviewer break K2 (Taylor route returns
+  `v = NULL`) is the same shape: speed only. D23 family.
+- E-4: all seven new titles pass 80 columns; the plan fixes them.
+- E-5: every changed `.R` file was `air`-clean on the base.
+- E-7: the `.total_cell()` `@return` line said "df (Taylor path only)" on
+  the base; no total cell returns `df`. Corrected (comment only).
+- Rows 5.5.4 and 5.5.6 raise `simpleError` on the base commit.
+- D26: no `DESCRIPTION` change this PR; the bump landed in #368.
+
+Trial measures, PR 7: errata 7 (builder); BLOCKs 0; STOPs 0; hand-written
+additions by the leader: none (the D28 extraction was a builder task);
+CI cycles: recorded at ship time.
