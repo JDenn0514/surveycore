@@ -7,40 +7,36 @@ R-specific commands, gates, and CRAN-compliance rules. The tester agent runs the
 | # | Command | Gate | On fail |
 |---|---|---|---|
 | 1 | `Rscript -e "devtools::document()"` | NAMESPACE and `man/` are byte-identical before and after the run — not compared against `HEAD`, because the gate runs before the shipper commits | BLOCK (builder forgot `document()`) |
-| 2 | `Rscript -e "devtools::test()"` | all tests pass | BLOCK (numerical-miss or contract-miss) |
+| 2 | `NOT_CRAN=true Rscript .claude/scripts/covr-report.R` | all tests pass; package coverage is 95% or more; per-file % and uncovered lines for the changed `R/` files | BLOCK if a test fails, covr did not run, or coverage is below 95%; HOLD if a line the PR added is uncovered |
 | 3 | removed | R CMD check (gate 5) runs every `@examples` block | — |
 | 4 | `R CMD build . 2>&1` | tarball produced | BLOCK (build failure) |
 | 5 | `R CMD check --as-cran --no-manual --no-tests <tarball> 2>&1` | 0 ERRORs, 0 WARNINGs; NOTEs reviewed; examples run clean | BLOCK on ERROR/WARNING |
 | 6 | `Rscript -e "pkgdown::check_pkgdown()"` | every export is in the `_pkgdown.yml` reference index | BLOCK |
-| 7 | `.claude/scripts/covr-report.R` | covr ran and no test failed; per-file % and uncovered lines for the changed `R/` files | BLOCK if covr did not run or a test failed; HOLD if a line the PR added is uncovered |
 
-Gate 3 is gone. The other gate numbers and log names did not change, so
-`gate-5-check.log` and the rest still match older audits.
+Gates 3 and 7 are gone. Gates 4, 5 and 6 keep their numbers and log
+names, so `gate-5-check.log` and the rest still match older audits.
+
+Gate 2 is one covr run. `covr-report.R` runs the whole `tests/testthat`
+directory with `testthat::test_dir()` inside `covr::package_coverage()`,
+so the test results and the coverage come from the same run. Its log is
+`gate-2-test-covr.log`. The log and the PASS row show the test counts in
+testthat's own shape, `[ FAIL n | WARN n | SKIP n | PASS n ]`, then the
+package total and the per-file detail. The gate runs on every PR, also
+when no `R/` file changed.
+
+The tests run against the installed, instrumented package, not through
+`devtools::load_all()`. This is how `R CMD check` runs them.
+
+The changed-file list feeds the per-file report only. It takes committed,
+uncommitted and untracked `R/` files against `develop`.
 
 Gate 5 does not run the tests. Gate 2 already ran them, and CI runs
 `R CMD check` with tests on four operating systems.
 
-Gate 7 has three cases:
-- **No `R/` file changed** against `develop` (committed, uncommitted or
-  untracked): covr does not run, and the row reads `SKIPPED`.
-- **Each changed `R/` file has a test file:** covr runs only the mapped
-  test files. A family is the first hyphen segment of a file name. A
-  change to `R/analysis-means.R` runs every `test-analysis-*.R` file, plus
-  the exact test files of every `R/analysis-*.R` file. A file with no
-  family siblings in `R/` keeps the exact mapping: `R/foo.R` maps to
-  `test-foo.R` and any `test-foo-*.R`, with the exceptions in
-  `rules/testing-surveycore.md` §File mapping. `R/foo-helpers.R` with no
-  test file of its own maps to the tests of `R/foo.R`.
-- **A changed `R/` file has no test file:** covr runs the full suite, and
-  the log says why.
-
-A scoped run can over-report uncovered lines. A line that only a test file
-outside the mapped set reaches reads as uncovered. Check such a line
-against the full suite before you HOLD on it.
-
-The 95% package coverage floor is enforced only by the CI test-coverage
-job (`.github/workflows/test-coverage.yaml`). The local gate answers one
-question: are this PR's changed lines tested.
+The gate needs covr 4.0.0 or later. covr 4.0.0 counts lines differently
+from 3.6.5: on the same tree it reports 96.33% where 3.6.5 reported
+96.66%. A Before figure from covr 3.6.5 and an After figure from 4.0.0
+are not comparable. Measure both on the same covr version.
 
 ### Canonical runner
 
@@ -48,8 +44,7 @@ Run the whole table with ONE background command:
 `bash .claude/scripts/run-gates.sh <log-dir> [--skip-pkgdown]`. It logs
 each gate to `<log-dir>`, prints one summary table plus a `Tree:` hash,
 and exits 0 only when every gate passes. `--baseline` mode runs gate 2
-and a full covr run with the package total and the 95% floor. Use it to
-capture Before-column numbers on a clean tree. Never run the gates one
+only. Use it to capture Before-column numbers on a clean tree. Never run the gates one
 command at a time.
 
 ## Output discipline (all gates)

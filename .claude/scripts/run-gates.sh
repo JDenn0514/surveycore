@@ -8,13 +8,14 @@
 #
 #   --skip-pkgdown  Skip gate 6. Allowed ONLY under the skip conditions in
 #                   r-package-profile.md (never when NAMESPACE changes).
-#   --baseline      Run only gates 2 (tests) and 7 (full coverage with the
-#                   95% floor). For the orchestrator's Before-column capture
+#   --baseline      Run only gate 2 (tests and coverage with the 95%
+#                   floor). For the orchestrator's Before-column capture
 #                   on a clean tree.
 #
-# Gates: 1 document(), 2 test(), 4 R CMD build, 5 R CMD check (no tests),
-# 6 check_pkgdown(), 7 covr (skipped or scoped to the changed R/ files).
+# Gates: 1 document(), 2 tests + covr in one run, 4 R CMD build,
+# 5 R CMD check (no tests), 6 check_pkgdown().
 # Gate 3 (run_examples()) is removed: R CMD check runs the examples.
+# Gate 7 (covr) is removed: gate 2 is now the covr run.
 #
 # Exit code 0 = all gates PASS. The summary names the log file of any FAIL.
 # Gate definitions live in r-package-profile.md §Validation commands.
@@ -46,61 +47,25 @@ pass_gate() { # name note
   row "| $1 | PASS | $2 |"
 }
 
-# --- Gate 2: devtools::test() ------------------------------------------
-gate_test() {
-  local log="$LOGDIR/gate-2-test.log"
-  NOT_CRAN=true Rscript -e 'devtools::test()' > "$log" 2>&1
-  local line
-  line=$(grep -E '\[ FAIL [0-9]+' "$log" | tail -1)
-  local nfail
-  nfail=$(printf '%s' "$line" | sed -E 's/.*FAIL ([0-9]+).*/\1/')
-  if [ -n "$line" ] && [ "$nfail" = "0" ]; then
-    pass_gate "devtools::test()" "$line"
-  else
-    fail_gate "devtools::test()" "$log" "${line:-no result line found}"
-  fi
-}
-
-# --- Gate 7: coverage ----------------------------------------------------
-# NOT_CRAN=true matches gate 2. Eleven test files carry a file-level
-# skip_on_cran(); without the variable they skip and coverage reads low.
+# --- Gate 2: tests and coverage in one covr run -------------------------
+# covr-report.R runs the whole test suite once under covr. One run gives
+# the test counts, the package total and the per-file detail. With covr
+# 4.0.0 the full covr run took 574 s and devtools::test() took 557 s on the
+# same tree, so a separate test gate cost a second run for no new answer.
 #
-# --baseline: full covr::package_coverage() and the package total, checked
-# against the 95% floor. Unchanged from the old gate.
-gate_covr_baseline() {
-  local log="$LOGDIR/gate-7-covr.log"
-  local changed
-  changed=$(git diff --name-only develop...HEAD -- 'R/*.R' 2>/dev/null | tr '\n' ',')
-  NOT_CRAN=true COVR_MODE=full CHANGED_R_FILES="$changed" \
-    Rscript .claude/scripts/covr-report.R > "$log" 2>&1
-  local pct
-  pct=$(grep -oE 'COVERAGE_PCT=[0-9.]+' "$log" | tail -1 | cut -d= -f2)
-  local nunc
-  nunc=$(grep -oE 'UNCOVERED_COUNT=[0-9]+' "$log" | tail -1 | cut -d= -f2)
-  local detail="${pct}%"
-  if [ -n "$nunc" ]; then
-    detail="${detail}; changed R/ files: $(grep -c '^CHANGED_FILE_PCT' "$log"), uncovered lines in them: ${nunc}"
-  fi
-  if [ -z "$pct" ]; then
-    fail_gate "covr" "$log" "coverage did not run"
-  elif awk "BEGIN{exit !($pct >= 95)}"; then
-    pass_gate "covr" "$detail"
-  else
-    fail_gate "covr" "$log" "coverage ${pct}% is below the 95% floor"
-  fi
-}
-
-# Normal mode: answer "are this PR's changed lines tested". The gates run
-# before the shipper commits, so the changed-file list takes committed,
-# uncommitted and untracked R/ files, measured from the merge base with
-# develop. A deleted file has nothing to cover and drops out.
-# - No changed R/ file: covr is skipped.
-# - Otherwise covr-report.R runs only the test files mapped to the changed
-#   files, or the full suite when a changed file has no mapped test file.
-# The gate fails only when covr did not run or a test failed. The 95%
-# package floor is enforced by the CI test-coverage job only.
-# The base is the newer of the merge bases with develop and origin/develop,
-# so a stale local develop does not count develop's own commits as changes.
+# NOT_CRAN=true: eleven test files carry a file-level skip_on_cran();
+# without the variable they skip and coverage reads low.
+#
+# The gate fails when a test fails, when covr did not run, or when the
+# package total is below 95%. It runs on every PR, also when no R/ file
+# changed.
+#
+# The changed-file list feeds the per-file report only. The gates run
+# before the shipper commits, so the list takes committed, uncommitted and
+# untracked R/ files, measured from the merge base with develop. A deleted
+# file has nothing to cover and drops out. The base is the newer of the
+# merge bases with develop and origin/develop, so a stale local develop does
+# not count develop's own commits as changes.
 changed_r_files() {
   local base b2
   base=$(git merge-base develop HEAD 2>/dev/null)
@@ -118,40 +83,37 @@ changed_r_files() {
   done
 }
 
-gate_covr() {
-  local log="$LOGDIR/gate-7-covr.log"
+gate_test_covr() {
+  local name="tests + covr"
+  local log="$LOGDIR/gate-2-test-covr.log"
   local changed
   changed=$(changed_r_files)
-  if [ -z "$changed" ]; then
-    echo "COVR_MODE=skipped (no R/ file changed vs develop)" > "$log"
-    row "| covr | SKIPPED | no R/ file changed vs develop |"
-    return
-  fi
-  NOT_CRAN=true COVR_MODE=scoped CHANGED_R_FILES="$changed" \
+  NOT_CRAN=true CHANGED_R_FILES="$changed" \
     Rscript .claude/scripts/covr-report.R > "$log" 2>&1
-  local mode nfiles nunc nfail
-  mode=$(grep -oE '^COVR_MODE=[a-z]+' "$log" | tail -1 | cut -d= -f2)
-  nfiles=$(grep -c '^CHANGED_FILE_PCT' "$log")
-  nunc=$(grep -oE 'UNCOVERED_COUNT=[0-9]+' "$log" | tail -1 | cut -d= -f2)
-  nfail=$(grep -oE '^SCOPED_TEST_FAILURES=[0-9]+' "$log" | tail -1 | cut -d= -f2)
-  local detail="changed R/ files: ${nfiles}, uncovered lines in them: ${nunc}; package floor: CI only"
-  if [ "$mode" = "scoped" ]; then
-    detail="scoped, $(grep -oE 'SCOPED_TEST_FILE_COUNT=[0-9]+' "$log" | cut -d= -f2) test files; ${detail}"
-  else
-    detail="full suite (no mapped test file); ${detail}"
+  local summary nfail pct nunc
+  summary=$(grep -E '^\[ FAIL [0-9]+' "$log" | tail -1)
+  nfail=$(grep -oE '^TEST_FAILURES=[0-9]+' "$log" | tail -1 | cut -d= -f2)
+  pct=$(grep -oE '^COVERAGE_PCT=[0-9.]+' "$log" | tail -1 | cut -d= -f2)
+  nunc=$(grep -oE '^UNCOVERED_COUNT=[0-9]+' "$log" | tail -1 | cut -d= -f2)
+  local detail="${summary}; coverage ${pct}%"
+  if [ -n "$nunc" ]; then
+    detail="${detail}; changed R/ files: $(grep -c '^CHANGED_FILE_PCT' "$log"), uncovered lines in them: ${nunc}"
   fi
-  if [ -z "$nunc" ]; then
-    fail_gate "covr" "$log" "coverage did not run"
-  elif [ "$mode" = "scoped" ] && [ "${nfail:-x}" != "0" ]; then
-    fail_gate "covr" "$log" "scoped test run: ${nfail:-unknown} failing test blocks"
+  if [ -z "$pct" ]; then
+    fail_gate "$name" "$log" "covr did not run"
+  elif [ -z "$nfail" ]; then
+    fail_gate "$name" "$log" "no test result line found"
+  elif [ "$nfail" != "0" ]; then
+    fail_gate "$name" "$log" "$summary"
+  elif awk "BEGIN{exit !($pct >= 95)}"; then
+    pass_gate "$name" "$detail"
   else
-    pass_gate "covr" "$detail"
+    fail_gate "$name" "$log" "coverage ${pct}% is below the 95% floor; ${summary}"
   fi
 }
 
 if [ "$BASELINE" = "1" ]; then
-  gate_test
-  gate_covr_baseline
+  gate_test_covr
 else
   # --- Gate 1: document() + drift check --------------------------------
   # Hash NAMESPACE and man/ before and after document(), then compare the two
@@ -180,12 +142,12 @@ else
     fail_gate "devtools::document()" "$log" "document() rewrote NAMESPACE/man (builder forgot document())"
   fi
 
-  gate_test
+  gate_test_covr
 
   # --- Gate 3: removed -------------------------------------------------
   # Gate 3 ran devtools::run_examples(). R CMD check (gate 5) runs every
-  # example too, so the gate was a second run of the same code. The other
-  # gate numbers and log names stay as they were.
+  # example too, so the gate was a second run of the same code. Gates 4, 5
+  # and 6 keep their numbers and log names.
 
   # --- Gate 4: R CMD build ----------------------------------------------
   log="$LOGDIR/gate-4-build.log"
@@ -240,8 +202,6 @@ else
       fail_gate "pkgdown::check_pkgdown()" "$log" "_pkgdown.yml check error"
     fi
   fi
-
-  gate_covr
 fi
 
 echo ""
