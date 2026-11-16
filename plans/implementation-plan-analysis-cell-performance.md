@@ -1211,7 +1211,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/_snaps/analysis-cell-equivalence.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 7: `refactor/analysis-cell-totals` — `get_totals()` builds its
+- [x] PR 7: `refactor/analysis-cell-totals` — `get_totals()` builds its
   context once and takes its Taylor SEs and `.vcov` from one stacked call
   - **Budget** — 7 test-spec rows | 7 criteria
     - Rows: §5 5.1.5, 5.1.6, 5.2.8, 5.3.3, 5.3.9, 5.5.4, 5.5.6

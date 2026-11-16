@@ -382,3 +382,5 @@ all matched, `.vcov` dimnames, warning order and errors included.
 Trial measures, PR 7: errata 7 (builder); BLOCKs 0; STOPs 0; hand-written
 additions by the leader: none (the D28 extraction was a builder task);
 CI cycles: recorded at ship time.
+
+PR 7 shipped as #369 (squash 9cfe91e), 2026-11-16. CI: 1 cycle.
