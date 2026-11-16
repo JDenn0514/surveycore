@@ -296,6 +296,12 @@ get_totals <- function(
 
   small_cell_ns <- integer(0)
 
+  # Work shared by every cell, done once per call: the cluster matrices
+  # (Taylor) and the replicate matrix (replicate). Built after step 5b; the
+  # indicator columns are not design columns, so both are the same either
+  # way.
+  ctx <- .cell_context(design)
+
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
       combo_row <- group_combos[ci, , drop = FALSE]
@@ -314,7 +320,16 @@ get_totals <- function(
     }
 
     for (li in seq_along(x_levels)) {
-      cell <- .total_cell(design, ind_cols[[li]], domain)
+      # Taylor cells skip their own variance call; the SE step below fills
+      # their SE.
+      cell <- .total_cell(
+        design,
+        ind_cols[[li]],
+        domain,
+        mats = ctx$mats,
+        compute_se = FALSE,
+        rep_mat = ctx$rep_mat
+      )
 
       if (is_categorical) {
         # A level's n and n_weighted count the rows at that level, as in
@@ -348,6 +363,14 @@ get_totals <- function(
       }
     }
   }
+
+  # ── Taylor SE step ──────────────────────────────────────────────────────────
+  # One stacked .svy_recvar() call over every live cell gives the .vcov
+  # matrix, and each live cell's SE is read from its diagonal. Runs before
+  # any post-loop condition, so a lonely-PSU abort fires here.
+  se_step <- .taylor_se_step(design, acc_joint, acc_se, ctx)
+  acc_se <- se_step$se
+  v_all <- se_step$v
 
   # ── Step 7: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
@@ -435,7 +458,9 @@ get_totals <- function(
     estimate_cols = c("total"),
     statistic = "total"
   )
-  result <- .attach_joint_vcov(result, design, acc_joint)
+  # Taylor: attach the matrix of the SE step. Replicate: v_all is NULL, so
+  # .svy_rep_vcov() computes it here, as before.
+  result <- .attach_joint_vcov(result, design, acc_joint, v = v_all)
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {
