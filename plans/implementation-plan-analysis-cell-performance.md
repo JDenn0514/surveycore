@@ -1107,7 +1107,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/_snaps/analysis-cell-equivalence.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 6: `refactor/analysis-cell-means` — `get_means()` builds its context
+- [x] PR 6: `refactor/analysis-cell-means` — `get_means()` builds its context
   once, takes its Taylor SEs and `.vcov` from one stacked call, narrows the
   columns it passes to `.degf_taylor()` and skips the call on an
   uncalibrated design, comments `.degf_taylor()`, and merges the replicate

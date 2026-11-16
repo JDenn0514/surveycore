@@ -754,3 +754,117 @@ test_that("get_means() still errors on a calibrated design when x is Inf", {
     class = "simpleError"
   )
 })
+
+# ------------------------------------------------------------------------------
+# get_totals() rows
+# ------------------------------------------------------------------------------
+
+test_that("get_totals() gives each clean group the SE of its own domain when another group has an NA and na.rm = FALSE", {
+  expect_groups_match_domain(
+    "totals/tay_y1_na",
+    "tay",
+    function(d) {
+      get_totals(
+        d,
+        y1_na,
+        na.rm = FALSE,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "total"
+  )
+})
+
+test_that("get_totals() gives each clean group the SE of its own domain when another group has an NA and na.rm = FALSE, two-stage design with FPC", {
+  expect_groups_match_domain(
+    "totals/multi_y1_na",
+    "multi",
+    function(d) {
+      get_totals(
+        d,
+        y1_na,
+        na.rm = FALSE,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "total"
+  )
+})
+
+test_that("get_totals() errors when every replicate weight is NA on a row outside the domain", {
+  d <- cell_golden_design("rep_allna_dom")
+  expect_error(
+    get_totals(
+      d,
+      y1,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_totals(
+      d,
+      y1,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_totals() errors on a single-PSU stratum when lonely.psu is fail", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(calls$totals(), class = "surveycore_error_lonely_psu")
+  expect_snapshot(error = TRUE, calls$totals())
+})
+
+test_that("get_totals() errors on a single-PSU stratum when lonely.psu is an unknown value", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "unknown_value")
+  expect_error(
+    calls$totals(),
+    class = "surveycore_error_lonely_psu_unknown_option"
+  )
+  expect_snapshot(error = TRUE, calls$totals())
+})
+
+test_that("get_totals() still errors on a calibrated design when x is NA and na.rm = FALSE", {
+  # The calibration projection aborts in qr.resid() on the NA in group B.
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("cal")
+  expect_error(
+    get_totals(
+      d,
+      y1_na,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})
+
+test_that("grouped get_totals() still errors when a base weight is Inf", {
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("infwt")
+  expect_error(
+    get_totals(
+      d,
+      y1,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})
