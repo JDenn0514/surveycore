@@ -434,3 +434,36 @@ FIX-BEFORE-MERGE 1 (PR description only); hand-written additions by the
 leader: none; CI cycles: recorded at ship time.
 
 PR 8 shipped as #371 (squash f1581e2), 2026-11-17. CI: 1 cycle, 7 of 7 checks passed on the first run.
+
+## D31 — PR 9 errata and trial record (SETTLED, orchestrator, 2026-11-17)
+Builder errata E-1 to E-10 (`prs/pr-9-analysis-cell-performance/implementation.md`)
+stand. The reviewer (`prs/pr-9-analysis-cell-performance/review.md`, PASS)
+accepts them, re-ran the `identical()` comparison of all 31 scenarios and
+of V3, C2 and R4 at B = 16, 32 and 64 from the saved results (all TRUE),
+and re-timed M7, C2, F5 and R2 in fresh sessions (after/before 0.16, 0.11,
+0.13, 0.31).
+- `TAYLOR_SE_BLOCK` is 32, the size the §XII.5 rule picks from one pass:
+  sums 7.81 s (16), 7.13 s (32), 7.34 s (64). The pick sits inside the
+  run-to-run noise. The reviewer's second pass at 32 would have picked 16;
+  R4 moved 0.77 s between two passes at one size. Every size gives
+  `identical()` results, so the choice moves speed and memory only. The
+  rule was applied once, as the spec says.
+- E-1: `LANG=C.UTF-8 LC_ALL=C.UTF-8` does not take effect in R on this
+  Windows machine; R runs in the C locale and 10 UTF-8 snapshot tests
+  fail. The counted run used the default `English_United States.utf8`
+  locale. The baseline command in `CLAUDE.md` is wrong for this machine.
+  FOLLOW-UP.
+- E-2: another session's R process overlapped the first base block-size
+  run; those times were discarded and the results kept for equality only.
+- Gate 4 first failed: the builder's two `git archive` extracts (1.7 GB,
+  with `data-raw/`) sat in the gitignored run directory, and `R CMD build`
+  copies the whole folder before it applies `.Rbuildignore`. The extracts
+  were moved to the scratchpad and gates 4 and 5 re-run on the same tree
+  `dcaad9f`: `Status: 1 NOTE`. Gates 1, 2 and 6 stand.
+- Reviewer FIX-BEFORE-MERGE, both leader steps: fill `{ref}` in `NEWS.md`
+  after the PR opens; put the §XII table and `TAYLOR_SE_BLOCK = 32` in the
+  PR description.
+
+Trial measures, PR 9: errata 10 (builder); BLOCKs 0; STOPs 0; reviewer
+FIX-BEFORE-MERGE 2 (leader steps the plan assigns); hand-written additions
+by the leader: none; CI cycles: recorded at ship time.
