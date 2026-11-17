@@ -1285,7 +1285,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/_snaps/analysis-cell-equivalence.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 8: `refactor/analysis-cell-ratios` — `get_ratios()` builds its
+- [x] PR 8: `refactor/analysis-cell-ratios` — `get_ratios()` builds its
   context once for all three per-cell calls and takes its Taylor SEs from
   stacked calls in blocks
   - **Budget** — 7 test-spec rows | 7 criteria

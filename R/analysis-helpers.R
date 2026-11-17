@@ -1309,8 +1309,10 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 # One stacked call builds a k x k matrix per stratum, so its memory grows
 # with k^2. Blocks keep it small. For finite columns, entry [j, j] of a
 # stacked call equals the one-column result, so the block size does not
-# change any SE.
-TAYLOR_SE_BLOCK <- 64L
+# change any SE. The value 32 is the smallest of 16, 32 and 64 whose summed
+# time on three large-cell benchmark calls was within 5% of the fastest
+# (changelog/refactor-analysis-cell-performance.md).
+TAYLOR_SE_BLOCK <- 32L
 
 # ── .cell_context() ───────────────────────────────────────────────────────────
 #
