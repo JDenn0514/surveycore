@@ -432,3 +432,5 @@ dimnames, warning order and errors included.
 Trial measures, PR 8: errata 7 (builder); BLOCKs 0; STOPs 0; reviewer
 FIX-BEFORE-MERGE 1 (PR description only); hand-written additions by the
 leader: none; CI cycles: recorded at ship time.
+
+PR 8 shipped as #371 (squash f1581e2), 2026-11-17. CI: 1 cycle, 7 of 7 checks passed on the first run.
