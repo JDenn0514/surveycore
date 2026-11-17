@@ -1,3 +1,24 @@
+# surveycore (development version)
+
+## Performance
+
+* `get_freqs()`, `get_means()`, `get_totals()`, `get_variance()`,
+  `get_covariance()` and `get_ratios()` are faster on grouped and
+  multi-level calls. Work that is the same for every cell, building the
+  cluster and strata matrices and converting the replicate weight columns,
+  now runs once per call, and the Taylor standard errors of many cells come
+  from a few shared variance calls. Results do not change beyond
+  floating-point rounding; an optimized BLAS can differ in the last bit. For
+  example, a grouped `get_means()` on 50,000 rows with 60 cells took 2.75 s
+  and now takes 0.48 s. ({ref})
+
+* With `options(survey.lonely.psu = "fail")`, or with a value the variance
+  engine does not know, a stratum with one PSU still raises the same error.
+  In `get_freqs()`, `get_means()`, `get_totals()`, `get_variance()` and
+  `get_covariance()` the error now comes later in the call, after more
+  cells are computed. A warning from one of those cells can print before
+  it, and an error from one of them replaces it. ({ref})
+
 # surveycore 1.2.0
 
 ## New features
