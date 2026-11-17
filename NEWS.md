@@ -10,14 +10,14 @@
   from a few shared variance calls. Results do not change beyond
   floating-point rounding; an optimized BLAS can differ in the last bit. For
   example, a grouped `get_means()` on 50,000 rows with 60 cells took 2.75 s
-  and now takes 0.48 s. ({ref})
+  and now takes 0.48 s. (#372)
 
 * With `options(survey.lonely.psu = "fail")`, or with a value the variance
   engine does not know, a stratum with one PSU still raises the same error.
   In `get_freqs()`, `get_means()`, `get_totals()`, `get_variance()` and
   `get_covariance()` the error now comes later in the call, after more
   cells are computed. A warning from one of those cells can print before
-  it, and an error from one of them replaces it. ({ref})
+  it, and an error from one of them replaces it. (#372)
 
 # surveycore 1.2.0
 
