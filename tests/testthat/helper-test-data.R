@@ -64,9 +64,8 @@ make_dataset_df <- function(keys = full_keys, n = 20L, seed = 42L) {
 # make_stale_metadata_design()
 # ------------------------------------------------------------------------------
 
-# The fixtures were constructed with surveycore 1.0.0 and S7 0.2.2 using
-# make_survey_data(seed = 42L). Their serialized class definitions predate
-# the dataset_metadata property.
+# tools/make-legacy-design-fixture.R records how these pre-1.2.0 designs
+# were saved with surveycore 1.0.0 and S7 0.2.2.
 make_stale_metadata_design <- function(
   design = c("taylor", "replicate", "twophase", "nonprob")
 ) {

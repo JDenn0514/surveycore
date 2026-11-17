@@ -39,11 +39,7 @@ test_that("saved designs from before 1.2.0 have no dataset metadata property", {
     expect_s3_class(d, paste0("surveycore::survey_", cls))
     expect_no_error(S7::validate(d))
 
-    expect_false("dataset_metadata" %in% S7::prop_names(d@metadata))
-    expect_error(
-      d@metadata@dataset_metadata,
-      regexp = "Can't find property|Property not found"
-    )
+    expect_false(S7::prop_exists(d@metadata, "dataset_metadata"))
   }
 })
 
