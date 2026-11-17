@@ -1,5 +1,9 @@
 # Decisions — analysis-cell-performance
 
+**Archive note (2026-11-17).** A citation of the `plans/` copy of a document
+of this feature carries [no such file]. The five documents moved out of
+`plans/` and now sit beside this file in `archive/analysis-cell-performance/`.
+
 ## D1 — scope is six functions (SETTLED, user, 2026-11-10)
 `get_freqs()`, `get_means()`, `get_totals()`, `get_variance()`,
 `get_covariance()`, `get_ratios()`. Only the first two were profiled.
@@ -231,7 +235,7 @@ this machine compare against 254.
 - The gate run's `devtools::document()` bumped `Config/roxygen2/version` in
   `DESCRIPTION` to 8.1.1. The leader reverted it; it is not part of the PR.
 - Gate 9: the branch also carries the PR 1 and 2 bookkeeping edits to
-  `plans/implementation-plan-analysis-cell-performance.md` and
+  `plans/implementation-plan-analysis-cell-performance.md` [no such file] and
   `plans/pr-budget-calibration.md`, as a separate `docs:` commit by the
   leader's instruction. They are outside PR 3's Files touched.
 
@@ -467,3 +471,5 @@ and re-timed M7, C2, F5 and R2 in fresh sessions (after/before 0.16, 0.11,
 Trial measures, PR 9: errata 10 (builder); BLOCKs 0; STOPs 0; reviewer
 FIX-BEFORE-MERGE 2 (leader steps the plan assigns); hand-written additions
 by the leader: none; CI cycles: recorded at ship time.
+
+PR 9 shipped as #372 (squash 57dab10), 2026-11-17. CI: 1 cycle, 7 of 7 checks passed on the first run.

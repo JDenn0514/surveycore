@@ -5,6 +5,17 @@
 **Base commit**: `develop` at `0c0a987`, or the later `develop` commit the
 first branch of this work is cut from. Section 2.4 says how to pin it.
 
+## Errata applied at archive time
+
+| # | Location | Correction | Authority |
+|---|---|---|---|
+| 1 | §5 row 5.1.10, the note | "the stored diagonal is finite but rescaled" corrected to: the diagonal is `Inf` on `tay`, `multi`, `strat` and `cal`; the finite, rescaled case is `get_totals()` | `decisions-analysis-cell-performance.md` D27, erratum E-1 |
+
+The PR 6 builder measured it on the base commit: `means/tay_y1_na` gives
+`se^2` 0.5283716 for group A and a `.vcov[A, A]` of `Inf`. The row's
+assertions did not change. They require only that the diagonal differs
+from `se^2`, so the row passed with the wrong note.
+
 ## Errata
 
 **E-1 (2026-11-10, decision D16).** Plan review pass 1 found spec behaviour
@@ -826,7 +837,7 @@ Kept-mismatch row:
 
 | Row | `test_that()` description | Assertion |
 |---|---|---|
-| 5.1.10 | "get_means() keeps a stored variance that differs from se^2 for a clean group when another group has an NA and na.rm = FALSE" | On `means/tay_y1_na`, with `i <- which(r$group == "A")`: `expect_true(is.finite(r$se[[i]]))` and `expect_false(isTRUE(all.equal(attr(r, ".vcov")[i, i], r$se[[i]]^2)))`. On an uncalibrated design the stored diagonal is finite but rescaled, so the row does not assert that it is non-finite. |
+| 5.1.10 | "get_means() keeps a stored variance that differs from se^2 for a clean group when another group has an NA and na.rm = FALSE" | On `means/tay_y1_na`, with `i <- which(r$group == "A")`: `expect_true(is.finite(r$se[[i]]))` and `expect_false(isTRUE(all.equal(attr(r, ".vcov")[i, i], r$se[[i]]^2)))`. The stored diagonal is `Inf` on `tay`, `multi`, `strat` and `cal`, because a mean's influence column is all `NA`; the finite, rescaled case is `get_totals()`. The row asserts only that the diagonal differs from `se^2`. |
 
 ### 5.2 Replicate weights that are NA, Inf, or zero
 

@@ -1,5 +1,9 @@
 # Implementation plan — analysis-cell-performance
 
+**Archive note (2026-11-17).** A citation of the `plans/` copy of a document
+of this feature carries [no such file]. The five documents moved out of
+`plans/` and now sit beside this file in `archive/analysis-cell-performance/`.
+
 **Status**: DRAFT (planner, 2026-11-10)
 **Revision**: 2 (plan review pass 1 applied: R-1, D15, D16, D-1, D-2, A-2 to
 A-8, S-4, F-1, and the PR 6 title)
@@ -101,11 +105,11 @@ needs an up-to-date head branch.
 - No PR diff into `develop` may hold a path under `.surveycore-workspace/`.
   Check with `git diff --name-only origin/develop...HEAD`.
 - The planning copies under `plans/` ship with PR 1:
-  `plans/comprehension-analysis-cell-performance.md`,
-  `plans/decisions-analysis-cell-performance.md`,
-  `plans/spec-analysis-cell-performance.md`,
-  `plans/test-spec-analysis-cell-performance.md` and
-  `plans/implementation-plan-analysis-cell-performance.md`. The first four
+  `plans/comprehension-analysis-cell-performance.md` [no such file],
+  `plans/decisions-analysis-cell-performance.md` [no such file],
+  `plans/spec-analysis-cell-performance.md` [no such file],
+  `plans/test-spec-analysis-cell-performance.md` [no such file] and
+  `plans/implementation-plan-analysis-cell-performance.md` [no such file]. The first four
   are untracked on `develop` today and hold older versions. When PR 1 is
   built, copy the PLAN_READY versions from the run directory over them:
   `spec.md`, `test-spec.md` (with erratum E-1), `decisions.md` (D1 to D16),
@@ -726,11 +730,11 @@ total of 261 does not change. List every correction in the PR description.
     7. `git diff --name-only origin/develop...HEAD -- R` prints nothing.
     8. G.
   - **Files touched**
-    - `plans/comprehension-analysis-cell-performance.md`
-    - `plans/decisions-analysis-cell-performance.md`
-    - `plans/spec-analysis-cell-performance.md`
-    - `plans/test-spec-analysis-cell-performance.md`
-    - `plans/implementation-plan-analysis-cell-performance.md`
+    - `plans/comprehension-analysis-cell-performance.md` [no such file]
+    - `plans/decisions-analysis-cell-performance.md` [no such file]
+    - `plans/spec-analysis-cell-performance.md` [no such file]
+    - `plans/test-spec-analysis-cell-performance.md` [no such file]
+    - `plans/implementation-plan-analysis-cell-performance.md` [no such file]
     - `tests/testthat/helper-cell-golden.R` (new)
     - `data-raw/analysis-cell-golden.R` (new)
     - `tests/testthat/fixtures/analysis-cell-golden.rds` (new)
@@ -1385,7 +1389,7 @@ total of 261 does not change. List every correction in the PR description.
     - `tests/testthat/_snaps/analysis-cell-equivalence.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 9: `refactor/analysis-cell-performance` — the measured block size,
+- [x] PR 9: `refactor/analysis-cell-performance` — the measured block size,
   the speed table, `NEWS.md` and the changelog
   - **Budget** — 0 test-spec rows | 8 criteria
     - Rows: none. Speed is measured outside the test suite.
@@ -1598,7 +1602,7 @@ the usual figure for 12 rows.
   conflict shows before PR 6.
 - `spec.md` §I lists decisions D1 to D13; `decisions.md` also holds D14,
   which this plan applies in PR 1. `spec.md` still reads **Status**: DRAFT
-  while `status.md` records SPEC_READY.
+  while `status.md` [not archived] records SPEC_READY.
 - `spec.md` §II.1 sets no home for the §XII timing script. This plan keeps
   it in the run directory and out of every PR diff.
 - `data-raw/README.md` does not change (plan review F-2).
