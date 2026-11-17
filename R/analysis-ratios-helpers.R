@@ -18,6 +18,7 @@
 # @param domain     Numeric 0/1 vector (full length): in-domain indicator.
 # @param ratio_est  Numeric scalar: full-sample ratio estimate.
 # @param total_x    Numeric scalar: full-sample denominator weighted total.
+# @param rep_mat    The replicate weight matrix (ctx$rep_mat).
 # @return Named list: se, se_srs, n_weighted, joint (see .joint_vcov()).
 #' @noRd
 .replicate_ratio_cell <- function(
@@ -26,7 +27,8 @@
   x_vec,
   domain,
   ratio_est,
-  total_x
+  total_x,
+  rep_mat
 ) {
   data <- design@data
   vars <- design@variables
@@ -54,7 +56,6 @@
   x_safe <- ifelse(domain > 0, x_vec, 0)
 
   # Per-replicate ratios: ratio_r = total_y_r / total_x_r
-  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   rep_T_y <- as.numeric((y_safe * domain) %*% rep_mat)
   rep_T_x <- as.numeric((x_safe * domain) %*% rep_mat)
   rep_ratio <- ifelse(abs(rep_T_x) > 0, rep_T_y / rep_T_x, NA_real_)
@@ -93,7 +94,9 @@
 # Compute ratio SE via the delta method (linearization) for Taylor,
 # SRS, calibrated, and twophase designs. Injects the linearized variable
 # z_i = y_i - ratio * x_i into design@data and delegates SE computation
-# to .total_cell(), then divides by |total_x|.
+# to .total_cell(), then divides by |total_x|. With compute_se = FALSE (the
+# Taylor route) the z total skips its own variance call, and get_ratios()
+# takes the SE from the returned influence column after the cell loop.
 #
 # @param design     A survey design object (not survey_replicate).
 # @param y_vec      Numeric vector (full length): numerator values.
@@ -102,10 +105,19 @@
 # @param ratio_est  Numeric scalar: full-sample ratio estimate.
 # @param total_x    Numeric scalar: full-sample denominator weighted total.
 # @param tmp_col    Character(1): temp column name for the linearized variable.
-# @return Named list: se, se_srs, n_weighted, joint (see .joint_vcov()).
-#   The ratio's linearization is z / total_x, so the joint element of z's
-#   total is divided by total_x (signed: the SE takes abs(), a covariance
-#   needs the sign).
+# @param mats       Taylor route: ctx$mats. Other routes: NULL (.total_cell()
+#                   passes it to the Taylor cell only).
+# @param compute_se TRUE runs the z total's own variance call (nonprob SRS
+#                   and two-phase routes). FALSE skips it (Taylor route).
+# @return Named list: se, se_srs, n_weighted, joint (see .joint_vcov()), and
+#   infl. The ratio's linearization is z / total_x, so the joint element of
+#   z's total is divided by total_x (signed: the SE takes abs(), a
+#   covariance needs the sign).
+#   - compute_se = TRUE: se is the cell's SE, joint$value is the scaled
+#     column, and infl is NULL.
+#   - compute_se = FALSE: se is NA_real_, infl is the unscaled z influence
+#     column after projection, and joint$value is NULL. get_ratios() fills
+#     joint$value with infl / total_x in its SE step.
 #' @noRd
 .delta_ratio_cell <- function(
   design,
@@ -114,7 +126,9 @@
   domain,
   ratio_est,
   total_x,
-  tmp_col
+  tmp_col,
+  mats,
+  compute_se
 ) {
   y_safe <- ifelse(domain > 0, y_vec, 0)
   x_safe <- ifelse(domain > 0, x_vec, 0)
@@ -123,14 +137,27 @@
   z_lin <- domain * (y_safe - ratio_est * x_safe)
 
   design@data[[tmp_col]] <- z_lin
-  cell_z <- .total_cell(design, tmp_col, domain)
+  cell_z <- .total_cell(
+    design,
+    tmp_col,
+    domain,
+    mats = mats,
+    compute_se = compute_se
+  )
 
   se <- cell_z$se / abs(total_x)
   se_srs <- cell_z$se_srs / abs(total_x)
 
   joint <- cell_z$joint
+  infl <- NULL
   if (!is.null(joint)) {
-    joint$value <- joint$value / total_x
+    if (compute_se) {
+      joint$value <- joint$value / total_x
+    } else {
+      # Keep one column per cell: the unscaled one, until the SE step
+      infl <- joint$value
+      joint["value"] <- list(NULL)
+    }
     joint$est <- joint$est / total_x
   }
 
@@ -138,6 +165,7 @@
     se = se,
     se_srs = se_srs,
     n_weighted = cell_z$n_weighted,
-    joint = joint
+    joint = joint,
+    infl = infl
   )
 }

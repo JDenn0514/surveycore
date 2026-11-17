@@ -211,11 +211,6 @@ get_ratios <- function(
   domain_mask <- .apply_domain(design)
   degf <- Inf # Normal approximation; matches survey::svyratio() default
 
-  # Flag for replicate dispatch (also true for survey_nonprob with repweights)
-  is_replicate <- S7::S7_inherits(design, survey_replicate) ||
-    (S7::S7_inherits(design, survey_nonprob) &&
-      !is.null(design@variables$repweights))
-
   # ── Step 3: Single-level warning for group variables ──────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
@@ -262,9 +257,19 @@ get_ratios <- function(
   acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
   acc_joint <- list()
+  # Taylor route only: each live cell's unscaled z influence column and its
+  # denominator total, kept until the SE step after the loop. NULL and NA
+  # for cells stored as "na" and on every other route.
+  acc_infl <- list()
+  acc_total_x <- numeric(0)
 
   small_cell_ns <- integer(0)
   tmp_col <- "..surveycore_ratio_lin.."
+
+  # Work shared by every cell, done once per call: the cluster matrices
+  # (Taylor) and the replicate matrix (replicate, also survey_nonprob with
+  # repweights). ctx$replicate selects the replicate SE dispatch below.
+  ctx <- .cell_context(design)
 
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
@@ -292,8 +297,17 @@ get_ratios <- function(
       domain_vec <- as.numeric(active_mask)
     }
 
-    # Compute denominator total (for zero check + ratio point estimate)
-    cell_x <- .total_cell(design, denom_name, domain_vec)
+    # Compute denominator total (for zero check + ratio point estimate).
+    # Calls 1 and 2 keep their own variance call: on the Taylor route the
+    # lonely-PSU aborts fire in call 1, before the zero-denominator check.
+    cell_x <- .total_cell(
+      design,
+      denom_name,
+      domain_vec,
+      mats = ctx$mats,
+      compute_se = TRUE,
+      rep_mat = ctx$rep_mat
+    )
     total_x <- cell_x$total
 
     # All denominator values zero → error
@@ -321,6 +335,8 @@ get_ratios <- function(
       acc_n <- c(acc_n, n_cell)
       acc_nw <- c(acc_nw, NA_real_)
       acc_joint <- c(acc_joint, list(.joint_na()))
+      acc_infl <- c(acc_infl, list(NULL))
+      acc_total_x <- c(acc_total_x, NA_real_)
       if (length(group_vars) > 0L) {
         acc_grp_rows <- c(acc_grp_rows, list(combo_row))
       }
@@ -328,20 +344,30 @@ get_ratios <- function(
     }
 
     # Compute numerator total and ratio estimate
-    cell_y <- .total_cell(design, num_name, domain_vec)
+    cell_y <- .total_cell(
+      design,
+      num_name,
+      domain_vec,
+      mats = ctx$mats,
+      compute_se = TRUE,
+      rep_mat = ctx$rep_mat
+    )
     total_y <- cell_y$total
     ratio_est <- total_y / total_x
 
     # SE dispatch: replicate uses direct per-replicate ratios;
-    # all other classes use the delta method via .total_cell().
-    if (is_replicate) {
+    # all other classes use the delta method via .total_cell(). On the
+    # Taylor route the cell skips its own variance call; the SE step below
+    # fills its SE. Nonprob SRS and two-phase keep the per-cell SE.
+    if (ctx$replicate) {
       se_result <- .replicate_ratio_cell(
         design,
         y_col,
         x_col,
         domain_vec,
         ratio_est,
-        total_x
+        total_x,
+        rep_mat = ctx$rep_mat
       )
     } else {
       se_result <- .delta_ratio_cell(
@@ -351,7 +377,9 @@ get_ratios <- function(
         domain_vec,
         ratio_est,
         total_x,
-        tmp_col
+        tmp_col,
+        mats = ctx$mats,
+        compute_se = !ctx$taylor
       )
     }
 
@@ -361,10 +389,38 @@ get_ratios <- function(
     acc_n <- c(acc_n, n_cell)
     acc_nw <- c(acc_nw, cell_x$n_weighted)
     acc_joint <- c(acc_joint, list(se_result$joint))
+    acc_infl <- c(acc_infl, list(se_result$infl))
+    acc_total_x <- c(acc_total_x, total_x)
 
     if (length(group_vars) > 0L) {
       acc_grp_rows <- c(acc_grp_rows, list(combo_row))
     }
+  }
+
+  # ── Taylor SE step ──────────────────────────────────────────────────────────
+  # The live cells' unscaled z columns go to .taylor_cell_se() in blocks of
+  # at most TAYLOR_SE_BLOCK, and each SE is divided by |total_x|. Each block
+  # then writes the scaled column z / total_x to joint$value and drops the
+  # unscaled one, so a cell holds one column at a time. acc_infl[j] <-
+  # list(NULL) keeps the positions; acc_infl[[j]] <- NULL would delete the
+  # element and shift every later cell. The .vcov matrix comes from one
+  # stacked call over the scaled columns. Runs before any post-loop
+  # condition.
+  v_all <- NULL
+  if (ctx$taylor) {
+    live <- which(!vapply(acc_infl, is.null, logical(1L)))
+    for (start in seq_len(ceiling(length(live) / TAYLOR_SE_BLOCK))) {
+      first <- (start - 1L) * TAYLOR_SE_BLOCK + 1L
+      blk <- live[first:min(length(live), first + TAYLOR_SE_BLOCK - 1L)]
+      vals <- do.call(cbind, acc_infl[blk])
+      acc_se[blk] <- .taylor_cell_se(vals, ctx$mats, ctx$lonely.psu) /
+        abs(acc_total_x[blk])
+      for (j in blk) {
+        acc_joint[[j]]$value <- acc_infl[[j]] / acc_total_x[[j]]
+        acc_infl[j] <- list(NULL)
+      }
+    }
+    v_all <- .joint_vcov(design, acc_joint, mats = ctx$mats)
   }
 
   # ── Step 7: Small-cell warning ─────────────────────────────────────────────
@@ -440,7 +496,9 @@ get_ratios <- function(
     estimate_cols = c("ratio"),
     statistic = "ratio"
   )
-  result <- .attach_joint_vcov(result, design, acc_joint)
+  # Taylor: attach the matrix of the SE step. Other routes: v_all is NULL,
+  # so .attach_joint_vcov() computes it here (or stores none), as before.
+  result <- .attach_joint_vcov(result, design, acc_joint, v = v_all)
 
   # ── Step 13: Apply decimals and name style ────────────────────────────────
   if (!is.null(decimals)) {

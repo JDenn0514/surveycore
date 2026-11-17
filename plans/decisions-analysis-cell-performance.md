@@ -382,3 +382,53 @@ all matched, `.vcov` dimnames, warning order and errors included.
 Trial measures, PR 7: errata 7 (builder); BLOCKs 0; STOPs 0; hand-written
 additions by the leader: none (the D28 extraction was a builder task);
 CI cycles: recorded at ship time.
+
+PR 7 shipped as #369 (squash 9cfe91e), 2026-11-16. CI: 1 cycle.
+
+## D30 — PR 8 errata and trial record (SETTLED, orchestrator, 2026-11-16)
+Builder errata E-1 to E-7 (`prs/pr-8-analysis-cell-ratios/implementation.md`)
+stand. The reviewer (`prs/pr-8-analysis-cell-ratios/review.md`, PASS)
+accepts all seven, and compared 1664 calls on 46 designs on
+`origin/develop` and HEAD with `identical()`: all matched, `.vcov`
+dimnames, warning order and errors included.
+- E-1: the ratio SE step does not share code with `.taylor_se_step()`. The
+  two steps differ in four ways the spec fixes (no `v`, blocks, the
+  `abs(total_x)` division, the scaled column written back and the unscaled
+  one dropped in `get_ratios()`'s own frame). Their common calls are
+  already helpers.
+- E-2: `get_ratios()` dispatches on `ctx$replicate` in place of its own
+  copy of the same predicate.
+- E-3: call 3 is one call site, `mats = ctx$mats, compute_se =
+  !ctx$taylor`; off the Taylor route the values are the ones the plan
+  names.
+- E-4: `tay_empty_dom`, `tay_allna` and `zero_combos` now build the
+  cluster matrices once where the base built them zero times. Speed only;
+  means and totals do the same.
+- E-5 (D23 family): breaks c3 (block size 1) and d (call 3 keeps its own
+  variance call) stay green, and only the call counts catch them. Break e
+  (unscaled column not dropped) changes memory only. Reviewer break K2
+  (joint column divided by `abs(total_x)`) stays green: no test asserts
+  `.vcov` with a negative denominator total. The shipped code is right on
+  16 such calls. FOLLOW-UP: a row with one group's denominator negated and
+  a `vcov()` assertion.
+- E-6: the plan fixes the seven titles; five `test_that()` lines run past
+  80 columns, as 50 lines on `develop` already do.
+- E-7: `live` is the set of cells with a non-`NULL` `acc_infl` entry,
+  which on the Taylor route equals "the cells that reached call 3".
+- Criterion 7, bullet 1 reading: gate 2 lists one unreached line this PR
+  touches, `R/analysis-ratios-helpers.R:155` (`joint$value <- joint$value /
+  total_x` under `compute_se = TRUE`). It is the base line, re-indented. No
+  caller reaches it: `compute_se = TRUE` reaches only the nonprob SRS and
+  two-phase routes, and neither returns a joint element. It stays: without
+  it a later Taylor caller with `compute_se = TRUE` would get an unscaled
+  `.vcov` and no error. It joins the three criterion 7 lines
+  (`R/analysis-helpers.R:1245`, `R/analysis-totals-helpers.R:79`, `:156`)
+  in the PR description.
+- Coverage: gate 2 reads 96.31%, against 96.66% from PR 7's covr gate.
+  #370 replaced that gate with one covr run of the whole suite, and the
+  PR 7 tree was not measured the new way, so the 0.35-point gap is not
+  explained. The two changed files read 98.15% and 100%.
+
+Trial measures, PR 8: errata 7 (builder); BLOCKs 0; STOPs 0; reviewer
+FIX-BEFORE-MERGE 1 (PR description only); hand-written additions by the
+leader: none; CI cycles: recorded at ship time.

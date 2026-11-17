@@ -67,6 +67,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-11-13 | #366 | 5 | 247 | 49.4 | n/a | 0 | — |
 | 2026-11-13 | #367 | 7 | 267 | 38.1 | n/a | 0 | — |
 | 2026-11-16 | #368 | 10 | 322 | 32.2 | n/a | 0 | — |
+| 2026-11-16 | #369 | 7 | 261 | 37.3 | n/a | 0 | — |
 
 ## Notes on individual rows
 
@@ -143,6 +144,11 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 
 - **#368** (analysis-cell-performance, plan PR 6; slim-pipeline trial, D17).
   Source and test, counted as for #365. CI passed on the first run.
+
+- **#369** (analysis-cell-performance, plan PR 7; slim-pipeline trial, D17).
+  Source and test, counted as for #365. Includes the D28 extraction of
+  `.taylor_se_step()` from `get_freqs()` and `get_means()`. CI passed on
+  the first run.
 
 ## Reading the five rows
 

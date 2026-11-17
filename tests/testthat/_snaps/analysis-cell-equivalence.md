@@ -167,3 +167,38 @@
       Error in `.svy_onestrat()`:
       x Unknown `lonely.psu` value: "unknown_value".
 
+# get_ratios() errors when the numerator is NA in a cell with na.rm = FALSE on a replicate design
+
+    Code
+      get_ratios(d, y3_na, y1, group = group, na.rm = FALSE, variance = .cg_variance,
+        n_weighted = TRUE, min_cell_n = 0L)
+    Condition
+      Error in `.svy_rep_var()`:
+      x All replicates produced NA estimates.
+
+# get_ratios() errors on a single-PSU stratum when lonely.psu is fail
+
+    Code
+      calls$ratios()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Stratum 6 has only one PSU at stage 1.
+
+# get_ratios() errors on a single-PSU stratum when lonely.psu is an unknown value
+
+    Code
+      calls$ratios()
+    Condition
+      Error in `.svy_onestrat()`:
+      x Unknown `lonely.psu` value: "unknown_value".
+
+# get_ratios() errors when a group's denominator total is zero
+
+    Code
+      get_ratios(d, y3, y1_c_zero, group = group, variance = .cg_variance,
+        n_weighted = TRUE, min_cell_n = 0L)
+    Condition
+      Error in `get_ratios()`:
+      x All values of the denominator (y1_c_zero) are zero. Cannot compute ratio.
+      i Provide a denominator variable with at least one non-zero value.
+

@@ -868,3 +868,150 @@ test_that("grouped get_totals() still errors when a base weight is Inf", {
     class = "simpleError"
   )
 })
+
+# ------------------------------------------------------------------------------
+# get_ratios() rows
+# ------------------------------------------------------------------------------
+
+test_that("get_ratios() gives each clean group the SE of its own domain when another group's numerator is NA", {
+  expect_groups_match_domain(
+    "ratios/tay_num_na",
+    "tay",
+    function(d) {
+      get_ratios(
+        d,
+        y3_na,
+        y1,
+        na.rm = FALSE,
+        variance = .cg_variance,
+        n_weighted = TRUE,
+        min_cell_n = 0L
+      )
+    },
+    "ratio"
+  )
+})
+
+test_that("get_ratios() errors when the numerator is NA in a cell with na.rm = FALSE on a replicate design", {
+  d <- cell_golden_design("rep")
+  expect_error(
+    get_ratios(
+      d,
+      y3_na,
+      y1,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+  expect_snapshot(error = TRUE, {
+    get_ratios(
+      d,
+      y3_na,
+      y1,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("get_ratios() errors on a single-PSU stratum when lonely.psu is fail", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "fail")
+  expect_error(calls$ratios(), class = "surveycore_error_lonely_psu")
+  expect_snapshot(error = TRUE, calls$ratios())
+})
+
+test_that("get_ratios() errors on a single-PSU stratum when lonely.psu is an unknown value", {
+  calls <- cell_core_calls(cell_golden_design("lonely"))
+  withr::local_options(survey.lonely.psu = "unknown_value")
+  expect_error(
+    calls$ratios(),
+    class = "surveycore_error_lonely_psu_unknown_option"
+  )
+  expect_snapshot(error = TRUE, calls$ratios())
+})
+
+test_that("get_ratios() errors when a group's denominator total is zero", {
+  d <- cell_golden_design("tay")
+  expect_error(
+    get_ratios(
+      d,
+      y3,
+      y1_c_zero,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "surveycore_error_ratio_zero_denominator"
+  )
+  expect_snapshot(error = TRUE, {
+    get_ratios(
+      d,
+      y3,
+      y1_c_zero,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    )
+  })
+})
+
+test_that("grouped get_ratios() still errors when a base weight is Inf", {
+  # Base R raises this error, so it has no surveycore class and no snapshot.
+  d <- cell_golden_design("infwt")
+  expect_error(
+    get_ratios(
+      d,
+      y3,
+      y1,
+      group = group,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})
+
+test_that("get_ratios() still errors on a calibrated design when either variable is NA and na.rm = FALSE", {
+  # The calibration projection aborts in qr.resid() on the NA in group B:
+  # in the numerator total (call 2) for the first call, in the denominator
+  # total (call 1) for the second. Base R raises this error, so it has no
+  # surveycore class and no snapshot.
+  d <- cell_golden_design("cal")
+  expect_error(
+    get_ratios(
+      d,
+      y3_na,
+      y1,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+  expect_error(
+    get_ratios(
+      d,
+      y3,
+      y1_na,
+      group = group,
+      na.rm = FALSE,
+      variance = .cg_variance,
+      n_weighted = TRUE,
+      min_cell_n = 0L
+    ),
+    class = "simpleError"
+  )
+})
