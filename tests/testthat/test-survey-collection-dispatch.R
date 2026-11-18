@@ -436,36 +436,23 @@ test_that("get_pairwise() forwards `conf_level` to every survey", {
 })
 
 test_that("get_diffs() forwards `pval_adj` to every survey", {
-  # 300 rows per survey keep every treat-by-grp2 cell at 30 or more rows, so
-  # the small-cell warning does not fire.
+  # No `group` and no `covariates`, so get_diffs() reads the model
+  # coefficients and does not call marginaleffects. With marginaleffects
+  # 1.0.0, the grouped path raises "contrasts dropped from factor treat".
+  # 300 rows per survey keep every treat cell at 30 or more rows, so the
+  # small-cell warning does not fire. Three treat levels give two
+  # comparisons, so the Bonferroni adjustment moves the p-values.
   coll <- .make_dispatch_collection(n = 300L)
   .expect_forwarded(
-    get_diffs(
-      coll,
-      outcome,
-      treats = treat,
-      group = grp2,
-      pval_adj = "bonferroni"
-    ),
+    get_diffs(coll, outcome, treats = treat, pval_adj = "bonferroni"),
     .oracle_dispatch(
       get_diffs,
       coll,
       outcome,
       treats = treat,
-      group = grp2,
       pval_adj = "bonferroni"
     ),
-    get_diffs(coll, outcome, treats = treat, group = grp2)
-  )
-})
-
-test_that("get_diffs() forwards `min_cell_n` to every survey", {
-  # 120 rows per survey leave some treat-by-grp2 cells under the default
-  # min_cell_n of 30. With min_cell_n = 10 no cell is small, so the call
-  # raises no warning. Before issue #375 it raised the per-survey warnings.
-  coll <- .make_dispatch_collection()
-  expect_no_warning(
-    get_diffs(coll, outcome, treats = treat, group = grp2, min_cell_n = 10L)
+    get_diffs(coll, outcome, treats = treat)
   )
 })
 

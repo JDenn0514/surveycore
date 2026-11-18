@@ -44,7 +44,7 @@ here uses `pval_adj` for that reason.
   `R/analysis-quantiles.R`, `R/analysis-ratios.R`, `R/analysis-t-test.R`
   (two branches), `R/analysis-totals.R`, `R/analysis-variance.R` — each
   collection branch passes `.caller_env = environment()`
-- `tests/testthat/test-survey-collection-dispatch.R` — 12 new blocks in a
+- `tests/testthat/test-survey-collection-dispatch.R` — 11 new blocks in a
   new section on named-argument forwarding
 - `NEWS.md` — a Bug fixes entry
 
@@ -55,14 +55,15 @@ here uses `pval_adj` for that reason.
 - Add one oracle block per fixed function: the collection result with a
   non-default argument equals the per-survey bind with the same argument,
   and differs from the collection result at the default
-- Add a block that `get_diffs(coll, ..., min_cell_n = 10L)` raises no
-  warning
+- The `get_diffs()` block uses no `group`, so it stays off the
+  marginaleffects path. With marginaleffects 1.0.0, that path raises
+  "contrasts dropped from factor treat" on every grouped call. A first
+  version of this PR had a grouped `get_diffs()` block and a `min_cell_n`
+  block; both failed or printed that warning on CI, and both are gone.
 
 ## Verification
 
-- All 12 new blocks fail on `develop`'s `R/` code and pass on this branch.
-- Full suite with `NOT_CRAN=true` on Windows: 0 failures and 206 warnings
-  on this branch. The #376 commit reports 206 for `develop` at `dd4b5e6`,
-  so the warning count is unchanged.
-- Before #376, the same suite gave 254 warnings on `develop` at `c3add3a`
-  and 254 with the fix alone, with the same per-test set.
+- All 11 new blocks fail on `develop`'s `R/` code and pass on this branch.
+- Full suite with `NOT_CRAN=true` on Windows, marginaleffects 1.0.0 and
+  insight 1.7.0 (the CI versions): `develop` at `dd4b5e6` and this branch
+  both give 0 failures and 326 warnings, with the same per-test set.
