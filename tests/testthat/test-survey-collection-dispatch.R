@@ -11,10 +11,10 @@
 
 # ── Shared fixtures ──────────────────────────────────────────────────────────
 
-.make_dispatch_collection <- function(n_surveys = 3L, seed = 42L) {
+.make_dispatch_collection <- function(n_surveys = 3L, seed = 42L, n = 120L) {
   surveys <- lapply(seq_len(n_surveys), function(i) {
     df <- make_survey_data(
-      n = 120L,
+      n = n,
       n_psu = 12L,
       n_strata = 3L,
       design = "taylor",
@@ -275,7 +275,9 @@ test_that("get_ratios() forwards `numerator`, `denominator`, `group`", {
 })
 
 test_that("get_diffs() forwards all four NSE args", {
-  coll <- .make_dispatch_collection()
+  # 300 rows per survey keep every treat-by-grp2 cell at 30 or more rows, so
+  # the small-cell warning does not fire.
+  coll <- .make_dispatch_collection(n = 300L)
   # Note: `covariates` is a character vector in get_diffs(), not a tidy-select.
   got <- get_diffs(
     coll,
@@ -424,12 +426,12 @@ test_that("C13: .id rejects empty, NA, non-char, wrong length", {
 test_that("C14: bind-type mismatch across surveys aborts with surveycore class", {
   surveys <- list(
     w1 = {
-      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df <- make_survey_data(n = 120L, n_psu = 6L, n_strata = 2L, seed = 1L)
       df$grp <- sample(1:2, nrow(df), replace = TRUE)
       as_survey(df, ids = psu, weights = wt, strata = strata)
     },
     w2 = {
-      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      df <- make_survey_data(n = 120L, n_psu = 6L, n_strata = 2L, seed = 2L)
       df$grp <- factor(sample(c("a", "b"), nrow(df), replace = TRUE))
       as_survey(df, ids = psu, weights = wt, strata = strata)
     }
@@ -485,12 +487,12 @@ test_that("C10: tidy-selected variable absent raises surveycore_error_variable_n
 test_that(".if_missing_var = 'skip' drops survey missing a grouping var", {
   surveys <- list(
     w1 = {
-      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df <- make_survey_data(n = 120L, n_psu = 6L, n_strata = 2L, seed = 1L)
       df$grp <- factor(sample(c("A", "B"), nrow(df), replace = TRUE))
       as_survey(df, ids = psu, weights = wt, strata = strata)
     },
     w2 = {
-      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      df <- make_survey_data(n = 120L, n_psu = 6L, n_strata = 2L, seed = 2L)
       as_survey(df, ids = psu, weights = wt, strata = strata)
     }
   )
@@ -620,13 +622,13 @@ test_that("C11: absence vs presence of meta key counts as divergence", {
 test_that("heterogeneous schemas bind_rows with NA-fills on extras", {
   surveys <- list(
     w1 = {
-      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df <- make_survey_data(n = 120L, n_psu = 6L, n_strata = 2L, seed = 1L)
       df$extra <- rnorm(nrow(df))
       df$shared <- factor(sample(c("a", "b"), nrow(df), replace = TRUE))
       as_survey(df, ids = psu, weights = wt, strata = strata)
     },
     w2 = {
-      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      df <- make_survey_data(n = 120L, n_psu = 6L, n_strata = 2L, seed = 2L)
       df$shared <- factor(sample(c("a", "b"), nrow(df), replace = TRUE))
       as_survey(df, ids = psu, weights = wt, strata = strata)
     }
