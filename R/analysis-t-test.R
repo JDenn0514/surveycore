@@ -126,7 +126,8 @@ get_t_test <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .if_missing_var = .if_missing_var
+      .if_missing_var = .if_missing_var,
+      .caller_env = environment()
     ))
   }
   # Step 1: Validate design class
@@ -684,7 +685,8 @@ get_pairwise <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .if_missing_var = .if_missing_var
+      .if_missing_var = .if_missing_var,
+      .caller_env = environment()
     ))
   }
   # Step 1: Validate design class

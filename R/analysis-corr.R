@@ -295,7 +295,8 @@ get_corr <- function(
       method = method,
       ...,
       .id = .id,
-      .if_missing_var = .if_missing_var
+      .if_missing_var = .if_missing_var,
+      .caller_env = environment()
     ))
   }
   # ── Step 1: Validate ────────────────────────────────────────────────────────
