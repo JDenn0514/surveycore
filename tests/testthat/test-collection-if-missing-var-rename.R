@@ -19,7 +19,7 @@
 .make_rename_collection <- function(n_surveys = 2L, seed = 11L) {
   surveys <- lapply(seq_len(n_surveys), function(i) {
     df <- make_survey_data(
-      n = 60L,
+      n = 120L,
       n_psu = 6L,
       n_strata = 2L,
       design = "taylor",
