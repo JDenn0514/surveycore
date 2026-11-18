@@ -315,6 +315,161 @@ test_that("get_pairwise() forwards `by`", {
 })
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Section 4 — Named-argument forwarding oracle (regression for issue #375)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Each block passes one non-default argument. The collection result must
+# equal the per-survey bind oracle given the same argument, and must differ
+# from the collection result at the default. The second assertion proves the
+# argument moves the output, so the first cannot pass with the argument
+# dropped on both sides.
+
+# Drops `.meta` and other attributes, so the comparison is about values.
+.result_values <- function(result) {
+  df <- as.data.frame(result)
+  attributes(df) <- attributes(df)[c("names", "row.names", "class")]
+  df
+}
+
+.expect_forwarded <- function(got, want, at_default) {
+  expect_equal(.result_values(got), .result_values(want), tolerance = 1e-12)
+  expect_false(isTRUE(all.equal(
+    .result_values(got),
+    .result_values(at_default)
+  )))
+}
+
+test_that("get_means() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_means(coll, y1, conf_level = 0.8),
+    .oracle_dispatch(get_means, coll, y1, conf_level = 0.8),
+    get_means(coll, y1)
+  )
+})
+
+test_that("get_totals() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_totals(coll, y1, conf_level = 0.8),
+    .oracle_dispatch(get_totals, coll, y1, conf_level = 0.8),
+    get_totals(coll, y1)
+  )
+})
+
+test_that("get_freqs() forwards `variance` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_freqs(coll, grp2, variance = "ci"),
+    .oracle_dispatch(get_freqs, coll, grp2, variance = "ci"),
+    get_freqs(coll, grp2)
+  )
+})
+
+test_that("get_quantiles() forwards `probs` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_quantiles(coll, y1, probs = c(0.1, 0.9)),
+    .oracle_dispatch(get_quantiles, coll, y1, probs = c(0.1, 0.9)),
+    get_quantiles(coll, y1)
+  )
+})
+
+test_that("get_ratios() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_ratios(coll, num, denom, conf_level = 0.8),
+    .oracle_dispatch(get_ratios, coll, num, denom, conf_level = 0.8),
+    get_ratios(coll, num, denom)
+  )
+})
+
+test_that("get_variance() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_variance(coll, y1, conf_level = 0.8),
+    .oracle_dispatch(get_variance, coll, y1, conf_level = 0.8),
+    get_variance(coll, y1)
+  )
+})
+
+test_that("get_corr() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_corr(coll, c(y1, y2), conf_level = 0.8),
+    .oracle_dispatch(get_corr, coll, c(y1, y2), conf_level = 0.8),
+    get_corr(coll, c(y1, y2))
+  )
+})
+
+test_that("get_covariance() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_covariance(coll, c(y1, y2), conf_level = 0.8),
+    .oracle_dispatch(get_covariance, coll, c(y1, y2), conf_level = 0.8),
+    get_covariance(coll, c(y1, y2))
+  )
+})
+
+test_that("get_t_test() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_t_test(coll, outcome, by = grp2, conf_level = 0.8),
+    .oracle_dispatch(get_t_test, coll, outcome, by = grp2, conf_level = 0.8),
+    get_t_test(coll, outcome, by = grp2)
+  )
+})
+
+test_that("get_pairwise() forwards `conf_level` to every survey", {
+  coll <- .make_dispatch_collection()
+  .expect_forwarded(
+    get_pairwise(coll, outcome, by = treat, conf_level = 0.8),
+    .oracle_dispatch(
+      get_pairwise,
+      coll,
+      outcome,
+      by = treat,
+      conf_level = 0.8
+    ),
+    get_pairwise(coll, outcome, by = treat)
+  )
+})
+
+test_that("get_diffs() forwards `pval_adj` to every survey", {
+  # 300 rows per survey keep every treat-by-grp2 cell at 30 or more rows, so
+  # the small-cell warning does not fire.
+  coll <- .make_dispatch_collection(n = 300L)
+  .expect_forwarded(
+    get_diffs(
+      coll,
+      outcome,
+      treats = treat,
+      group = grp2,
+      pval_adj = "bonferroni"
+    ),
+    .oracle_dispatch(
+      get_diffs,
+      coll,
+      outcome,
+      treats = treat,
+      group = grp2,
+      pval_adj = "bonferroni"
+    ),
+    get_diffs(coll, outcome, treats = treat, group = grp2)
+  )
+})
+
+test_that("get_diffs() forwards `min_cell_n` to every survey", {
+  # 120 rows per survey leave some treat-by-grp2 cells under the default
+  # min_cell_n of 30. With min_cell_n = 10 no cell is small, so the call
+  # raises no warning. Before issue #375 it raised the per-survey warnings.
+  coll <- .make_dispatch_collection()
+  expect_no_warning(
+    get_diffs(coll, outcome, treats = treat, group = grp2, min_cell_n = 10L)
+  )
+})
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Section 5 — Error paths (dual pattern: class= + snapshot for representative)
 # ══════════════════════════════════════════════════════════════════════════════
 
