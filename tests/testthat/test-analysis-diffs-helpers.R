@@ -431,7 +431,7 @@ test_that(".extract_me_estimates() no-group: result_groups = NULL, reference_mea
   skip_if_not_installed("marginaleffects")
   fit <- .make_me_fit()
   result <- .extract_me_estimates(
-    fit, "arm", character(0), "Control", "ame", FALSE
+    fit, "arm", character(0), "Control", "ame", FALSE, 0.95
   )
 
   expect_null(result$result_groups)
@@ -442,7 +442,7 @@ test_that(".extract_me_estimates() no-group: returns correct number of result le
   skip_if_not_installed("marginaleffects")
   fit <- .make_me_fit()
   result <- .extract_me_estimates(
-    fit, "arm", character(0), "Control", "ame", FALSE
+    fit, "arm", character(0), "Control", "ame", FALSE, 0.95
   )
 
   # 3 levels -> 2 non-reference
@@ -454,7 +454,7 @@ test_that(".extract_me_estimates() no-group: result_means populated from preds_d
   skip_if_not_installed("marginaleffects")
   fit <- .make_me_fit()
   result <- .extract_me_estimates(
-    fit, "arm", character(0), "Control", "ame", FALSE
+    fit, "arm", character(0), "Control", "ame", FALSE, 0.95
   )
 
   expect_false(is.null(result$result_means))
@@ -468,7 +468,7 @@ test_that(".extract_me_estimates() with groups: result_groups is a data.frame", 
   fit <- .make_me_fit(with_group = TRUE)
   result <- suppressWarnings(
     .extract_me_estimates(
-      fit, "arm", "gender", "Control", "ame", FALSE
+      fit, "arm", "gender", "Control", "ame", FALSE, 0.95
     )
   )
 
@@ -482,7 +482,7 @@ test_that(".extract_me_estimates() suppress_mean = TRUE: preds_df = NULL, result
   skip_if_not_installed("marginaleffects")
   fit <- .make_me_fit()
   result <- .extract_me_estimates(
-    fit, "arm", character(0), "Control", "ame", TRUE
+    fit, "arm", character(0), "Control", "ame", TRUE, 0.95
   )
 
   expect_null(result$preds_df)
@@ -493,7 +493,7 @@ test_that(".extract_me_estimates() contrast parsing strips ref level correctly",
   skip_if_not_installed("marginaleffects")
   fit <- .make_me_fit()
   result <- .extract_me_estimates(
-    fit, "arm", character(0), "Control", "ame", FALSE
+    fit, "arm", character(0), "Control", "ame", FALSE, 0.95
   )
 
   # Level names should be "A" and "B", not "A - Control" etc.
@@ -508,7 +508,7 @@ test_that(".extract_me_estimates() scale = 'link' accepts parameter and returns 
   fit <- .make_me_fit()
 
   result_link <- .extract_me_estimates(
-    fit, "arm", character(0), "Control", "link", TRUE
+    fit, "arm", character(0), "Control", "link", TRUE, 0.95
   )
 
   # Function should succeed and return correct structure
@@ -598,7 +598,7 @@ test_that(".build_diffs_output() no-group ME path: col_vecs has correct structur
   design <- .make_build_design()
   fit <- survey_glm(design, dv ~ treats)
   result <- .extract_me_estimates(
-    fit, "treats", character(0), "Control", "ame", FALSE
+    fit, "treats", character(0), "Control", "ame", FALSE, 0.95
   )
 
   domain_mask <- .apply_domain(design)
@@ -635,7 +635,7 @@ test_that(".build_diffs_output() grouped path: groups_df has correct columns and
   fit <- survey_glm(design, dv ~ treats * gender)
   result <- suppressWarnings(
     .extract_me_estimates(
-      fit, "treats", "gender", "Control", "ame", FALSE
+      fit, "treats", "gender", "Control", "ame", FALSE, 0.95
     )
   )
 
@@ -848,7 +848,7 @@ test_that(".build_diffs_output() p-value adjustment with groups: adjusts within 
   fit <- survey_glm(design, dv ~ treats * gender)
   result <- suppressWarnings(
     .extract_me_estimates(
-      fit, "treats", "gender", "Control", "ame", FALSE
+      fit, "treats", "gender", "Control", "ame", FALSE, 0.95
     )
   )
 
@@ -990,7 +990,7 @@ test_that(".build_diffs_output() pct_change with show_means = FALSE: correct on 
   design <- .make_build_design()
   fit <- survey_glm(design, dv ~ treats)
   result <- .extract_me_estimates(
-    fit, "treats", character(0), "Control", "ame", FALSE
+    fit, "treats", character(0), "Control", "ame", FALSE, 0.95
   )
 
   domain_mask <- .apply_domain(design)
@@ -1025,7 +1025,7 @@ test_that(".build_diffs_output() pct_change with show_means = FALSE + grouped ME
   fit <- survey_glm(design, dv ~ treats * gender)
   result <- suppressWarnings(
     .extract_me_estimates(
-      fit, "treats", "gender", "Control", "ame", FALSE
+      fit, "treats", "gender", "Control", "ame", FALSE, 0.95
     )
   )
 
@@ -1286,7 +1286,7 @@ test_that(".build_diffs_output() ME path with show_means = TRUE and suppress_mea
   design <- .make_build_design()
   fit <- survey_glm(design, dv ~ treats)
   result <- .extract_me_estimates(
-    fit, "treats", character(0), "Control", "ame", TRUE
+    fit, "treats", character(0), "Control", "ame", TRUE, 0.95
   )
 
   domain_mask <- .apply_domain(design)
@@ -1324,7 +1324,7 @@ test_that(".build_diffs_output() grouped path with pct_change: group combo loop 
   fit <- survey_glm(design, dv ~ treats * gender)
   result <- suppressWarnings(
     .extract_me_estimates(
-      fit, "treats", "gender", "Control", "ame", FALSE
+      fit, "treats", "gender", "Control", "ame", FALSE, 0.95
     )
   )
 

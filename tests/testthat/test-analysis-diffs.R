@@ -557,6 +557,81 @@ test_that("get_diffs() gaussian ame == link produces identical output", {
   )
 })
 
+# conf_level on the marginaleffects path (#377). The intervals are t
+# intervals on the residual df: the design df (20 PSUs - 4 strata = 16) minus
+# the non-intercept coefficients. The half-width over the SE is the t
+# quantile, so a 90% interval must be narrower than the 95% one by
+# qt(0.95, df) / qt(0.975, df). suppressWarnings() hides glm()'s "contrasts
+# dropped" and the small-cell warnings, as the other grouped blocks do.
+
+test_that("get_diffs() with group honours conf_level", {
+  d <- .make_diffs_design()
+  run <- function(conf_level) {
+    suppressWarnings(get_diffs(
+      d,
+      dv,
+      treats,
+      group = gender,
+      ref_level = "Control",
+      variance = c("se", "ci"),
+      conf_level = conf_level
+    ))
+  }
+  r95 <- run(0.95)
+  r90 <- run(0.90)
+  # dv ~ treats * gender: 5 non-intercept coefficients
+  res_df <- 16 - 5
+  cmp <- !is.na(r90$se)
+
+  expect_identical(sum(cmp), 4L)
+  expect_equal(
+    (r90$ci_high[cmp] - r90$estimate[cmp]) / r90$se[cmp],
+    rep(stats::qt(0.95, res_df), 4L),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    (r90$ci_high[cmp] - r90$ci_low[cmp]) /
+      (r95$ci_high[cmp] - r95$ci_low[cmp]),
+    rep(stats::qt(0.95, res_df) / stats::qt(0.975, res_df), 4L),
+    tolerance = 1e-8
+  )
+  expect_identical(meta(r90)$conf_level, 0.90)
+})
+
+test_that("get_diffs() with covariates honours conf_level", {
+  d <- .make_diffs_design()
+  run <- function(conf_level) {
+    suppressWarnings(get_diffs(
+      d,
+      dv,
+      treats,
+      covariates = "age",
+      ref_level = "Control",
+      variance = c("se", "ci"),
+      conf_level = conf_level
+    ))
+  }
+  r95 <- run(0.95)
+  r90 <- run(0.90)
+  # dv ~ treats + age: 3 non-intercept coefficients
+  res_df <- 16 - 3
+  cmp <- !is.na(r90$se)
+
+  expect_identical(sum(cmp), 2L)
+  expect_equal(
+    (r90$ci_high[cmp] - r90$estimate[cmp]) / r90$se[cmp],
+    rep(stats::qt(0.95, res_df), 2L),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    (r90$ci_high[cmp] - r90$ci_low[cmp]) /
+      (r95$ci_high[cmp] - r95$ci_low[cmp]),
+    rep(stats::qt(0.95, res_df) / stats::qt(0.975, res_df), 2L),
+    tolerance = 1e-8
+  )
+  expect_identical(meta(r90)$conf_level, 0.90)
+})
+
 test_that("get_diffs() pval_adj with group adjusts within groups", {
   d <- .make_diffs_design()
   result_adj <- suppressWarnings(get_diffs(
