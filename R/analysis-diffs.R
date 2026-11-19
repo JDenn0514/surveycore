@@ -414,7 +414,8 @@ get_diffs <- function(
       group_names,
       ref_level,
       scale,
-      suppress_mean
+      suppress_mean,
+      conf_level
     )
   }
 

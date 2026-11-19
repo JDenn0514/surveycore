@@ -128,6 +128,8 @@
 # @param ref_level character(1). Reference level name.
 # @param scale character(1). "ame" or "link".
 # @param suppress_mean logical(1). If TRUE, skip avg_predictions() call.
+# @param conf_level numeric(1). Confidence level for every interval
+#   marginaleffects returns.
 #
 # @return Named list with 10 keys matching .extract_clean_estimates() return.
 .extract_me_estimates <- function(
@@ -136,7 +138,8 @@
   group_names,
   ref_level,
   scale,
-  suppress_mean
+  suppress_mean,
+  conf_level
 ) {
   p <- length(stats::coef(fit))
   res_df <- max(1, fit@degf - (p - 1L))
@@ -151,7 +154,8 @@
       by = group_names,
       type = me_type,
       wts = fit@weights,
-      df = res_df
+      df = res_df,
+      conf_level = conf_level
     )
   } else {
     slopes <- marginaleffects::avg_slopes(
@@ -159,7 +163,8 @@
       variables = treats_name,
       type = me_type,
       wts = fit@weights,
-      df = res_df
+      df = res_df,
+      conf_level = conf_level
     )
   }
   slopes_df <- as.data.frame(slopes)
@@ -173,7 +178,8 @@
         by = c(treats_name, group_names),
         type = me_type,
         wts = fit@weights,
-        df = res_df
+        df = res_df,
+        conf_level = conf_level
       )
     } else {
       preds <- marginaleffects::avg_predictions(
@@ -181,7 +187,8 @@
         by = treats_name,
         type = me_type,
         wts = fit@weights,
-        df = res_df
+        df = res_df,
+        conf_level = conf_level
       )
     }
     preds_df <- as.data.frame(preds)

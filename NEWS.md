@@ -31,6 +31,13 @@
   the result matches the same call run on each survey and bound together.
   Results from calls that set any of those arguments change. (#375)
 
+* `get_diffs()` ignored `conf_level` when it estimated through
+  marginaleffects: a call with `group`, with `covariates`, or with a
+  non-gaussian family and `scale = "ame"`. Those calls returned 95%
+  intervals while the result metadata recorded the requested level. The
+  intervals now use `conf_level`. Results from those calls that set a
+  `conf_level` other than 0.95 change. (#377)
+
 # surveycore 1.2.0
 
 ## New features
