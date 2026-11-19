@@ -813,7 +813,10 @@ test_that("survey_glm() full method with ids2 on a domain matches survey twophas
 test_that("get_totals() full method with fpc2 matches survey twophase2 [oracle]", {
   skip_if_not_installed("survey")
   df <- full_oracle_data()
-  df$n_stratum <- as.numeric(stats::ave(df$y1, df$strata, FUN = length))
+  # `S7::method(length, ...) <-` in R/methods-print.R binds `length` in the
+  # namespace. With S7 1.0.0 under `load_all()` that binding is not a
+  # function, so pass `base::length` here rather than a bare `length`.
+  df$n_stratum <- as.numeric(stats::ave(df$y1, df$strata, FUN = base::length))
   sc <- as_survey_twophase(
     full_oracle_phase1(df),
     strata2 = strata,
