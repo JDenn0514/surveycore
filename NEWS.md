@@ -19,6 +19,18 @@
   cells are computed. A warning from one of those cells can print before
   it, and an error from one of them replaces it. (#372)
 
+## Bug fixes
+
+* On a `survey_collection`, `get_corr()`, `get_covariance()`, `get_diffs()`,
+  `get_freqs()`, `get_means()`, `get_pairwise()`, `get_quantiles()`,
+  `get_ratios()`, `get_t_test()`, `get_totals()` and `get_variance()`
+  ignored every argument except the variables, `group`, `...`, `.id` and
+  `.if_missing_var`. Each survey ran with the defaults, so a call such as
+  `get_means(coll, y, conf_level = 0.9)` returned 95% intervals with no
+  message. Every argument the call supplies now reaches each survey, and
+  the result matches the same call run on each survey and bound together.
+  Results from calls that set any of those arguments change. (#375)
+
 # surveycore 1.2.0
 
 ## New features

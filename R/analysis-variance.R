@@ -143,7 +143,8 @@ get_variance <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .if_missing_var = .if_missing_var
+      .if_missing_var = .if_missing_var,
+      .caller_env = environment()
     ))
   }
 

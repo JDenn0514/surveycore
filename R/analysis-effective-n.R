@@ -129,7 +129,8 @@ get_effective_n <- function(
       min_cell_n = min_cell_n,
       ...,
       .id = .id,
-      .if_missing_var = .if_missing_var
+      .if_missing_var = .if_missing_var,
+      .caller_env = environment()
     ))
   }
 

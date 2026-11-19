@@ -665,6 +665,27 @@ set_collection_if_missing_var <- function(x, if_missing_var) {
 }
 
 
+# ── .collection_supplied_formals() ────────────────────────────────────────────
+
+# Returns a named list of the formals of `fn` that the caller supplied in
+# `env`, so `.dispatch_over_collection()` can forward them to each survey.
+# Skips the first formal (the design), `...`, `.id`, `.if_missing_var`, and
+# the names in `already`, which the dispatch branch forwards itself (the
+# tidy-select arguments, as quosures). A formal the caller left missing is
+# not forwarded, so each survey applies its own default.
+.collection_supplied_formals <- function(fn, env, already) {
+  if (is.null(env)) {
+    return(list())
+  }
+  fmls <- names(formals(fn))[-1L]
+  fmls <- setdiff(fmls, c("...", ".id", ".if_missing_var", already))
+  supplied <- Filter(
+    function(arg) !eval(call("missing", as.name(arg)), env),
+    fmls
+  )
+  mget(supplied, envir = env)
+}
+
 # ── .dispatch_over_collection() ───────────────────────────────────────────────
 
 #' Dispatch a `get_*()` analysis function across every survey in a collection
@@ -712,6 +733,12 @@ set_collection_if_missing_var <- function(x, if_missing_var) {
 #' @param .if_missing_var Character(1) in `c("error", "skip")` or `NULL`.
 #'   When non-`NULL`, the per-call missing-variable behaviour; when
 #'   `NULL`, the dispatcher resolves to `collection@if_missing_var`.
+#' @param .caller_env The execution frame of the `get_*()` function, or
+#'   `NULL`. When non-`NULL`, every formal of `fn` that the caller supplied
+#'   and that `...` does not already name is forwarded to each survey
+#'   (issue #375). Every dispatch branch passes `environment()`. `NULL`
+#'   forwards `...` only; the tests that call the dispatcher directly use
+#'   it.
 #' @return A tibble (same S3 class as the per-survey results) with the
 #'   resolved `.id` column prepended and `.meta` carried over.
 #'
@@ -722,8 +749,11 @@ set_collection_if_missing_var <- function(x, if_missing_var) {
   collection,
   ...,
   .id = NULL,
-  .if_missing_var = NULL
+  .if_missing_var = NULL,
+  .caller_env = NULL
 ) {
+  forwarded <- .collection_supplied_formals(fn, .caller_env, ...names())
+
   # Two-tier precedence: call-site non-NULL beats stored property.
   resolved_id <- .id %||% collection@id
   resolved_if_missing_var <- .if_missing_var %||% collection@if_missing_var
@@ -749,7 +779,7 @@ set_collection_if_missing_var <- function(x, if_missing_var) {
   skipped <- character(0L)
   for (nm in nms) {
     r <- tryCatch(
-      fn(collection@surveys[[nm]], ...),
+      rlang::inject(fn(collection@surveys[[nm]], ..., !!!forwarded)),
       surveycore_error_variable_not_found = function(cnd) {
         if (resolved_if_missing_var == "skip") {
           skipped <<- c(skipped, nm)
