@@ -532,6 +532,7 @@
 #   rho             — scalar in (-1, 1)
 #   z               — numeric vector of standardized continuous values
 #                     (row-aligned to observations used in the likelihood).
+#                     Finite or NA; never ±Inf (see the Φ step below).
 #   ordinal_level_int — integer vector of ordinal codes 1..K
 #                     (row-aligned to z).
 #   thresholds      — length K-1 interior thresholds.
@@ -570,14 +571,16 @@
   }
   # nocov end
 
-  # Precompute Φ((t_k - ρ z_i) / denom) on demand for each observation.
+  # Φ((t_k - ρ z_i) / denom) for each observation. The ±Inf sentinels need
+  # no special case: pnorm(Inf) is exactly 1 and pnorm(-Inf) exactly 0. This
+  # holds only for finite z. An infinite z gives Inf - Inf = NaN, which the
+  # floor below catches. `.corr_weighted_standardize()` never returns an
+  # infinite z: an infinite input makes every z NaN, and `use` drops NaN.
   theta_hi <- t_full[m_u + 1L]
   theta_lo <- t_full[m_u]
   u_hi <- (theta_hi - rho * z_u) / denom
   u_lo <- (theta_lo - rho * z_u) / denom
-  phi_hi <- ifelse(is.infinite(theta_hi) & theta_hi > 0, 1, stats::pnorm(u_hi))
-  phi_lo <- ifelse(is.infinite(theta_lo) & theta_lo < 0, 0, stats::pnorm(u_lo))
-  p_mi <- phi_hi - phi_lo
+  p_mi <- stats::pnorm(u_hi) - stats::pnorm(u_lo)
 
   any_floor_active <- FALSE
   bad <- is.na(p_mi) | p_mi < cell_prob_floor
