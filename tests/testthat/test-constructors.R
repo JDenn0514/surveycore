@@ -4544,6 +4544,14 @@ test_that("as_survey_nonprob() calibration is NULL when not supplied", {
   expect_null(d@calibration)
 })
 
+test_that("as_survey_nonprob() stores its unevaluated call in @call", {
+  df <- data.frame(y = 1:20, w = rep(1, 20))
+  d <- as_survey_nonprob(df, weights = w)
+  expect_true(is.call(d@call))
+  expect_identical(d@call[[1L]], quote(as_survey_nonprob))
+  expect_identical(d@call$weights, quote(w))
+})
+
 test_that("as_survey_nonprob() extracts haven variable labels", {
   df <- data.frame(y = 1:50, w = rep(1, 50))
   attr(df$y, "label") <- "Outcome variable"
