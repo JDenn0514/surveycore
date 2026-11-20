@@ -1114,7 +1114,10 @@ survey_glm <- function(
     rows = domain_for_score
   )
 
-  survey_glm_fit(
+  # `call` is set after construction: S7 1.0.0 drops it when passed to the
+  # constructor (RConsortium/S7#798). See .set_call() in R/utils.R.
+  fit_call <- match.call()
+  glm_fit <- survey_glm_fit(
     coefficients = stats::coef(fit),
     vcov = vcov_mat,
     fitted_values = as.numeric(stats::fitted(fit)),
@@ -1133,8 +1136,8 @@ survey_glm <- function(
     df_null = as.numeric(fit$df.null),
     df_residual = as.numeric(fit$df.residual),
     converged = isTRUE(fit$converged),
-    call = match.call(),
     fit_ = fit,
     term_assign = as.integer(attr(stats::model.matrix(fit), "assign"))
   )
+  .set_call(glm_fit, fit_call)
 }

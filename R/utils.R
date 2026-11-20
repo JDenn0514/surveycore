@@ -1313,3 +1313,28 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 .replicate_ignores_rscales <- function(type) {
   type %in% c("JK2", "ACS", "successive-difference")
 }
+
+
+# ── .set_call() ───────────────────────────────────────────────────────────────
+#
+# Stores `call` in the `call` property of an S7 object and returns the object.
+# S7 1.0.0 drops a property named `call` that is passed to a class constructor
+# or to S7::set_props(): its internal collect_dots() matches `call =` to its
+# own formal (RConsortium/S7#798). A property assignment after construction
+# stores the value, and the `call` properties are untyped, so the call is
+# stored without being evaluated.
+#
+# `check = FALSE` skips the class validator. The constructor has just run it,
+# and a second run would raise its warnings twice (for example
+# surveycore_warning_psu_multi_strata). S7 0.2.2 and 1.0.0 both take the
+# argument.
+#
+# Remove this helper, and pass `call =` to the constructor again, once
+# surveycore requires an S7 version with that fix. Call sites: as_survey(),
+# as_survey_replicate(), as_survey_twophase(), as_survey_nonprob() and
+# survey_glm().
+#' @noRd
+.set_call <- function(obj, call) {
+  S7::prop(obj, "call", check = FALSE) <- call
+  obj
+}

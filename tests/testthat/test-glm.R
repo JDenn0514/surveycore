@@ -92,6 +92,14 @@ test_that("survey_glm() stores the raw glm fit in fit_", {
   expect_true(inherits(fit@fit_, "glm"))
 })
 
+test_that("survey_glm() stores its unevaluated call in @call", {
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
+  expect_true(is.call(fit@call))
+  expect_identical(fit@call[[1L]], quote(survey_glm))
+  expect_identical(fit@call$design, quote(d))
+})
+
 test_that("survey_glm() degf equals .degf(design) for Taylor design", {
   d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
