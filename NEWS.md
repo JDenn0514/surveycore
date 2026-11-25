@@ -1,3 +1,16 @@
+# surveycore 1.2.1
+
+## Bug fixes
+
+* Designs built by `as_survey()`, `as_survey_replicate()`,
+  `as_survey_twophase()` and `as_survey_nonprob()`, and models fit by
+  `survey_glm()`, keep their `@call` again under S7 1.0.0, so `update()`
+  works on a `survey_glm_fit`. S7 1.0.0 dropped a property named `call`
+  passed to a constructor (RConsortium/S7#798). (#383)
+
+* Tests for dataset-level metadata now load designs saved by surveycore
+  1.0.0. (#373)
+
 # surveycore 1.2.0
 
 ## New features
