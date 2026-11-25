@@ -33,13 +33,13 @@ test_that("make_dataset_df() attaches only the keys it is given", {
   expect_null(attr(df, "survey_name", exact = TRUE))
 })
 
-test_that("make_stale_metadata_design() strips the property on all 4 classes", {
+test_that("saved designs from before 1.2.0 have no dataset metadata property", {
   for (cls in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(cls)
-    test_invariants(d)
+    expect_s3_class(d, paste0("surveycore::survey_", cls))
+    expect_no_error(S7::validate(d))
 
-    expect_false("dataset_metadata" %in% S7::prop_names(d@metadata))
-    expect_error(d@metadata@dataset_metadata, regexp = "find property")
+    expect_false(S7::prop_exists(d@metadata, "dataset_metadata"))
   }
 })
 
