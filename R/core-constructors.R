@@ -565,13 +565,15 @@ as_survey <- function(
 
   # ── Construct and return survey_taylor object ───────────────────────────────
 
-  survey_taylor(
+  # `call` is set after construction: S7 1.0.0 drops it when passed to the
+  # constructor (RConsortium/S7#798). See .set_call() in R/utils.R.
+  design <- survey_taylor(
     data = data,
     metadata = metadata,
     variables = variables,
-    calibration = calibration,
-    call = call
+    calibration = calibration
   )
+  .set_call(design, call)
 }
 
 
@@ -1401,13 +1403,15 @@ as_survey_replicate <- function(
 
   # ── Construct and return survey_replicate object ────────────────────────────
 
-  survey_replicate(
+  # `call` is set after construction: S7 1.0.0 drops it when passed to the
+  # constructor (RConsortium/S7#798). See .set_call() in R/utils.R.
+  design <- survey_replicate(
     data = data,
     metadata = metadata,
     variables = variables,
-    calibration = calibration,
-    call = call
+    calibration = calibration
   )
+  .set_call(design, call)
 }
 
 
@@ -1793,12 +1797,14 @@ as_survey_twophase <- function(
 
   # ── Construct and return survey_twophase object ─────────────────────────────
 
+  # `call` is set after construction: S7 1.0.0 drops it when passed to the
+  # constructor (RConsortium/S7#798). See .set_call() in R/utils.R.
   design <- survey_twophase(
     data = data,
     metadata = metadata,
-    variables = variables,
-    call = call
+    variables = variables
   )
+  design <- .set_call(design, call)
 
   # ── Warning TP-2: method = "full" with a weighted phase 1 and no fpc ────────
 
@@ -2324,14 +2330,16 @@ as_survey_nonprob <- function(
 
   # ── Construct and return survey_nonprob object ───────────────────────────
 
-  survey_nonprob(
+  # `call` is set after construction: S7 1.0.0 drops it when passed to the
+  # constructor (RConsortium/S7#798). See .set_call() in R/utils.R.
+  design <- survey_nonprob(
     data = data,
     metadata = metadata,
     variables = variables,
     calibration = calibration,
-    reference_sample = reference_sample,
-    call = call
+    reference_sample = reference_sample
   )
+  .set_call(design, call)
 }
 
 
